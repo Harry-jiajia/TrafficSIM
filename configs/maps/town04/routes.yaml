@@ -1,0 +1,452 @@
+routes:
+- depart_ms: 0
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:270:section:0:lane:-1
+  - road:392:section:0:lane:-1
+  - road:333:section:0:lane:-1
+  - road:437:section:0:lane:-1
+  route_id: town04-route-000
+  vehicle_id: vehicle-000
+- depart_ms: 500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:271:section:0:lane:-1
+  - road:394:section:0:lane:-1
+  - road:287:section:0:lane:-1
+  - road:440:section:0:lane:-1
+  route_id: town04-route-001
+  vehicle_id: vehicle-001
+- depart_ms: 1000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:272:section:0:lane:-1
+  - road:462:section:0:lane:-1
+  - road:330:section:0:lane:-1
+  - road:523:section:0:lane:-1
+  route_id: town04-route-002
+  vehicle_id: vehicle-002
+- depart_ms: 1500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:273:section:0:lane:-1
+  - road:418:section:0:lane:-1
+  - road:297:section:0:lane:-1
+  - road:421:section:0:lane:-1
+  route_id: town04-route-003
+  vehicle_id: vehicle-003
+- depart_ms: 2000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:274:section:0:lane:-1
+  - road:471:section:0:lane:-1
+  - road:275:section:0:lane:-1
+  - road:381:section:0:lane:-1
+  route_id: town04-route-004
+  vehicle_id: vehicle-004
+- depart_ms: 2500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:275:section:0:lane:-1
+  - road:381:section:0:lane:-1
+  - road:326:section:0:lane:-1
+  - road:424:section:0:lane:-1
+  route_id: town04-route-005
+  vehicle_id: vehicle-005
+- depart_ms: 3000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:276:section:0:lane:-1
+  - road:468:section:0:lane:-1
+  - road:293:section:0:lane:-4
+  - road:433:section:0:lane:-1
+  route_id: town04-route-006
+  vehicle_id: vehicle-006
+- depart_ms: 3500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:277:section:0:lane:-1
+  - road:360:section:0:lane:-1
+  - road:307:section:0:lane:-1
+  - road:506:section:0:lane:-1
+  route_id: town04-route-007
+  vehicle_id: vehicle-007
+- depart_ms: 4000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:278:section:0:lane:-1
+  - road:494:section:0:lane:-1
+  - road:308:section:0:lane:-1
+  - road:480:section:0:lane:-1
+  route_id: town04-route-008
+  vehicle_id: vehicle-008
+- depart_ms: 4500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:279:section:0:lane:-1
+  - road:533:section:0:lane:-1
+  - road:356:section:0:lane:-1
+  - road:482:section:0:lane:-1
+  route_id: town04-route-009
+  vehicle_id: vehicle-009
+- depart_ms: 5000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:280:section:0:lane:-1
+  - road:527:section:0:lane:-1
+  - road:281:section:0:lane:-1
+  - road:430:section:0:lane:-1
+  route_id: town04-route-010
+  vehicle_id: vehicle-010
+- depart_ms: 5500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:281:section:0:lane:-1
+  - road:430:section:0:lane:-1
+  - road:305:section:0:lane:-1
+  - road:436:section:0:lane:-1
+  route_id: town04-route-011
+  vehicle_id: vehicle-011
+- depart_ms: 6000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:282:section:0:lane:-1
+  - road:406:section:0:lane:-1
+  - road:291:section:0:lane:-1
+  - road:409:section:0:lane:-1
+  route_id: town04-route-012
+  vehicle_id: vehicle-012
+- depart_ms: 6500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:283:section:0:lane:-1
+  - road:378:section:0:lane:-1
+  - road:276:section:0:lane:-1
+  - road:468:section:0:lane:-1
+  route_id: town04-route-013
+  vehicle_id: vehicle-013
+- depart_ms: 7000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:284:section:0:lane:-2
+  - road:358:section:0:lane:-1
+  - road:339:section:0:lane:-5
+  - road:435:section:0:lane:-3
+  route_id: town04-route-014
+  vehicle_id: vehicle-014
+- depart_ms: 7500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:284:section:0:lane:-3
+  - road:358:section:0:lane:-2
+  - road:339:section:0:lane:-6
+  - road:435:section:0:lane:-4
+  route_id: town04-route-015
+  vehicle_id: vehicle-015
+- depart_ms: 8000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:285:section:0:lane:-2
+  - road:513:section:0:lane:-1
+  - road:343:section:0:lane:-6
+  - road:493:section:0:lane:-4
+  route_id: town04-route-016
+  vehicle_id: vehicle-016
+- depart_ms: 8500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:285:section:0:lane:-3
+  - road:512:section:0:lane:-1
+  - road:299:section:0:lane:-4
+  - road:530:section:0:lane:-1
+  route_id: town04-route-017
+  vehicle_id: vehicle-017
+- depart_ms: 9000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:286:section:0:lane:-1
+  - road:397:section:0:lane:-1
+  - road:313:section:0:lane:-1
+  - road:388:section:0:lane:-1
+  route_id: town04-route-018
+  vehicle_id: vehicle-018
+- depart_ms: 9500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:287:section:0:lane:-1
+  - road:440:section:0:lane:-1
+  - road:292:section:0:lane:-1
+  - road:390:section:0:lane:-1
+  route_id: town04-route-019
+  vehicle_id: vehicle-019
+- depart_ms: 10000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:288:section:0:lane:-1
+  - road:497:section:0:lane:-1
+  - road:320:section:0:lane:-1
+  - road:366:section:0:lane:-1
+  route_id: town04-route-020
+  vehicle_id: vehicle-020
+- depart_ms: 10500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:289:section:0:lane:-1
+  - road:459:section:0:lane:-1
+  - road:273:section:0:lane:-1
+  - road:418:section:0:lane:-1
+  route_id: town04-route-021
+  vehicle_id: vehicle-021
+- depart_ms: 11000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:290:section:0:lane:-1
+  - road:443:section:0:lane:-1
+  - road:328:section:0:lane:-1
+  - road:403:section:0:lane:-1
+  route_id: town04-route-022
+  vehicle_id: vehicle-022
+- depart_ms: 11500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:291:section:0:lane:-1
+  - road:409:section:0:lane:-1
+  - road:315:section:0:lane:-1
+  - road:456:section:0:lane:-1
+  route_id: town04-route-023
+  vehicle_id: vehicle-023
+- depart_ms: 12000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:292:section:0:lane:-1
+  - road:390:section:0:lane:-1
+  - road:271:section:0:lane:-1
+  - road:394:section:0:lane:-1
+  route_id: town04-route-024
+  vehicle_id: vehicle-024
+- depart_ms: 12500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:293:section:0:lane:-1
+  - road:434:section:0:lane:-1
+  - road:294:section:0:lane:-1
+  - road:357:section:0:lane:-1
+  route_id: town04-route-025
+  vehicle_id: vehicle-025
+- depart_ms: 13000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:293:section:0:lane:-2
+  - road:434:section:0:lane:-2
+  - road:294:section:0:lane:-2
+  - road:357:section:0:lane:-2
+  route_id: town04-route-026
+  vehicle_id: vehicle-026
+- depart_ms: 13500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:293:section:0:lane:-3
+  - road:434:section:0:lane:-3
+  - road:294:section:0:lane:-3
+  - road:357:section:0:lane:-3
+  route_id: town04-route-027
+  vehicle_id: vehicle-027
+- depart_ms: 14000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:293:section:0:lane:-4
+  - road:433:section:0:lane:-1
+  - road:351:section:0:lane:-1
+  - road:427:section:0:lane:-1
+  route_id: town04-route-028
+  vehicle_id: vehicle-028
+- depart_ms: 14500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:294:section:0:lane:-1
+  - road:357:section:0:lane:-1
+  - road:295:section:0:lane:-1
+  - road:477:section:0:lane:-1
+  route_id: town04-route-029
+  vehicle_id: vehicle-029
+- depart_ms: 15000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:294:section:0:lane:-2
+  - road:357:section:0:lane:-2
+  - road:295:section:0:lane:-2
+  - road:477:section:0:lane:-2
+  route_id: town04-route-030
+  vehicle_id: vehicle-030
+- depart_ms: 15500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:294:section:0:lane:-3
+  - road:357:section:0:lane:-3
+  - road:295:section:0:lane:-3
+  - road:477:section:0:lane:-3
+  route_id: town04-route-031
+  vehicle_id: vehicle-031
+- depart_ms: 16000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:294:section:0:lane:-4
+  - road:357:section:0:lane:-4
+  - road:295:section:0:lane:-4
+  - road:477:section:0:lane:-4
+  route_id: town04-route-032
+  vehicle_id: vehicle-032
+- depart_ms: 16500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:295:section:0:lane:-1
+  - road:477:section:0:lane:-1
+  - road:296:section:0:lane:-1
+  - road:491:section:0:lane:-1
+  route_id: town04-route-033
+  vehicle_id: vehicle-033
+- depart_ms: 17000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:295:section:0:lane:-2
+  - road:477:section:0:lane:-2
+  - road:296:section:0:lane:-2
+  - road:491:section:0:lane:-2
+  route_id: town04-route-034
+  vehicle_id: vehicle-034
+- depart_ms: 17500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:295:section:0:lane:-3
+  - road:477:section:0:lane:-3
+  - road:296:section:0:lane:-3
+  - road:491:section:0:lane:-3
+  route_id: town04-route-035
+  vehicle_id: vehicle-035
+- depart_ms: 18000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:295:section:0:lane:-4
+  - road:477:section:0:lane:-4
+  - road:296:section:0:lane:-4
+  - road:490:section:0:lane:-1
+  route_id: town04-route-036
+  vehicle_id: vehicle-036
+- depart_ms: 18500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:296:section:0:lane:-1
+  - road:491:section:0:lane:-1
+  - road:298:section:0:lane:-1
+  - road:517:section:0:lane:-1
+  route_id: town04-route-037
+  vehicle_id: vehicle-037
+- depart_ms: 19000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:296:section:0:lane:-2
+  - road:491:section:0:lane:-2
+  - road:298:section:0:lane:-2
+  - road:517:section:0:lane:-2
+  route_id: town04-route-038
+  vehicle_id: vehicle-038
+- depart_ms: 19500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:296:section:0:lane:-3
+  - road:491:section:0:lane:-3
+  - road:298:section:0:lane:-3
+  - road:517:section:0:lane:-3
+  route_id: town04-route-039
+  vehicle_id: vehicle-039
+- depart_ms: 20000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:296:section:0:lane:-4
+  - road:490:section:0:lane:-1
+  - road:335:section:0:lane:-2
+  - road:452:section:0:lane:-1
+  route_id: town04-route-040
+  vehicle_id: vehicle-040
+- depart_ms: 20500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:297:section:0:lane:-1
+  - road:421:section:0:lane:-1
+  - road:323:section:0:lane:-1
+  - road:525:section:0:lane:-1
+  route_id: town04-route-041
+  vehicle_id: vehicle-041
+- depart_ms: 21000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:298:section:0:lane:-1
+  - road:517:section:0:lane:-1
+  - road:299:section:0:lane:-1
+  - road:532:section:0:lane:-1
+  route_id: town04-route-042
+  vehicle_id: vehicle-042
+- depart_ms: 21500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:298:section:0:lane:-2
+  - road:517:section:0:lane:-2
+  - road:299:section:0:lane:-2
+  - road:532:section:0:lane:-2
+  route_id: town04-route-043
+  vehicle_id: vehicle-043
+- depart_ms: 22000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:298:section:0:lane:-3
+  - road:517:section:0:lane:-3
+  - road:299:section:0:lane:-3
+  - road:532:section:0:lane:-3
+  route_id: town04-route-044
+  vehicle_id: vehicle-044
+- depart_ms: 22500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:298:section:0:lane:-4
+  - road:517:section:0:lane:-4
+  - road:299:section:0:lane:-4
+  - road:530:section:0:lane:-1
+  route_id: town04-route-045
+  vehicle_id: vehicle-045
+- depart_ms: 23000
+  desired_speed_mps: 12.0
+  lane_ids:
+  - road:299:section:0:lane:-1
+  - road:532:section:0:lane:-1
+  - road:301:section:0:lane:-1
+  - road:473:section:0:lane:-1
+  route_id: town04-route-046
+  vehicle_id: vehicle-046
+- depart_ms: 23500
+  desired_speed_mps: 13.0
+  lane_ids:
+  - road:299:section:0:lane:-2
+  - road:532:section:0:lane:-2
+  - road:301:section:0:lane:-2
+  - road:473:section:0:lane:-2
+  route_id: town04-route-047
+  vehicle_id: vehicle-047
+- depart_ms: 24000
+  desired_speed_mps: 10.0
+  lane_ids:
+  - road:299:section:0:lane:-3
+  - road:532:section:0:lane:-3
+  - road:301:section:0:lane:-3
+  - road:473:section:0:lane:-3
+  route_id: town04-route-048
+  vehicle_id: vehicle-048
+- depart_ms: 24500
+  desired_speed_mps: 11.0
+  lane_ids:
+  - road:299:section:0:lane:-4
+  - road:530:section:0:lane:-1
+  - road:284:section:0:lane:-3
+  - road:358:section:0:lane:-2
+  route_id: town04-route-049
+  vehicle_id: vehicle-049
+schema_version: '1.0'

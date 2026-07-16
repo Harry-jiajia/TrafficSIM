@@ -1,0 +1,27 @@
+html,
+body,
+#map {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: #0b1018;
+  overflow: hidden;
+}
+
+#map-status {
+  position: absolute;
+  z-index: 1000;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 7px 12px;
+  border-radius: 6px;
+  color: #d9e6f2;
+  background: rgb(16 23 34 / 90%);
+  font: 12px -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.leaflet-control-attribution {
+  background: rgb(16 23 34 / 75%) !important;
+  color: #91a4b8;
+}

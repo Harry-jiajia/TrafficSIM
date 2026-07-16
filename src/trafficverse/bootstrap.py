@@ -1,0 +1,245 @@
+"""Composition roots for the database-free Core Run and later product adapters."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from uuid import UUID
+
+from fastapi import FastAPI
+
+from trafficverse.adapters.carla import CarlaAdapter
+from trafficverse.adapters.messaging import DiscardDataLogger, FrameBroker
+from trafficverse.adapters.persistence import InMemoryExperimentRepository
+from trafficverse.api import ApiDependencies, RuntimeDirectory, create_app
+from trafficverse.api.command_bus import ExperimentCommandBus
+from trafficverse.api.map_catalog import MapCatalog
+from trafficverse.api.models import ReadinessComponent
+from trafficverse.application.experiment_registry import ExperimentRegistry
+from trafficverse.application.simulation_manager import SimulationManager
+from trafficverse.application.simulation_runner import SimulationRunner
+from trafficverse.config.loader import load_scenario, validate_map_manifest
+from trafficverse.config.models import MapManifest, ScenarioConfig
+from trafficverse.domain.enums import ComponentStatus, ExperimentStatus, RequirementMode
+from trafficverse.ports import (
+    CarlaPort,
+    DataLoggerPort,
+    EventPublisherPort,
+    ExperimentRepositoryPort,
+    TrafficEnginePort,
+)
+from trafficverse.roi import CoordinateTransformer, RoiDefinition, RoiSynchronizer
+from trafficverse.roi.signal_synchronizer import SignalSynchronizer
+from trafficverse.traffic import NativeTrafficEngine
+
+
+@dataclass(frozen=True, slots=True)
+class AppContainer:
+    """Explicit dependencies available to the application layer."""
+
+    traffic: TrafficEnginePort
+    carla: CarlaPort
+    experiments: ExperimentRepositoryPort
+    events: EventPublisherPort
+    data_logger: DataLoggerPort
+
+
+class CoreRuntimeFactory:
+    """Constructs one fixed-scenario runtime per API experiment."""
+
+    def __init__(
+        self,
+        scenario: ScenarioConfig,
+        repository_root: Path,
+        broker: FrameBroker,
+        maps: MapCatalog,
+    ) -> None:
+        self._scenario = _resolve_scenario_paths(scenario, repository_root)
+        self._repository = InMemoryExperimentRepository()
+        self._broker = broker
+        self._maps = maps
+        self._registry = ExperimentRegistry(maximum_running=1)
+        self._managers: dict[UUID, SimulationManager] = {}
+        self._runners: dict[UUID, SimulationRunner] = {}
+
+    async def create(
+        self,
+        experiment_id: UUID,
+        scenario_id: UUID,
+        map_id: str | None,
+    ) -> SimulationManager:
+        del scenario_id
+        await self._repository.create(experiment_id)
+        scenario, manifest, map_directory = self._scenario_for_map(map_id)
+        focus = scenario.roi.focus
+        definition = RoiDefinition(
+            radius_m=scenario.roi.radius_m,
+            buffer_m=scenario.roi.buffer_m,
+            max_actors=scenario.roi.max_actors,
+            focus_x=focus.x if focus.mode == "fixed" else None,
+            focus_y=focus.y if focus.mode == "fixed" else None,
+            focus_vehicle_id=focus.vehicle_id if focus.mode == "follow_vehicle" else None,
+        )
+        manager = SimulationManager(
+            scenario=scenario,
+            carla_map_name=manifest.carla_map,
+            traffic=NativeTrafficEngine(experiment_id),
+            carla=CarlaAdapter(),
+            experiments=self._repository,
+            data_logger=DiscardDataLogger(),
+            roi_planner=RoiSynchronizer(
+                definition,
+                CoordinateTransformer.from_yaml(
+                    map_directory / "registration.yaml",
+                    max_error_m=manifest.max_registration_error_m,
+                ),
+                blueprint_id=scenario.carla.fallback_blueprints[0],
+            ),
+            signal_planner=SignalSynchronizer.from_assets(
+                Path(scenario.traffic_engine.network_path),
+                Path(scenario.traffic_engine.signals_path),
+                strict=manifest.strict_signal_mapping,
+            ),
+            frame_publisher=self._broker,
+            registry=self._registry,
+        )
+        runner = SimulationRunner(manager)
+        self._managers[experiment_id] = manager
+        self._runners[experiment_id] = runner
+        runner.start()
+        return manager
+
+    def _scenario_for_map(self, map_id: str | None) -> tuple[ScenarioConfig, MapManifest, Path]:
+        selected_map_id = map_id or self._scenario.scenario.map_id
+        map_directory = self._maps.directory(selected_map_id)
+        manifest = validate_map_manifest(
+            map_directory / "manifest.yaml",
+            expected_carla_version=self._scenario.carla.expected_version,
+            expected_network_schema_version=self._scenario.traffic_engine.network_schema_version,
+        )
+        network = str(map_directory / "network.json")
+        routes = str(map_directory / "routes.yaml")
+        signals = str(map_directory / "signals.yaml")
+        scenario = self._scenario.model_copy(
+            update={
+                "scenario": self._scenario.scenario.model_copy(update={"map_id": selected_map_id}),
+                "traffic": self._scenario.traffic.model_copy(
+                    update={"network": network, "routes": routes, "signals": signals}
+                ),
+                "traffic_engine": self._scenario.traffic_engine.model_copy(
+                    update={
+                        "network_path": network,
+                        "routes_path": routes,
+                        "signals_path": signals,
+                    }
+                ),
+                "map_registration": self._scenario.map_registration.model_copy(
+                    update={"manifest": str(map_directory / "manifest.yaml")}
+                ),
+            }
+        )
+        return scenario, manifest, map_directory
+
+    async def readiness(self) -> tuple[ReadinessComponent, ...]:
+        carla_mode = self._scenario.carla.mode
+        carla_message: str | None
+        if carla_mode is RequirementMode.DISABLED:
+            carla_status = ComponentStatus.DISABLED
+            carla_required = False
+            carla_message = "CARLA disabled; global 2D mode is available"
+        else:
+            prepared = [
+                manager
+                for manager in self._managers.values()
+                if manager.experiment_id is not None and not manager.carla_degraded
+            ]
+            carla_status = ComponentStatus.HEALTHY if prepared else ComponentStatus.DEGRADED
+            carla_required = carla_mode is RequirementMode.REQUIRED
+            carla_message = (
+                None
+                if prepared
+                else "CARLA connection will be validated while preparing the experiment"
+            )
+        return (
+            ReadinessComponent(
+                component="traffic-engine",
+                status=ComponentStatus.HEALTHY,
+                required=True,
+            ),
+            ReadinessComponent(
+                component="carla",
+                status=carla_status,
+                required=carla_required,
+                message=carla_message,
+            ),
+        )
+
+    async def close(self) -> None:
+        for runner in tuple(self._runners.values()):
+            await runner.close()
+        for manager in tuple(self._managers.values()):
+            if manager.experiment_id is None:
+                continue
+            if await manager.get_status() is not ExperimentStatus.COMPLETED:
+                await manager.stop("SERVER_SHUTDOWN")
+        self._runners.clear()
+        self._managers.clear()
+
+
+def build_core_api(
+    scenario_path: Path,
+    *,
+    repository_root: Path,
+    carla_mode: RequirementMode | None = None,
+    artifact_root: Path | None = None,
+) -> FastAPI:
+    scenario = load_scenario(scenario_path)
+    if carla_mode is not None:
+        scenario = scenario.model_copy(
+            update={"carla": scenario.carla.model_copy(update={"mode": carla_mode})}
+        )
+    resolved = _resolve_scenario_paths(scenario, repository_root)
+    map_directory = Path(resolved.map_registration.manifest).parent
+    broker = FrameBroker()
+    maps = MapCatalog(
+        (map_directory,),
+        artifact_root=artifact_root or repository_root / "artifacts/maps",
+    )
+    factory = CoreRuntimeFactory(resolved, repository_root, broker, maps)
+    runtimes = RuntimeDirectory(factory.create)
+    dependencies = ApiDependencies(
+        runtimes=runtimes,
+        maps=maps,
+        commands=ExperimentCommandBus(runtimes),
+        broker=broker,
+        readiness=factory.readiness,
+        shutdown=factory.close,
+    )
+    return create_app(dependencies)
+
+
+def _resolve_scenario_paths(scenario: ScenarioConfig, repository_root: Path) -> ScenarioConfig:
+    def resolved(value: str) -> str:
+        path = Path(value)
+        return str(path if path.is_absolute() else repository_root / path)
+
+    network = resolved(scenario.traffic_engine.network_path)
+    routes = resolved(scenario.traffic_engine.routes_path)
+    signals = resolved(scenario.traffic_engine.signals_path)
+    return scenario.model_copy(
+        update={
+            "traffic": scenario.traffic.model_copy(
+                update={"network": network, "routes": routes, "signals": signals}
+            ),
+            "traffic_engine": scenario.traffic_engine.model_copy(
+                update={
+                    "network_path": network,
+                    "routes_path": routes,
+                    "signals_path": signals,
+                }
+            ),
+            "map_registration": scenario.map_registration.model_copy(
+                update={"manifest": resolved(scenario.map_registration.manifest)}
+            ),
+        }
+    )

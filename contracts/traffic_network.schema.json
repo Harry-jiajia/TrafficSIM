@@ -1,0 +1,289 @@
+{
+  "$defs": {
+    "Lane": {
+      "additionalProperties": false,
+      "properties": {
+        "centerline": {
+          "items": {
+            "$ref": "#/$defs/Vector3"
+          },
+          "minItems": 2,
+          "title": "Centerline",
+          "type": "array"
+        },
+        "junction_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Junction Id"
+        },
+        "lane_id": {
+          "minLength": 1,
+          "title": "Lane Id",
+          "type": "string"
+        },
+        "left_lane_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Left Lane Id"
+        },
+        "length_m": {
+          "exclusiveMinimum": 0.0,
+          "title": "Length M",
+          "type": "number"
+        },
+        "predecessor_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Predecessor Ids",
+          "type": "array"
+        },
+        "right_lane_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Right Lane Id"
+        },
+        "road_id": {
+          "minLength": 1,
+          "title": "Road Id",
+          "type": "string"
+        },
+        "section_index": {
+          "minimum": 0,
+          "title": "Section Index",
+          "type": "integer"
+        },
+        "source_lane_id": {
+          "title": "Source Lane Id",
+          "type": "integer"
+        },
+        "speed_limit_mps": {
+          "exclusiveMinimum": 0.0,
+          "title": "Speed Limit Mps",
+          "type": "number"
+        },
+        "successor_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Successor Ids",
+          "type": "array"
+        },
+        "width_m": {
+          "exclusiveMinimum": 0.0,
+          "title": "Width M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "lane_id",
+        "road_id",
+        "section_index",
+        "source_lane_id",
+        "length_m",
+        "width_m",
+        "speed_limit_mps",
+        "centerline"
+      ],
+      "title": "Lane",
+      "type": "object"
+    },
+    "LaneLink": {
+      "additionalProperties": false,
+      "properties": {
+        "from_lane_id": {
+          "minLength": 1,
+          "title": "From Lane Id",
+          "type": "string"
+        },
+        "junction_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Junction Id"
+        },
+        "link_id": {
+          "minLength": 1,
+          "title": "Link Id",
+          "type": "string"
+        },
+        "signal_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signal Id"
+        },
+        "stop_line_s_m": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stop Line S M"
+        },
+        "to_lane_id": {
+          "minLength": 1,
+          "title": "To Lane Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "link_id",
+        "from_lane_id",
+        "to_lane_id"
+      ],
+      "title": "LaneLink",
+      "type": "object"
+    },
+    "TrafficSignal": {
+      "additionalProperties": false,
+      "properties": {
+        "controlled_link_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Controlled Link Ids",
+          "type": "array"
+        },
+        "opendrive_id": {
+          "minLength": 1,
+          "title": "Opendrive Id",
+          "type": "string"
+        },
+        "road_id": {
+          "minLength": 1,
+          "title": "Road Id",
+          "type": "string"
+        },
+        "signal_id": {
+          "minLength": 1,
+          "title": "Signal Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "signal_id",
+        "opendrive_id",
+        "road_id",
+        "controlled_link_ids"
+      ],
+      "title": "TrafficSignal",
+      "type": "object"
+    },
+    "Vector3": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        },
+        "z": {
+          "default": 0.0,
+          "title": "Z",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Vector3",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "lanes": {
+      "items": {
+        "$ref": "#/$defs/Lane"
+      },
+      "minItems": 1,
+      "title": "Lanes",
+      "type": "array"
+    },
+    "links": {
+      "items": {
+        "$ref": "#/$defs/LaneLink"
+      },
+      "title": "Links",
+      "type": "array"
+    },
+    "map_id": {
+      "minLength": 1,
+      "title": "Map Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "traffic-network/1.0",
+      "default": "traffic-network/1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "signals": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/TrafficSignal"
+      },
+      "title": "Signals",
+      "type": "array"
+    },
+    "source_format": {
+      "const": "OpenDRIVE",
+      "default": "OpenDRIVE",
+      "title": "Source Format",
+      "type": "string"
+    }
+  },
+  "required": [
+    "map_id",
+    "lanes",
+    "links"
+  ],
+  "title": "RoadNetwork",
+  "type": "object"
+}

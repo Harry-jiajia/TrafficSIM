@@ -1,0 +1,70 @@
+{
+  "$defs": {
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "correlation_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Correlation Id"
+    },
+    "experiment_id": {
+      "format": "uuid",
+      "title": "Experiment Id",
+      "type": "string"
+    },
+    "message_id": {
+      "minLength": 1,
+      "title": "Message Id",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/JsonValue"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sent_at": {
+      "format": "date-time",
+      "title": "Sent At",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 0,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "simulation_time_ms": {
+      "minimum": 0,
+      "title": "Simulation Time Ms",
+      "type": "integer"
+    },
+    "type": {
+      "minLength": 1,
+      "title": "Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "type",
+    "message_id",
+    "experiment_id",
+    "simulation_time_ms",
+    "sequence",
+    "sent_at",
+    "payload"
+  ],
+  "title": "WebSocketEnvelope",
+  "type": "object"
+}

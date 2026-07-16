@@ -1,0 +1,1190 @@
+programs:
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:1012_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:1012_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:1012_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:1012_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:1012_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:1012_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:1012_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:1012_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:1012_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:1012_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_10
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_11
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:106_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_10
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_11
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:167_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:281_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:281_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:281_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:281_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:281_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:281_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_10
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_11
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:317_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:386_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:386_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:386_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_10
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_11
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:394_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_10
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_11
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:431_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_10
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_11
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:53_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:548_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:548_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:548_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:548_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:548_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:548_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:548_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:548_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:548_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:548_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_10
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_11
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:569_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:648_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:648_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:648_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:648_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:648_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:648_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:648_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:648_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:648_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:648_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:669_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:669_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:669_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:669_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:669_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:669_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:669_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:669_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:669_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:669_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:690_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:690_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:690_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:690_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:690_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:690_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:720_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:720_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:720_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:720_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:720_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:720_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:720_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:720_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:720_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:720_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_10
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_11
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:741_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:773_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:773_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:773_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:773_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:773_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:773_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_10
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_11
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_12
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:804_9
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:892_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:892_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:892_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:892_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:892_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:892_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_0
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_1
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_10
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_11
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_2
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_3
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_4
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_5
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_6
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_7
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_8
+- phases:
+  - color: GREEN
+    duration_ms: 20000
+  - color: RED
+    duration_ms: 20000
+  signal_id: signal:924_9
+schema_version: '1.0'

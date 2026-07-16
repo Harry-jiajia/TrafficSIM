@@ -1,0 +1,87 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "trafficverse"
+version = "0.1.0"
+description = "Native 2D traffic and remote CARLA 3D mixed-traffic simulation platform"
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+dependencies = [
+  "alembic>=1.14,<2",
+  "fastapi>=0.115,<1",
+  "pydantic>=2.10,<3",
+  "psycopg[binary]>=3.2,<4",
+  "python-multipart>=0.0.20,<1",
+  "PyYAML>=6.0.2,<7",
+  "SQLAlchemy[asyncio]>=2.0,<3",
+  "uvicorn[standard]>=0.34,<1",
+]
+
+[project.optional-dependencies]
+carla = [
+  "carla==0.9.16; (sys_platform == 'linux' and platform_machine == 'x86_64') or (sys_platform == 'win32' and platform_machine == 'AMD64')",
+  "Pillow>=11,<13",
+]
+ui = [
+  "PySide6==6.11.1",
+]
+
+[project.scripts]
+trafficverse = "trafficverse.cli:main"
+
+[dependency-groups]
+dev = [
+  "httpx2>=2.7,<3",
+  "mypy>=1.14,<2",
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.9,<1",
+  "types-PyYAML>=6.0.12,<7",
+]
+
+[tool.hatch.build]
+dev-mode-dirs = ["src", "."]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/trafficverse", "ui"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["trafficverse"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unreachable = true
+pretty = true
+show_error_codes = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["yaml"]
+ignore_missing_imports = false
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = '-ra --strict-config --strict-markers -m "not integration and not e2e and not performance"'
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+  "integration: requires a real external component",
+  "traffic: native traffic engine integration test",
+  "carla: requires CARLA",
+  "postgres: requires PostgreSQL",
+  "e2e: end-to-end test",
+  "performance: performance test",
+]

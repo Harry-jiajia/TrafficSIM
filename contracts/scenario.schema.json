@@ -1,0 +1,579 @@
+{
+  "$defs": {
+    "AutomationConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "proportions": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/AutomationLevel"
+          },
+          "title": "Proportions",
+          "type": "object"
+        }
+      },
+      "required": [
+        "proportions"
+      ],
+      "title": "AutomationConfig",
+      "type": "object"
+    },
+    "AutomationLevel": {
+      "enum": [
+        "HUMAN",
+        "ACC",
+        "L2",
+        "L3",
+        "L4"
+      ],
+      "title": "AutomationLevel",
+      "type": "string"
+    },
+    "CameraConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "fps": {
+          "exclusiveMinimum": 0,
+          "maximum": 60,
+          "title": "Fps",
+          "type": "integer"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "maximum": 2160,
+          "title": "Height",
+          "type": "integer"
+        },
+        "jpeg_quality": {
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Jpeg Quality",
+          "type": "integer"
+        },
+        "mode": {
+          "enum": [
+            "BIRD_VIEW",
+            "FOLLOW"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "maximum": 4096,
+          "title": "Width",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mode",
+        "width",
+        "height",
+        "fps",
+        "jpeg_quality"
+      ],
+      "title": "CameraConfig",
+      "type": "object"
+    },
+    "CarlaConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "blueprint_filter": {
+          "default": "vehicle.*",
+          "minLength": 1,
+          "title": "Blueprint Filter",
+          "type": "string"
+        },
+        "camera_queue_size": {
+          "const": 2,
+          "default": 2,
+          "title": "Camera Queue Size",
+          "type": "integer"
+        },
+        "endpoint_mode": {
+          "const": "remote_server",
+          "default": "remote_server",
+          "title": "Endpoint Mode",
+          "type": "string"
+        },
+        "expected_version": {
+          "minLength": 1,
+          "title": "Expected Version",
+          "type": "string"
+        },
+        "fallback_blueprints": {
+          "default": [
+            "vehicle.tesla.model3",
+            "vehicle.audi.tt"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Fallback Blueprints",
+          "type": "array"
+        },
+        "host": {
+          "minLength": 1,
+          "title": "Host",
+          "type": "string"
+        },
+        "mode": {
+          "$ref": "#/$defs/RequirementMode"
+        },
+        "port": {
+          "maximum": 65535,
+          "minimum": 1,
+          "title": "Port",
+          "type": "integer"
+        },
+        "spawn_retries": {
+          "default": 2,
+          "maximum": 10,
+          "minimum": 0,
+          "title": "Spawn Retries",
+          "type": "integer"
+        },
+        "step_ms": {
+          "default": 50,
+          "exclusiveMinimum": 0,
+          "title": "Step Ms",
+          "type": "integer"
+        },
+        "timeout_s": {
+          "exclusiveMinimum": 0.0,
+          "title": "Timeout S",
+          "type": "number"
+        },
+        "worker_threads": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Worker Threads",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "mode",
+        "host",
+        "port",
+        "timeout_s",
+        "expected_version"
+      ],
+      "title": "CarlaConfig",
+      "type": "object"
+    },
+    "LoggingConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "parquet_batch_rows": {
+          "exclusiveMinimum": 0,
+          "title": "Parquet Batch Rows",
+          "type": "integer"
+        },
+        "trajectory_hz": {
+          "exclusiveMinimum": 0,
+          "title": "Trajectory Hz",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "trajectory_hz",
+        "parquet_batch_rows"
+      ],
+      "title": "LoggingConfig",
+      "type": "object"
+    },
+    "MapRegistrationConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "manifest": {
+          "minLength": 1,
+          "title": "Manifest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "manifest"
+      ],
+      "title": "MapRegistrationConfig",
+      "type": "object"
+    },
+    "ReplayConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "snapshot_interval_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Snapshot Interval Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "snapshot_interval_ms"
+      ],
+      "title": "ReplayConfig",
+      "type": "object"
+    },
+    "RequirementMode": {
+      "enum": [
+        "required",
+        "optional",
+        "disabled"
+      ],
+      "title": "RequirementMode",
+      "type": "string"
+    },
+    "RoiConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "buffer_m": {
+          "exclusiveMinimum": 0.0,
+          "title": "Buffer M",
+          "type": "number"
+        },
+        "focus": {
+          "$ref": "#/$defs/RoiFocusConfig"
+        },
+        "max_actors": {
+          "default": 200,
+          "exclusiveMinimum": 0,
+          "title": "Max Actors",
+          "type": "integer"
+        },
+        "radius_m": {
+          "exclusiveMinimum": 0.0,
+          "title": "Radius M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "radius_m",
+        "buffer_m",
+        "focus"
+      ],
+      "title": "RoiConfig",
+      "type": "object"
+    },
+    "RoiFocusConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "fixed",
+            "follow_vehicle"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "vehicle_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vehicle Id"
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "X"
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Y"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "RoiFocusConfig",
+      "type": "object"
+    },
+    "ScenarioIdentityConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "map_id": {
+          "minLength": 1,
+          "title": "Map Id",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "seed": {
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "map_id",
+        "seed"
+      ],
+      "title": "ScenarioIdentityConfig",
+      "type": "object"
+    },
+    "SimulationConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Duration Ms",
+          "type": "integer"
+        },
+        "speed_multiplier": {
+          "exclusiveMinimum": 0.0,
+          "title": "Speed Multiplier",
+          "type": "number"
+        },
+        "step_ms": {
+          "exclusiveMinimum": 0,
+          "title": "Step Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "step_ms",
+        "duration_ms",
+        "speed_multiplier"
+      ],
+      "title": "SimulationConfig",
+      "type": "object"
+    },
+    "TrafficBehaviorConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "comfortable_deceleration_mps2": {
+          "default": 4.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Comfortable Deceleration Mps2",
+          "type": "number"
+        },
+        "emergency_deceleration_mps2": {
+          "default": 8.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Emergency Deceleration Mps2",
+          "type": "number"
+        },
+        "lane_change_front_gap_m": {
+          "default": 10.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Lane Change Front Gap M",
+          "type": "number"
+        },
+        "lane_change_rear_gap_m": {
+          "default": 8.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Lane Change Rear Gap M",
+          "type": "number"
+        },
+        "max_acceleration_mps2": {
+          "default": 2.5,
+          "exclusiveMinimum": 0.0,
+          "title": "Max Acceleration Mps2",
+          "type": "number"
+        },
+        "minimum_gap_m": {
+          "default": 2.5,
+          "exclusiveMinimum": 0.0,
+          "title": "Minimum Gap M",
+          "type": "number"
+        },
+        "time_headway_s": {
+          "default": 1.2,
+          "exclusiveMinimum": 0.0,
+          "title": "Time Headway S",
+          "type": "number"
+        },
+        "vehicle_length_m": {
+          "default": 4.5,
+          "exclusiveMinimum": 0.0,
+          "title": "Vehicle Length M",
+          "type": "number"
+        }
+      },
+      "title": "TrafficBehaviorConfig",
+      "type": "object"
+    },
+    "TrafficConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "network": {
+          "minLength": 1,
+          "title": "Network",
+          "type": "string"
+        },
+        "routes": {
+          "minLength": 1,
+          "title": "Routes",
+          "type": "string"
+        },
+        "signals": {
+          "minLength": 1,
+          "title": "Signals",
+          "type": "string"
+        },
+        "vehicles": {
+          "exclusiveMinimum": 0,
+          "title": "Vehicles",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "network",
+        "routes",
+        "signals",
+        "vehicles"
+      ],
+      "title": "TrafficConfig",
+      "type": "object"
+    },
+    "TrafficEngineConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "behavior": {
+          "$ref": "#/$defs/TrafficBehaviorConfig"
+        },
+        "network_path": {
+          "minLength": 1,
+          "title": "Network Path",
+          "type": "string"
+        },
+        "network_schema_version": {
+          "const": "traffic-network/1.0",
+          "default": "traffic-network/1.0",
+          "title": "Network Schema Version",
+          "type": "string"
+        },
+        "routes_path": {
+          "minLength": 1,
+          "title": "Routes Path",
+          "type": "string"
+        },
+        "seed": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Seed",
+          "type": "integer"
+        },
+        "signals_path": {
+          "minLength": 1,
+          "title": "Signals Path",
+          "type": "string"
+        },
+        "step_ms": {
+          "default": 50,
+          "exclusiveMinimum": 0,
+          "title": "Step Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "network_path",
+        "routes_path",
+        "signals_path"
+      ],
+      "title": "TrafficEngineConfig",
+      "type": "object"
+    },
+    "WeatherConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "preset": {
+          "minLength": 1,
+          "title": "Preset",
+          "type": "string"
+        }
+      },
+      "required": [
+        "preset"
+      ],
+      "title": "WeatherConfig",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "automation": {
+      "$ref": "#/$defs/AutomationConfig"
+    },
+    "camera": {
+      "$ref": "#/$defs/CameraConfig"
+    },
+    "carla": {
+      "$ref": "#/$defs/CarlaConfig"
+    },
+    "logging": {
+      "$ref": "#/$defs/LoggingConfig"
+    },
+    "map_registration": {
+      "$ref": "#/$defs/MapRegistrationConfig"
+    },
+    "replay": {
+      "$ref": "#/$defs/ReplayConfig"
+    },
+    "roi": {
+      "$ref": "#/$defs/RoiConfig"
+    },
+    "scenario": {
+      "$ref": "#/$defs/ScenarioIdentityConfig"
+    },
+    "schema_version": {
+      "const": "1.1",
+      "default": "1.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "simulation": {
+      "$ref": "#/$defs/SimulationConfig"
+    },
+    "traffic": {
+      "$ref": "#/$defs/TrafficConfig"
+    },
+    "traffic_engine": {
+      "$ref": "#/$defs/TrafficEngineConfig"
+    },
+    "weather": {
+      "$ref": "#/$defs/WeatherConfig"
+    }
+  },
+  "required": [
+    "scenario",
+    "simulation",
+    "traffic",
+    "automation",
+    "roi",
+    "carla",
+    "traffic_engine",
+    "weather",
+    "map_registration",
+    "camera",
+    "logging",
+    "replay"
+  ],
+  "title": "ScenarioConfig",
+  "type": "object"
+}

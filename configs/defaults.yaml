@@ -1,0 +1,13 @@
+schema_version: "1.0"
+simulation:
+  step_ms: 50
+  speed_multiplier: 1.0
+roi:
+  radius_m: 1000.0
+  buffer_m: 200.0
+camera:
+  mode: BIRD_VIEW
+  width: 960
+  height: 540
+  fps: 10
+  jpeg_quality: 75

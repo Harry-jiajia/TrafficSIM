@@ -1,0 +1,52 @@
+import ast
+from pathlib import Path
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+FORBIDDEN = {"carla", "fastapi", "sqlalchemy", "traci", "PySide6"}
+
+
+def _top_level_imports(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    imported: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name.split(".", maxsplit=1)[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported.add(node.module.split(".", maxsplit=1)[0])
+    return imported
+
+
+def test_domain_and_ports_do_not_import_infrastructure_sdks() -> None:
+    roots = [
+        REPOSITORY_ROOT / "src" / "trafficverse" / "domain",
+        REPOSITORY_ROOT / "src" / "trafficverse" / "ports",
+    ]
+    violations: dict[str, list[str]] = {}
+    for root in roots:
+        for path in root.rglob("*.py"):
+            forbidden = sorted(_top_level_imports(path) & FORBIDDEN)
+            if forbidden:
+                violations[str(path.relative_to(REPOSITORY_ROOT))] = forbidden
+    assert violations == {}
+
+
+def test_removed_external_traffic_sdk_imports_are_absent() -> None:
+    source_root = REPOSITORY_ROOT / "src" / "trafficverse"
+    violations: dict[str, list[str]] = {}
+    for path in source_root.rglob("*.py"):
+        forbidden = sorted(_top_level_imports(path) & {"sumolib", "traci"})
+        if forbidden:
+            violations[str(path.relative_to(REPOSITORY_ROOT))] = forbidden
+    assert violations == {}
+
+
+def test_carla_sdk_boundary_is_confined_to_carla_adapter() -> None:
+    source_root = REPOSITORY_ROOT / "src" / "trafficverse"
+    violations: dict[str, list[str]] = {}
+    for path in source_root.rglob("*.py"):
+        if "adapters/carla" in path.as_posix():
+            continue
+        forbidden = sorted(_top_level_imports(path) & {"carla"})
+        if forbidden:
+            violations[str(path.relative_to(REPOSITORY_ROOT))] = forbidden
+    assert violations == {}

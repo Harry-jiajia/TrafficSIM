@@ -1,0 +1,160 @@
+{
+  "$defs": {
+    "AutomationLevel": {
+      "enum": [
+        "HUMAN",
+        "ACC",
+        "L2",
+        "L3",
+        "L4"
+      ],
+      "title": "AutomationLevel",
+      "type": "string"
+    },
+    "Vector3": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        },
+        "z": {
+          "default": 0.0,
+          "title": "Z",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Vector3",
+      "type": "object"
+    },
+    "VehicleAction": {
+      "enum": [
+        "KEEP_LANE",
+        "ACCELERATE",
+        "BRAKE",
+        "LANE_CHANGE_LEFT",
+        "LANE_CHANGE_RIGHT",
+        "STOP",
+        "TAKEOVER"
+      ],
+      "title": "VehicleAction",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "acceleration_mps2": {
+      "title": "Acceleration Mps2",
+      "type": "number"
+    },
+    "action": {
+      "$ref": "#/$defs/VehicleAction"
+    },
+    "automation_level": {
+      "$ref": "#/$defs/AutomationLevel"
+    },
+    "controller_id": {
+      "minLength": 1,
+      "title": "Controller Id",
+      "type": "string"
+    },
+    "experiment_id": {
+      "format": "uuid",
+      "title": "Experiment Id",
+      "type": "string"
+    },
+    "heading_rad": {
+      "title": "Heading Rad",
+      "type": "number"
+    },
+    "lane_id": {
+      "minLength": 1,
+      "title": "Lane Id",
+      "type": "string"
+    },
+    "position": {
+      "$ref": "#/$defs/Vector3"
+    },
+    "risk_score": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Risk Score",
+      "type": "number"
+    },
+    "route_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Route Id"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 0,
+      "title": "Sequence",
+      "type": "integer"
+    },
+    "simulation_time_ms": {
+      "minimum": 0,
+      "title": "Simulation Time Ms",
+      "type": "integer"
+    },
+    "speed_mps": {
+      "minimum": 0.0,
+      "title": "Speed Mps",
+      "type": "number"
+    },
+    "target_lane_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Target Lane Id"
+    },
+    "vehicle_id": {
+      "minLength": 1,
+      "title": "Vehicle Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "experiment_id",
+    "vehicle_id",
+    "simulation_time_ms",
+    "sequence",
+    "automation_level",
+    "position",
+    "speed_mps",
+    "acceleration_mps2",
+    "heading_rad",
+    "lane_id",
+    "controller_id",
+    "action",
+    "risk_score"
+  ],
+  "title": "VehicleState",
+  "type": "object"
+}

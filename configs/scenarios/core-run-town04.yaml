@@ -1,0 +1,75 @@
+schema_version: "1.1"
+scenario:
+  name: core-run-town04
+  map_id: town04-carla-0.9.16-native-1.0
+  seed: 42
+simulation:
+  step_ms: 50
+  duration_ms: 120000
+  speed_multiplier: 1.0
+traffic:
+  network: configs/maps/town04/network.json
+  routes: configs/maps/town04/routes.yaml
+  signals: configs/maps/town04/signals.yaml
+  vehicles: 50
+automation:
+  proportions:
+    HUMAN: 1.0
+    ACC: 0.0
+    L2: 0.0
+    L3: 0.0
+    L4: 0.0
+roi:
+  radius_m: 1000.0
+  buffer_m: 200.0
+  max_actors: 200
+  focus:
+    mode: fixed
+    x: 0.0
+    y: 0.0
+carla:
+  mode: required
+  endpoint_mode: remote_server
+  host: 127.0.0.1
+  port: 2000
+  timeout_s: 30.0
+  expected_version: "0.9.16"
+  step_ms: 50
+  worker_threads: 0
+  blueprint_filter: vehicle.*
+  fallback_blueprints:
+    - vehicle.tesla.model3
+    - vehicle.audi.tt
+  spawn_retries: 2
+  camera_queue_size: 2
+traffic_engine:
+  network_schema_version: traffic-network/1.0
+  network_path: configs/maps/town04/network.json
+  routes_path: configs/maps/town04/routes.yaml
+  signals_path: configs/maps/town04/signals.yaml
+  step_ms: 50
+  seed: 42
+  behavior:
+    max_acceleration_mps2: 2.5
+    comfortable_deceleration_mps2: 4.0
+    emergency_deceleration_mps2: 8.0
+    minimum_gap_m: 2.5
+    time_headway_s: 1.2
+    vehicle_length_m: 4.5
+    lane_change_front_gap_m: 10.0
+    lane_change_rear_gap_m: 8.0
+weather:
+  preset: ClearNoon
+map_registration:
+  manifest: configs/maps/town04/manifest.yaml
+camera:
+  mode: BIRD_VIEW
+  width: 960
+  height: 540
+  fps: 10
+  jpeg_quality: 75
+logging:
+  trajectory_hz: 10
+  parquet_batch_rows: 10000
+replay:
+  snapshot_interval_ms: 5000

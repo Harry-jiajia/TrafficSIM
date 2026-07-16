@@ -1,0 +1,106 @@
+{
+  "$defs": {
+    "ComponentRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/RequirementMode"
+        },
+        "version": {
+          "minLength": 1,
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "version"
+      ],
+      "title": "ComponentRequirement",
+      "type": "object"
+    },
+    "RequirementMode": {
+      "enum": [
+        "required",
+        "optional",
+        "disabled"
+      ],
+      "title": "RequirementMode",
+      "type": "string"
+    },
+    "RuntimeProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "architectures": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Architectures",
+          "type": "array"
+        },
+        "carla": {
+          "$ref": "#/$defs/ComponentRequirement"
+        },
+        "operating_system": {
+          "enum": [
+            "Darwin",
+            "Linux",
+            "Windows"
+          ],
+          "title": "Operating System",
+          "type": "string"
+        },
+        "postgres": {
+          "$ref": "#/$defs/ComponentRequirement"
+        },
+        "python_version": {
+          "pattern": "^\\d+\\.\\d+$",
+          "title": "Python Version",
+          "type": "string"
+        },
+        "traffic_engine": {
+          "$ref": "#/$defs/ComponentRequirement"
+        }
+      },
+      "required": [
+        "operating_system",
+        "architectures",
+        "python_version",
+        "carla",
+        "traffic_engine",
+        "postgres"
+      ],
+      "title": "RuntimeProfile",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "default_profile": {
+      "minLength": 1,
+      "title": "Default Profile",
+      "type": "string"
+    },
+    "profiles": {
+      "additionalProperties": {
+        "$ref": "#/$defs/RuntimeProfile"
+      },
+      "minProperties": 1,
+      "title": "Profiles",
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "default_profile",
+    "profiles"
+  ],
+  "title": "RuntimeBaseline",
+  "type": "object"
+}

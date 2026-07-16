@@ -1,0 +1,18 @@
+carla_map: Town04
+carla_version: 0.9.16
+compiler_version: 1.0.0
+files:
+  Town04.xodr: sha256:ccf97e74c45d6e036feb5506b9859b4b15a84f4f75895081e3fd0531684f1779
+  network.geojson: sha256:d24a810f1c60c8efc750c60678fd027ed24a0967709587d2f02b401be9b51525
+  network.json: sha256:cb4fa33665117c8d3b5ef7adb371d1ebb4f4e76c6bd4a028aee68043f73ad060
+  registration.yaml: sha256:4c9898b1539889e6582243f157831bcbabe3b86704c77889756959ec7dea2d94
+  routes.yaml: sha256:ae920c11a360d06f5029f567f7b04bbad5c14aaf718ef0b9213e0a8b7d8949b7
+  signals.yaml: sha256:53fc8c7507f4f8d79de78c1e183a02b69536035ee024d74f554bd064deb30930
+map_id: town04-carla-0.9.16-native-1.0
+max_registration_error_m: 0.001
+network_schema_version: traffic-network/1.0
+schema_version: '1.0'
+source_ref: 294096eb1c38eabf246e4f3a9cdab704e33a7f4c
+source_repository: https://github.com/carla-simulator/carla
+strict_signal_mapping: true
+validated: true

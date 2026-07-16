@@ -1,0 +1,177 @@
+from datetime import datetime, timezone
+from pathlib import Path
+from uuid import UUID
+
+from PySide6.QtCore import QCoreApplication, QObject, Signal
+from ui.models import ExperimentStatus
+from ui.viewmodels import RunViewModel
+
+EXPERIMENT_ID = UUID("00000000-0000-0000-0000-000000000010")
+SCENARIO_ID = UUID("00000000-0000-0000-0000-000000000042")
+
+
+class FakeRest(QObject):
+    request_succeeded = Signal(str, object)
+    request_failed = Signal(str, str)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls: list[tuple[str, object]] = []
+
+    def check_readiness(self) -> None:
+        self.calls.append(("ready", None))
+
+    def list_maps(self) -> None:
+        self.calls.append(("maps", None))
+
+    def get_map_network(self, map_id: str) -> None:
+        self.calls.append(("network", map_id))
+
+    def get_import_job(self, job_id: UUID) -> None:
+        self.calls.append(("import-job", job_id))
+
+    def import_map(self, path: Path) -> None:
+        self.calls.append(("import", path))
+
+    def create_experiment(self, scenario_id: UUID, map_id: str) -> None:
+        self.calls.append(("create", (scenario_id, map_id)))
+
+
+class FakeRealtime(QObject):
+    connection_changed = Signal(str)
+    envelope_received = Signal(object)
+    protocol_error = Signal(str)
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.connected: UUID | None = None
+        self.sent: list[tuple[str, dict[str, object]]] = []
+        self.snapshot_requests = 0
+
+    def connect_to_experiment(self, experiment_id: UUID) -> None:
+        self.connected = experiment_id
+
+    def send_command(self, command: str, payload: dict[str, object]) -> str:
+        self.sent.append((command, payload))
+        return "message-1"
+
+    def request_snapshot(self) -> str:
+        self.snapshot_requests += 1
+        return "snapshot-1"
+
+
+def _app() -> QCoreApplication:
+    return QCoreApplication.instance() or QCoreApplication([])
+
+
+def _viewmodel() -> tuple[RunViewModel, FakeRest, FakeRealtime]:
+    _app()
+    rest = FakeRest()
+    realtime = FakeRealtime()
+    viewmodel = RunViewModel(rest, realtime, SCENARIO_ID)  # type: ignore[arg-type]
+    return viewmodel, rest, realtime
+
+
+def _envelope(message_type: str, sequence: int, payload: object) -> dict[str, object]:
+    return {
+        "schema_version": "1.0",
+        "type": message_type,
+        "message_id": f"message-{sequence}",
+        "correlation_id": None,
+        "experiment_id": str(EXPERIMENT_ID),
+        "simulation_time_ms": sequence * 50,
+        "sequence": sequence,
+        "sent_at": datetime.now(timezone.utc).isoformat(),
+        "payload": payload,
+    }
+
+
+def _vehicle(sequence: int) -> dict[str, object]:
+    return {
+        "schema_version": "1.0",
+        "experiment_id": str(EXPERIMENT_ID),
+        "vehicle_id": "vehicle-1",
+        "simulation_time_ms": sequence * 50,
+        "sequence": sequence,
+        "automation_level": "HUMAN",
+        "position": {"x": 1.0, "y": 2.0, "z": 0.0},
+        "speed_mps": 5.0,
+        "acceleration_mps2": 0.0,
+        "heading_rad": 0.0,
+        "lane_id": "lane-1",
+        "target_lane_id": None,
+        "controller_id": "fixture",
+        "action": "KEEP_LANE",
+        "risk_score": 0.0,
+        "route_id": "route-1",
+    }
+
+
+def test_map_catalog_auto_selects_verified_map_and_loads_network() -> None:
+    viewmodel, rest, _ = _viewmodel()
+    viewmodel.handle_rest_success(
+        "maps.list",
+        [
+            {
+                "map_id": "town04",
+                "carla_map": "Town04",
+                "carla_version": "0.9.16",
+                "validated": True,
+                "network_schema_version": "traffic-network/1.0",
+            }
+        ],
+    )
+    viewmodel.create_experiment()
+
+    assert ("network", "town04") in rest.calls
+    assert ("create", (SCENARIO_ID, "town04")) in rest.calls
+
+
+def test_start_prepares_created_experiment_then_starts_when_ready() -> None:
+    viewmodel, _, realtime = _viewmodel()
+    viewmodel.handle_rest_success(
+        "experiment.create",
+        {
+            "experiment_id": str(EXPERIMENT_ID),
+            "status": "CREATED",
+            "simulation_time_ms": 0,
+            "speed_multiplier": 1.0,
+        },
+    )
+    viewmodel.start()
+    viewmodel.handle_envelope(_envelope("experiment.state.changed", 0, {"status": "READY"}))
+
+    assert realtime.connected == EXPERIMENT_ID
+    assert realtime.sent == [
+        ("experiment.prepare", {}),
+        ("experiment.start", {}),
+    ]
+    assert viewmodel.status is ExperimentStatus.READY
+
+
+def test_vehicle_sequence_gap_requests_world_snapshot() -> None:
+    viewmodel, _, realtime = _viewmodel()
+    viewmodel.handle_rest_success(
+        "experiment.create",
+        {
+            "experiment_id": str(EXPERIMENT_ID),
+            "status": "RUNNING",
+            "simulation_time_ms": 0,
+            "speed_multiplier": 1.0,
+        },
+    )
+    viewmodel.handle_envelope(
+        _envelope(
+            "world.snapshot",
+            2,
+            {
+                "traffic": {"vehicles": [_vehicle(2)], "traffic_lights": []},
+                "carla": None,
+                "events": [],
+                "metrics": [],
+            },
+        )
+    )
+    viewmodel.handle_envelope(_envelope("vehicle.delta", 4, {"vehicles": [_vehicle(4)]}))
+
+    assert realtime.snapshot_requests == 1

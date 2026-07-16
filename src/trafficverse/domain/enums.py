@@ -1,0 +1,82 @@
+"""Stable enums shared across TrafficVerse modules and wire contracts."""
+
+from enum import Enum
+
+
+class AutomationLevel(str, Enum):
+    HUMAN = "HUMAN"
+    ACC = "ACC"
+    L2 = "L2"
+    L3 = "L3"
+    L4 = "L4"
+
+
+class VehicleAction(str, Enum):
+    KEEP_LANE = "KEEP_LANE"
+    ACCELERATE = "ACCELERATE"
+    BRAKE = "BRAKE"
+    LANE_CHANGE_LEFT = "LANE_CHANGE_LEFT"
+    LANE_CHANGE_RIGHT = "LANE_CHANGE_RIGHT"
+    STOP = "STOP"
+    TAKEOVER = "TAKEOVER"
+
+
+class LaneChangeDirection(str, Enum):
+    NONE = "NONE"
+    LEFT = "LEFT"
+    RIGHT = "RIGHT"
+
+
+class TrafficLightColor(str, Enum):
+    RED = "RED"
+    YELLOW = "YELLOW"
+    GREEN = "GREEN"
+    OFF = "OFF"
+
+
+class ExperimentStatus(str, Enum):
+    CREATED = "CREATED"
+    PREPARING = "PREPARING"
+    READY = "READY"
+    RUNNING = "RUNNING"
+    PAUSED = "PAUSED"
+    STOPPING = "STOPPING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
+class ComponentStatus(str, Enum):
+    HEALTHY = "HEALTHY"
+    DEGRADED = "DEGRADED"
+    UNAVAILABLE = "UNAVAILABLE"
+    DISABLED = "DISABLED"
+
+
+class EventSeverity(str, Enum):
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
+class RequirementMode(str, Enum):
+    REQUIRED = "required"
+    OPTIONAL = "optional"
+    DISABLED = "disabled"
+
+
+class ErrorCode(str, Enum):
+    INVALID_STATE_TRANSITION = "INVALID_STATE_TRANSITION"
+    SCENARIO_VALIDATION_FAILED = "SCENARIO_VALIDATION_FAILED"
+    CONFIGURATION_NOT_FOUND = "CONFIGURATION_NOT_FOUND"
+    VERSION_MISMATCH = "VERSION_MISMATCH"
+    MAP_ASSET_INVALID = "MAP_ASSET_INVALID"
+    COMPONENT_UNAVAILABLE = "COMPONENT_UNAVAILABLE"
+    CARLA_CONNECTION_FAILED = "CARLA_CONNECTION_FAILED"
+    CARLA_VERSION_MISMATCH = "CARLA_VERSION_MISMATCH"
+    CARLA_SYNC_MISMATCH = "CARLA_SYNC_MISMATCH"
+    CARLA_OPERATION_FAILED = "CARLA_OPERATION_FAILED"
+    CARLA_CAMERA_TARGET_NOT_FOUND = "CARLA_CAMERA_TARGET_NOT_FOUND"
+    RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND"
+    RESOURCE_CONFLICT = "RESOURCE_CONFLICT"
+    CONCURRENT_MODIFICATION = "CONCURRENT_MODIFICATION"

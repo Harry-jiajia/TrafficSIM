@@ -1,0 +1,32 @@
+schema_version: "1.0"
+default_profile: auto
+profiles:
+  macos-dev:
+    operating_system: Darwin
+    architectures:
+      - arm64
+      - x86_64
+    python_version: "3.10"
+    carla:
+      mode: disabled
+      version: "0.9.16"
+    traffic_engine:
+      mode: required
+      version: traffic-network/1.0
+    postgres:
+      mode: disabled
+      version: "16"
+  core-run:
+    operating_system: Linux
+    architectures:
+      - x86_64
+    python_version: "3.10"
+    carla:
+      mode: required
+      version: "0.9.16"
+    traffic_engine:
+      mode: required
+      version: traffic-network/1.0
+    postgres:
+      mode: optional
+      version: "16"
