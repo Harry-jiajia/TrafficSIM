@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
 
 from ui.models import ControlAvailability, MapSummary
 from ui.viewmodels import RunViewModel
-from ui.widgets import CameraView, LeafletMapWidget
+from ui.widgets import CarlaNativeWindowHost, LeafletMapWidget
 
 
 class MainWindow(QMainWindow):
@@ -52,7 +52,7 @@ class MainWindow(QMainWindow):
     def _header(self) -> QHBoxLayout:
         title = QLabel("TrafficVerse")
         title.setObjectName("title")
-        subtitle = QLabel("Town04 Core Run · Native Traffic + Remote CARLA")
+        subtitle = QLabel("Town04 Core Run · SUMO 真值 + 本机 CARLA 原生窗口")
         subtitle.setObjectName("subtitle")
         title_stack = QVBoxLayout()
         title_stack.setSpacing(1)
@@ -83,12 +83,12 @@ class MainWindow(QMainWindow):
     def _workspace(self) -> QSplitter:
         self._map = LeafletMapWidget(load_page=self._load_web_map)
         self._map.vehicle_selected.connect(self._set_vehicle_id)
-        self._camera = CameraView()
+        self._carla_window = CarlaNativeWindowHost()
         map_panel = self._panel("全局二维交通", self._map)
-        camera_panel = self._panel("ROI 局部三维", self._camera)
+        carla_panel = self._panel("ROI 局部三维 · CARLA 原生窗口", self._carla_window)
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(map_panel)
-        splitter.addWidget(camera_panel)
+        splitter.addWidget(carla_panel)
         splitter.setSizes([850, 600])
         splitter.setStretchFactor(0, 3)
         splitter.setStretchFactor(1, 2)
@@ -193,7 +193,6 @@ class MainWindow(QMainWindow):
         vm.network_changed.connect(self._map.set_network)
         vm.vehicles_changed.connect(self._set_vehicles)
         vm.traffic_lights_changed.connect(self._map.set_traffic_lights)
-        vm.camera_changed.connect(self._camera.submit_frame)
         vm.component_health_changed.connect(self._set_health)
         vm.experiment_status_changed.connect(self._set_status)
         vm.simulation_time_changed.connect(self._set_time)
@@ -229,8 +228,8 @@ class MainWindow(QMainWindow):
         status = getattr(carla, "status", "UNKNOWN")
         self._metric_value(self._carla_status).setText(str(status))
         if carla is not None and str(status) not in {"HEALTHY", "ComponentStatus.HEALTHY"}:
-            message = getattr(carla, "message", None) or "远程 CARLA 当前不可用"
-            self._camera.show_degraded(str(message))
+            message = getattr(carla, "message", None) or "本机 CARLA 当前不可用"
+            self._carla_window.show_unavailable(str(message))
 
     @Slot(str)
     def _set_status(self, status: str) -> None:
@@ -255,6 +254,7 @@ class MainWindow(QMainWindow):
     @Slot(str)
     def _set_connection(self, state: str) -> None:
         labels = {
+            "API_CONNECTED": "API 已连接",
             "CONNECTED": "实时已连接",
             "CONNECTING": "实时连接中",
             "RECONNECTING": "实时重连中",

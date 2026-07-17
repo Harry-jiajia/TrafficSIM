@@ -26,7 +26,6 @@ class RunViewModel(QObject):
     network_changed = Signal(object)
     vehicles_changed = Signal(object)
     traffic_lights_changed = Signal(object)
-    camera_changed = Signal(object)
     component_health_changed = Signal(object)
     experiment_status_changed = Signal(str)
     simulation_time_changed = Signal(int)
@@ -72,7 +71,9 @@ class RunViewModel(QObject):
         return self._status
 
     def initialize(self) -> None:
-        self._rest.check_readiness()
+        # Readiness describes a prepared experiment and is expected to fail before one exists.
+        # At UI startup only probe whether the API control plane is reachable.
+        self._rest.check_health()
         self._rest.list_maps()
         self._emit_controls()
 
@@ -137,7 +138,9 @@ class RunViewModel(QObject):
         self._send("vehicle.control", payload)
 
     def handle_rest_success(self, operation: str, payload: object) -> None:
-        if operation == "ready":
+        if operation == "health":
+            self.connection_changed.emit("API_CONNECTED")
+        elif operation == "ready":
             readiness = ReadinessResponse.model_validate(payload)
             if not readiness.ready:
                 self.notification.emit("warning", "后端尚未就绪，请检查组件状态。")
@@ -176,8 +179,6 @@ class RunViewModel(QObject):
                 self.vehicles_changed.emit(tuple(self._world.vehicles.values()))
             if update.traffic_lights_changed:
                 self.traffic_lights_changed.emit(tuple(self._world.traffic_lights.values()))
-            if update.camera_changed and self._world.camera is not None:
-                self.camera_changed.emit(self._world.camera)
             if update.health_changed:
                 self.component_health_changed.emit(tuple(self._world.components.values()))
             if update.status_changed and self._world.status is not None:

@@ -21,6 +21,8 @@ def test_core_run_scenario_loads_structurally() -> None:
     scenario = load_scenario(SCENARIO_PATH, apply_environment=False)
     assert scenario.scenario.name == "core-run-town04"
     assert scenario.traffic.vehicles == 50
+    assert scenario.sumo.host == "127.0.0.1"
+    assert scenario.sumo.port == 8813
     assert sum(scenario.automation.proportions.values()) == 1.0
 
 
@@ -30,15 +32,15 @@ def test_configuration_hash_is_stable() -> None:
     assert configuration_hash(first) == configuration_hash(second)
 
 
-def test_scenario_rejects_divergent_engine_asset_paths(tmp_path: Path) -> None:
+def test_scenario_rejects_divergent_sumo_step(tmp_path: Path) -> None:
     payload = yaml.safe_load(SCENARIO_PATH.read_text(encoding="utf-8"))
-    payload["traffic_engine"]["network_path"] = "different.json"
+    payload["sumo"]["step_ms"] = 100
     invalid_path = tmp_path / "invalid.yaml"
     invalid_path.write_text(yaml.safe_dump(payload), encoding="utf-8")
 
     with pytest.raises(ConfigurationError) as captured:
         load_scenario(invalid_path, apply_environment=False)
-    assert "traffic_engine values must match" in captured.value.details["reason"]
+    assert "simulation step values must match" in captured.value.details["reason"]
 
 
 def test_invalid_automation_proportions_report_field(tmp_path: Path) -> None:
@@ -92,18 +94,22 @@ def test_invalid_carla_port_environment_override_is_rejected(
     assert "port" in captured.value.details["reason"]
 
 
-def test_remote_carla_environment_overrides_are_applied(
+def test_local_simulator_environment_overrides_are_applied(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("TRAFFICVERSE_CARLA_HOST", "10.0.0.8")
     monkeypatch.setenv("TRAFFICVERSE_CARLA_PORT", "2200")
     monkeypatch.setenv("TRAFFICVERSE_CARLA_TIMEOUT_S", "45.5")
+    monkeypatch.setenv("TRAFFICVERSE_SUMO_HOST", "10.0.0.9")
+    monkeypatch.setenv("TRAFFICVERSE_SUMO_PORT", "9913")
 
     scenario = load_scenario(SCENARIO_PATH)
 
     assert scenario.carla.host == "10.0.0.8"
     assert scenario.carla.port == 2200
     assert scenario.carla.timeout_s == 45.5
+    assert scenario.sumo.host == "10.0.0.9"
+    assert scenario.sumo.port == 9913
 
 
 def test_invalid_carla_timeout_environment_override_is_rejected(
@@ -129,6 +135,7 @@ def test_environment_validation_reports_missing_assets(tmp_path: Path) -> None:
         "traffic.routes",
         "traffic.signals",
         "map_registration.manifest",
+        "sumo.config_file",
     }
 
 
@@ -143,14 +150,16 @@ def _write_manifest(
     asset.write_text("town04", encoding="utf-8")
     digest = checksum or f"sha256:{hashlib.sha256(asset.read_bytes()).hexdigest()}"
     manifest = {
-        "schema_version": "1.0",
-        "map_id": "town04-carla-0.9.16-native-1.0",
+        "schema_version": "1.1",
+        "map_id": "town04-carla-0.9.16-sumo-1.27.1-v1",
         "carla_map": "Town04",
         "carla_version": carla_version,
+        "sumo_version": "1.27.1",
         "network_schema_version": "traffic-network/1.0",
         "compiler_version": "1.0.0",
         "source_repository": "https://github.com/carla-simulator/carla",
         "source_ref": "test-ref",
+        "sumo_generation_command": "python scripts/maps/generate_town04_sumo.py",
         "validated": validated,
         "max_registration_error_m": 0.5,
         "strict_signal_mapping": True,

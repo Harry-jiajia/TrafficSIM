@@ -4,13 +4,11 @@ import asyncio
 from typing import cast
 from uuid import UUID
 
-import pytest
 from pydantic import JsonValue
 
 from trafficverse.adapters.messaging import FrameBroker, make_envelope
 from trafficverse.domain.enums import AutomationLevel, VehicleAction
 from trafficverse.domain.models import (
-    CameraFrame,
     CarlaFrame,
     SimulationFrame,
     TrafficSnapshot,
@@ -37,14 +35,6 @@ def _frame(sequence: int, x: float) -> SimulationFrame:
         action=VehicleAction.KEEP_LANE,
         risk_score=0.0,
     )
-    camera = CameraFrame(
-        camera_id="main",
-        carla_frame=sequence,
-        simulation_time_ms=sequence * 50,
-        width=2,
-        height=2,
-        data_base64="eA==",
-    )
     return SimulationFrame(
         traffic=TrafficSnapshot(
             experiment_id=EXPERIMENT_ID,
@@ -56,22 +46,20 @@ def _frame(sequence: int, x: float) -> SimulationFrame:
             simulation_time_ms=sequence * 50,
             carla_frame=sequence,
             actor_count=1,
-            camera_frame=camera,
         ),
     )
 
 
-def test_slow_client_coalesces_vehicle_by_id_and_keeps_latest_camera() -> None:
+def test_slow_client_coalesces_vehicle_by_id() -> None:
     async def exercise() -> None:
         broker = FrameBroker()
         subscription = broker.subscribe(EXPERIMENT_ID)
-        subscription.set_topics(frozenset({"vehicles", "camera"}), max_hz=10.0)
+        subscription.set_topics(frozenset({"vehicles"}), max_hz=10.0)
 
         await broker.publish_frame(_frame(1, 1.0))
         await broker.publish_frame(_frame(2, 2.0))
 
         vehicle = await subscription.buffer.next()
-        camera = await subscription.buffer.next()
         assert vehicle.type == "vehicle.delta"
         assert vehicle.sequence == 2
         vehicle_payload = cast("dict[str, JsonValue]", vehicle.payload)
@@ -79,11 +67,7 @@ def test_slow_client_coalesces_vehicle_by_id_and_keeps_latest_camera() -> None:
         first_vehicle = cast("dict[str, JsonValue]", vehicles[0])
         position = cast("dict[str, JsonValue]", first_vehicle["position"])
         assert position["x"] == 2.0
-        assert camera.type == "camera.frame"
-        camera_payload = cast("dict[str, JsonValue]", camera.payload)
-        assert camera_payload["carla_frame"] == 2
         assert subscription.buffer.coalesced_vehicle_deltas == 1
-        assert subscription.buffer.dropped_camera_frames == 1
         assert subscription.buffer.depth == 0
 
     asyncio.run(exercise())
@@ -105,16 +89,6 @@ def test_critical_overflow_disconnects_instead_of_growing_without_bound() -> Non
 
     assert subscription.buffer.overflowed
     assert subscription.buffer.depth == 2
-
-
-def test_camera_allows_only_one_subscriber() -> None:
-    broker = FrameBroker()
-    first = broker.subscribe(EXPERIMENT_ID)
-    second = broker.subscribe(EXPERIMENT_ID)
-    first.set_topics(frozenset({"camera"}), max_hz=10.0)
-
-    with pytest.raises(ValueError, match="already has a subscriber"):
-        second.set_topics(frozenset({"camera"}), max_hz=10.0)
 
 
 def test_snapshot_request_returns_latest_complete_frame() -> None:

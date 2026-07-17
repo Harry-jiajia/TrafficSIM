@@ -42,6 +42,9 @@
         "carla": {
           "$ref": "#/$defs/ComponentRequirement"
         },
+        "native_window": {
+          "$ref": "#/$defs/ComponentRequirement"
+        },
         "operating_system": {
           "enum": [
             "Darwin",
@@ -59,7 +62,7 @@
           "title": "Python Version",
           "type": "string"
         },
-        "traffic_engine": {
+        "sumo": {
           "$ref": "#/$defs/ComponentRequirement"
         }
       },
@@ -68,7 +71,8 @@
         "architectures",
         "python_version",
         "carla",
-        "traffic_engine",
+        "sumo",
+        "native_window",
         "postgres"
       ],
       "title": "RuntimeProfile",

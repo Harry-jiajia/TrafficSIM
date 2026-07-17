@@ -5,9 +5,12 @@ simulation:
 roi:
   radius_m: 1000.0
   buffer_m: 200.0
-camera:
-  mode: BIRD_VIEW
-  width: 960
-  height: 540
-  fps: 10
-  jpeg_quality: 75
+sumo:
+  host: 127.0.0.1
+  port: 8813
+  step_ms: 50
+ui:
+  api_url: http://127.0.0.1:8000
+  carla_view:
+    mode: native_window
+    native_window_id_env: TRAFFICVERSE_CARLA_WINDOW_ID

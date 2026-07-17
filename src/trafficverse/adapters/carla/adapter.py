@@ -1,17 +1,14 @@
-"""Production CARLA Port implementation for the remote Simulation Runtime."""
+"""Production CARLA Port implementation for the local CARLA server."""
 
 from __future__ import annotations
 
-import base64
 import math
 import threading
-from collections import deque
 from collections.abc import Sequence
 from dataclasses import dataclass
 
 from trafficverse.adapters.carla.models import (
     CarlaRuntime,
-    RuntimeCameraFrame,
     RuntimeOperationResult,
     RuntimeSpawnRequest,
     RuntimeTransform,
@@ -23,8 +20,6 @@ from trafficverse.domain.enums import ComponentStatus, ErrorCode
 from trafficverse.domain.errors import TrafficVerseError
 from trafficverse.domain.models import (
     ActorSpawnResult,
-    CameraCommand,
-    CameraFrame,
     CarlaFrame,
     CarlaTrafficLight,
     ComponentHealth,
@@ -40,13 +35,11 @@ class CarlaDiagnostics:
     connected: bool
     world_loaded: bool
     owned_actor_count: int
-    camera_frames_received: int
-    camera_frames_dropped: int
     last_carla_frame: int
 
 
 class CarlaAdapter:
-    """Owns CARLA lifecycle, deterministic batches, tick, and camera backpressure."""
+    """Own CARLA lifecycle, deterministic actor batches, and the authoritative tick."""
 
     def __init__(self, runtime: CarlaRuntime | None = None) -> None:
         self._runtime = runtime or PythonCarlaRuntime()
@@ -59,11 +52,6 @@ class CarlaAdapter:
         self._closed = False
         self._vehicle_actors: dict[str, int] = {}
         self._owned_actor_ids: set[int] = set()
-        self._camera_frames: deque[CameraFrame] = deque(maxlen=2)
-        self._camera_lock = threading.Lock()
-        self._camera_received = 0
-        self._camera_dropped = 0
-        self._last_camera_frame = -1
         self._tick_thread_id: int | None = None
         self._last_carla_frame = -1
         self._last_target_time_ms = 0
@@ -79,7 +67,7 @@ class CarlaAdapter:
         except Exception as error:
             raise TrafficVerseError(
                 ErrorCode.CARLA_CONNECTION_FAILED,
-                f"unable to connect to remote CARLA at {config.host}:{config.port}: {error}",
+                f"unable to connect to local CARLA at {config.host}:{config.port}: {error}",
             ) from error
         self._client_version = versions.client
         self._server_version = versions.server
@@ -288,52 +276,6 @@ class CarlaAdapter:
         self._require_config()
         return self._runtime.actor_count()
 
-    def set_camera(self, command: CameraCommand) -> None:
-        self._require_world()
-        target_actor_id = None
-        if command.mode == "FOLLOW":
-            target_actor_id = self._vehicle_actors.get(command.vehicle_id or "")
-            if target_actor_id is None:
-                raise TrafficVerseError(
-                    ErrorCode.CARLA_CAMERA_TARGET_NOT_FOUND,
-                    f"FOLLOW camera vehicle does not exist: {command.vehicle_id}",
-                )
-        with self._camera_lock:
-            self._camera_frames.clear()
-            self._last_camera_frame = -1
-        self._runtime.start_camera(
-            mode=command.mode,
-            target_actor_id=target_actor_id,
-            width=command.width,
-            height=command.height,
-            fps=command.fps,
-            jpeg_quality=command.jpeg_quality,
-            callback=self._receive_camera_frame,
-        )
-
-    def _receive_camera_frame(self, frame: RuntimeCameraFrame) -> None:
-        public_frame = CameraFrame(
-            camera_id=frame.camera_id,
-            carla_frame=frame.carla_frame,
-            simulation_time_ms=frame.simulation_time_ms,
-            width=frame.width,
-            height=frame.height,
-            data_base64=base64.b64encode(frame.jpeg_bytes).decode("ascii"),
-        )
-        with self._camera_lock:
-            self._camera_received += 1
-            if frame.carla_frame <= self._last_camera_frame:
-                self._camera_dropped += 1
-                return
-            self._last_camera_frame = frame.carla_frame
-            if len(self._camera_frames) == self._camera_frames.maxlen:
-                self._camera_dropped += 1
-            self._camera_frames.append(public_frame)
-
-    def latest_camera_frame(self) -> CameraFrame | None:
-        with self._camera_lock:
-            return self._camera_frames[-1] if self._camera_frames else None
-
     def tick(self, target_time_ms: int) -> CarlaFrame:
         config = self._require_world()
         expected_target_time_ms = self._last_target_time_ms + config.step_ms
@@ -366,7 +308,6 @@ class CarlaAdapter:
             simulation_time_ms=target_time_ms,
             carla_frame=carla_frame,
             actor_count=self._runtime.actor_count(),
-            camera_frame=self.latest_camera_frame(),
         )
 
     def health(self) -> ComponentHealth:
@@ -375,36 +316,29 @@ class CarlaAdapter:
                 component="carla",
                 status=ComponentStatus.HEALTHY,
                 version=self._server_version,
-                message="remote CARLA connected",
+                message="local CARLA connected",
             )
         return ComponentHealth(
             component="carla",
             status=ComponentStatus.UNAVAILABLE,
             version=self._server_version,
-            message="remote CARLA disconnected",
+            message="local CARLA disconnected",
         )
 
     def diagnostics(self) -> CarlaDiagnostics:
-        with self._camera_lock:
-            return CarlaDiagnostics(
-                client_version=self._client_version,
-                server_version=self._server_version,
-                connected=self._connected and not self._closed,
-                world_loaded=self._world_loaded,
-                owned_actor_count=len(self._owned_actor_ids),
-                camera_frames_received=self._camera_received,
-                camera_frames_dropped=self._camera_dropped,
-                last_carla_frame=self._last_carla_frame,
-            )
+        return CarlaDiagnostics(
+            client_version=self._client_version,
+            server_version=self._server_version,
+            connected=self._connected and not self._closed,
+            world_loaded=self._world_loaded,
+            owned_actor_count=len(self._owned_actor_ids),
+            last_carla_frame=self._last_carla_frame,
+        )
 
     def close(self) -> None:
         if self._closed:
             return
         first_error: Exception | None = None
-        try:
-            self._runtime.stop_camera()
-        except Exception as error:
-            first_error = error
         if self._owned_actor_ids:
             try:
                 results = self._runtime.destroy_actors(tuple(sorted(self._owned_actor_ids)))

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -8,8 +7,6 @@ import pytest
 
 from trafficverse.adapters.carla import CarlaAdapter
 from trafficverse.adapters.carla.models import (
-    CameraCallback,
-    RuntimeCameraFrame,
     RuntimeOperationResult,
     RuntimeSpawnRequest,
     RuntimeSpawnResult,
@@ -21,7 +18,7 @@ from trafficverse.adapters.carla.models import (
 from trafficverse.config.models import CarlaConfig, WeatherConfig
 from trafficverse.domain.enums import ErrorCode, RequirementMode, TrafficLightColor
 from trafficverse.domain.errors import TrafficVerseError
-from trafficverse.domain.models import CameraCommand, TrafficLightUpdate, Vector3
+from trafficverse.domain.models import TrafficLightUpdate, Vector3
 
 
 class FakeRuntime:
@@ -34,7 +31,6 @@ class FakeRuntime:
         self.next_actor_id = 100
         self.spawn_failures: dict[str, int] = {}
         self.spawn_batches: list[tuple[str, ...]] = []
-        self.callback: CameraCallback | None = None
         self.frame = 0
         self.frozen = False
         self.light_colors: list[TrafficLightColor] = []
@@ -113,40 +109,6 @@ class FakeRuntime:
         self.calls.append(f"lights:{len(updates)}")
         return tuple(RuntimeOperationResult(actor_id) for actor_id, _ in updates)
 
-    def start_camera(
-        self,
-        *,
-        mode: str,
-        target_actor_id: int | None,
-        width: int,
-        height: int,
-        fps: int,
-        jpeg_quality: int,
-        callback: CameraCallback,
-    ) -> None:
-        del width, height, fps, jpeg_quality
-        self.calls.append(f"camera:{mode}:{target_actor_id}")
-        self.callback = callback
-
-    def stop_camera(self) -> None:
-        self.calls.append("stop_camera")
-        self.callback = None
-
-    def emit_camera_frames(self, count: int) -> None:
-        assert self.callback is not None
-        callback = self.callback
-        for frame in range(1, count + 1):
-            callback(
-                RuntimeCameraFrame(
-                    camera_id="camera-1",
-                    carla_frame=frame,
-                    simulation_time_ms=frame * 50,
-                    width=2,
-                    height=2,
-                    jpeg_bytes=b"\xff\xd8test\xff\xd9",
-                )
-            )
-
     def tick(self, timeout_s: float) -> int:
         self.calls.append(f"tick:{timeout_s}")
         self.frame += 1
@@ -212,7 +174,6 @@ def test_lifecycle_call_order_and_cleanup_restores_settings() -> None:
         "freeze_lights:True",
         "blueprints:vehicle.*",
         "spawn:v-1",
-        "stop_camera",
         "destroy:100",
         "freeze_lights:False",
         "apply_settings:False:None",
@@ -292,26 +253,6 @@ def test_external_actor_loss_is_removed_from_adapter_ownership() -> None:
     assert f"destroy:{actor_id}" not in runtime.calls
 
 
-def test_follow_camera_missing_vehicle_uses_stable_error() -> None:
-    runtime = FakeRuntime()
-    adapter = loaded_adapter(runtime)
-
-    with pytest.raises(TrafficVerseError) as raised:
-        adapter.set_camera(
-            CameraCommand(
-                mode="FOLLOW",
-                vehicle_id="missing",
-                width=960,
-                height=540,
-                fps=10,
-                jpeg_quality=75,
-            )
-        )
-
-    assert raised.value.code is ErrorCode.CARLA_CAMERA_TARGET_NOT_FOUND
-    adapter.close()
-
-
 def test_traffic_lights_are_frozen_and_accept_three_colors() -> None:
     runtime = FakeRuntime()
     adapter = loaded_adapter(runtime)
@@ -331,28 +272,4 @@ def test_traffic_lights_are_frozen_and_accept_three_colors() -> None:
         TrafficLightColor.YELLOW,
         TrafficLightColor.GREEN,
     ]
-    adapter.close()
-
-
-def test_camera_keeps_two_frames_and_latest_is_monotonic() -> None:
-    runtime = FakeRuntime()
-    adapter = loaded_adapter(runtime)
-    adapter.set_camera(
-        CameraCommand(
-            mode="BIRD_VIEW",
-            width=960,
-            height=540,
-            fps=10,
-            jpeg_quality=75,
-        )
-    )
-
-    runtime.emit_camera_frames(100)
-
-    latest = adapter.latest_camera_frame()
-    assert latest is not None
-    assert latest.carla_frame == 100
-    assert base64.b64decode(latest.data_base64) == b"\xff\xd8test\xff\xd9"
-    assert adapter.diagnostics().camera_frames_received == 100
-    assert adapter.diagnostics().camera_frames_dropped == 98
     adapter.close()

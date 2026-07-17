@@ -31,52 +31,6 @@
       "title": "AutomationLevel",
       "type": "string"
     },
-    "CameraConfig": {
-      "additionalProperties": false,
-      "properties": {
-        "fps": {
-          "exclusiveMinimum": 0,
-          "maximum": 60,
-          "title": "Fps",
-          "type": "integer"
-        },
-        "height": {
-          "exclusiveMinimum": 0,
-          "maximum": 2160,
-          "title": "Height",
-          "type": "integer"
-        },
-        "jpeg_quality": {
-          "maximum": 100,
-          "minimum": 1,
-          "title": "Jpeg Quality",
-          "type": "integer"
-        },
-        "mode": {
-          "enum": [
-            "BIRD_VIEW",
-            "FOLLOW"
-          ],
-          "title": "Mode",
-          "type": "string"
-        },
-        "width": {
-          "exclusiveMinimum": 0,
-          "maximum": 4096,
-          "title": "Width",
-          "type": "integer"
-        }
-      },
-      "required": [
-        "mode",
-        "width",
-        "height",
-        "fps",
-        "jpeg_quality"
-      ],
-      "title": "CameraConfig",
-      "type": "object"
-    },
     "CarlaConfig": {
       "additionalProperties": false,
       "properties": {
@@ -86,15 +40,9 @@
           "title": "Blueprint Filter",
           "type": "string"
         },
-        "camera_queue_size": {
-          "const": 2,
-          "default": 2,
-          "title": "Camera Queue Size",
-          "type": "integer"
-        },
         "endpoint_mode": {
-          "const": "remote_server",
-          "default": "remote_server",
+          "const": "local_server",
+          "default": "local_server",
           "title": "Endpoint Mode",
           "type": "string"
         },
@@ -162,6 +110,25 @@
         "expected_version"
       ],
       "title": "CarlaConfig",
+      "type": "object"
+    },
+    "CarlaViewConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "native_window",
+          "default": "native_window",
+          "title": "Mode",
+          "type": "string"
+        },
+        "native_window_id_env": {
+          "default": "TRAFFICVERSE_CARLA_WINDOW_ID",
+          "pattern": "^[A-Z][A-Z0-9_]+$",
+          "title": "Native Window Id Env",
+          "type": "string"
+        }
+      },
+      "title": "CarlaViewConfig",
       "type": "object"
     },
     "LoggingConfig": {
@@ -363,59 +330,70 @@
       "title": "SimulationConfig",
       "type": "object"
     },
-    "TrafficBehaviorConfig": {
+    "SumoConfig": {
       "additionalProperties": false,
+      "description": "External SUMO/TraCI endpoint used as the production traffic truth source.",
       "properties": {
-        "comfortable_deceleration_mps2": {
-          "default": 4.0,
-          "exclusiveMinimum": 0.0,
-          "title": "Comfortable Deceleration Mps2",
-          "type": "number"
+        "config_file": {
+          "minLength": 1,
+          "title": "Config File",
+          "type": "string"
         },
-        "emergency_deceleration_mps2": {
-          "default": 8.0,
-          "exclusiveMinimum": 0.0,
-          "title": "Emergency Deceleration Mps2",
-          "type": "number"
+        "connect_retries": {
+          "default": 3,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Connect Retries",
+          "type": "integer"
         },
-        "lane_change_front_gap_m": {
-          "default": 10.0,
-          "exclusiveMinimum": 0.0,
-          "title": "Lane Change Front Gap M",
-          "type": "number"
+        "expected_version": {
+          "default": "1.27.1",
+          "minLength": 1,
+          "title": "Expected Version",
+          "type": "string"
         },
-        "lane_change_rear_gap_m": {
-          "default": 8.0,
-          "exclusiveMinimum": 0.0,
-          "title": "Lane Change Rear Gap M",
-          "type": "number"
+        "host": {
+          "default": "127.0.0.1",
+          "minLength": 1,
+          "title": "Host",
+          "type": "string"
         },
-        "max_acceleration_mps2": {
-          "default": 2.5,
-          "exclusiveMinimum": 0.0,
-          "title": "Max Acceleration Mps2",
-          "type": "number"
+        "launch_mode": {
+          "const": "external",
+          "default": "external",
+          "title": "Launch Mode",
+          "type": "string"
         },
-        "minimum_gap_m": {
-          "default": 2.5,
-          "exclusiveMinimum": 0.0,
-          "title": "Minimum Gap M",
-          "type": "number"
+        "port": {
+          "default": 8813,
+          "maximum": 65535,
+          "minimum": 1,
+          "title": "Port",
+          "type": "integer"
         },
-        "time_headway_s": {
-          "default": 1.2,
-          "exclusiveMinimum": 0.0,
-          "title": "Time Headway S",
-          "type": "number"
+        "provider": {
+          "const": "sumo",
+          "default": "sumo",
+          "title": "Provider",
+          "type": "string"
         },
-        "vehicle_length_m": {
-          "default": 4.5,
-          "exclusiveMinimum": 0.0,
-          "title": "Vehicle Length M",
-          "type": "number"
+        "step_ms": {
+          "default": 50,
+          "exclusiveMinimum": 0,
+          "title": "Step Ms",
+          "type": "integer"
+        },
+        "tls_manager": {
+          "const": "sumo",
+          "default": "sumo",
+          "title": "Tls Manager",
+          "type": "string"
         }
       },
-      "title": "TrafficBehaviorConfig",
+      "required": [
+        "config_file"
+      ],
+      "title": "SumoConfig",
       "type": "object"
     },
     "TrafficConfig": {
@@ -451,52 +429,20 @@
       "title": "TrafficConfig",
       "type": "object"
     },
-    "TrafficEngineConfig": {
+    "UiConfig": {
       "additionalProperties": false,
       "properties": {
-        "behavior": {
-          "$ref": "#/$defs/TrafficBehaviorConfig"
-        },
-        "network_path": {
+        "api_url": {
+          "default": "http://127.0.0.1:8000",
           "minLength": 1,
-          "title": "Network Path",
+          "title": "Api Url",
           "type": "string"
         },
-        "network_schema_version": {
-          "const": "traffic-network/1.0",
-          "default": "traffic-network/1.0",
-          "title": "Network Schema Version",
-          "type": "string"
-        },
-        "routes_path": {
-          "minLength": 1,
-          "title": "Routes Path",
-          "type": "string"
-        },
-        "seed": {
-          "default": 0,
-          "minimum": 0,
-          "title": "Seed",
-          "type": "integer"
-        },
-        "signals_path": {
-          "minLength": 1,
-          "title": "Signals Path",
-          "type": "string"
-        },
-        "step_ms": {
-          "default": 50,
-          "exclusiveMinimum": 0,
-          "title": "Step Ms",
-          "type": "integer"
+        "carla_view": {
+          "$ref": "#/$defs/CarlaViewConfig"
         }
       },
-      "required": [
-        "network_path",
-        "routes_path",
-        "signals_path"
-      ],
-      "title": "TrafficEngineConfig",
+      "title": "UiConfig",
       "type": "object"
     },
     "WeatherConfig": {
@@ -520,9 +466,6 @@
     "automation": {
       "$ref": "#/$defs/AutomationConfig"
     },
-    "camera": {
-      "$ref": "#/$defs/CameraConfig"
-    },
     "carla": {
       "$ref": "#/$defs/CarlaConfig"
     },
@@ -542,19 +485,22 @@
       "$ref": "#/$defs/ScenarioIdentityConfig"
     },
     "schema_version": {
-      "const": "1.1",
-      "default": "1.1",
+      "const": "1.2",
+      "default": "1.2",
       "title": "Schema Version",
       "type": "string"
     },
     "simulation": {
       "$ref": "#/$defs/SimulationConfig"
     },
+    "sumo": {
+      "$ref": "#/$defs/SumoConfig"
+    },
     "traffic": {
       "$ref": "#/$defs/TrafficConfig"
     },
-    "traffic_engine": {
-      "$ref": "#/$defs/TrafficEngineConfig"
+    "ui": {
+      "$ref": "#/$defs/UiConfig"
     },
     "weather": {
       "$ref": "#/$defs/WeatherConfig"
@@ -564,13 +510,12 @@
     "scenario",
     "simulation",
     "traffic",
+    "sumo",
     "automation",
     "roi",
     "carla",
-    "traffic_engine",
     "weather",
     "map_registration",
-    "camera",
     "logging",
     "replay"
   ],

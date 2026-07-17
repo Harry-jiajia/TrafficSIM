@@ -8,7 +8,7 @@ from pydantic import Field, JsonValue, field_validator
 
 from trafficverse.domain.enums import ComponentStatus, EventSeverity
 from trafficverse.domain.models.common import StrictModel
-from trafficverse.domain.models.vehicle import CameraFrame, TrafficLightState, VehicleState
+from trafficverse.domain.models.vehicle import TrafficLightState, VehicleState
 
 
 class TrafficSnapshot(StrictModel):
@@ -23,7 +23,6 @@ class CarlaFrame(StrictModel):
     simulation_time_ms: int = Field(ge=0)
     carla_frame: int = Field(ge=0)
     actor_count: int = Field(ge=0)
-    camera_frame: CameraFrame | None = None
 
 
 class DomainEvent(StrictModel):

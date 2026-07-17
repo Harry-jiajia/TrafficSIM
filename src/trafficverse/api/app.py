@@ -21,8 +21,8 @@ _STATUS_BY_CODE = {
     ErrorCode.RESOURCE_NOT_FOUND: status.HTTP_404_NOT_FOUND,
     ErrorCode.INVALID_STATE_TRANSITION: status.HTTP_409_CONFLICT,
     ErrorCode.RESOURCE_CONFLICT: status.HTTP_409_CONFLICT,
-    ErrorCode.MAP_ASSET_INVALID: status.HTTP_422_UNPROCESSABLE_CONTENT,
-    ErrorCode.SCENARIO_VALIDATION_FAILED: status.HTTP_422_UNPROCESSABLE_CONTENT,
+    ErrorCode.MAP_ASSET_INVALID: status.HTTP_422_UNPROCESSABLE_ENTITY,
+    ErrorCode.SCENARIO_VALIDATION_FAILED: status.HTTP_422_UNPROCESSABLE_ENTITY,
     ErrorCode.COMPONENT_UNAVAILABLE: status.HTTP_503_SERVICE_UNAVAILABLE,
 }
 
@@ -88,7 +88,7 @@ def create_app(dependencies: ApiDependencies) -> FastAPI:
             code=ErrorCode.SCENARIO_VALIDATION_FAILED.value,
             message="request validation failed",
             details=details,
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
 
     app.include_router(build_rest_router(dependencies))

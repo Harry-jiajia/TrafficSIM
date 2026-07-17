@@ -4,12 +4,10 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from uuid import UUID
 
-from trafficverse.config.models import CarlaConfig, TrafficEngineConfig, WeatherConfig
+from trafficverse.config.models import CarlaConfig, SumoConfig, WeatherConfig
 from trafficverse.domain.enums import ComponentStatus, ExperimentStatus
 from trafficverse.domain.models import (
     ActorSpawnResult,
-    CameraCommand,
-    CameraFrame,
     CarlaFrame,
     CarlaTrafficLight,
     ComponentHealth,
@@ -33,7 +31,7 @@ class FakeTrafficEnginePort:
         self.last_time_ms = -1
         self.controls: dict[str, ControlCommand] = {}
 
-    def load(self, config: TrafficEngineConfig) -> None:
+    def load(self, config: SumoConfig) -> None:
         del config
         self.started = True
         self.closed = False
@@ -75,7 +73,6 @@ class FakeCarlaPort:
         self._next_actor_id = 1
         self._traffic_lights = traffic_lights
         self.traffic_light_updates: list[TrafficLightUpdate] = []
-        self.camera_command: CameraCommand | None = None
 
     def connect(self, config: CarlaConfig) -> None:
         del config
@@ -128,12 +125,6 @@ class FakeCarlaPort:
             carla_frame=self.frame,
             actor_count=len(self.actor_ids),
         )
-
-    def latest_camera_frame(self) -> CameraFrame | None:
-        return None
-
-    def set_camera(self, command: CameraCommand) -> None:
-        self.camera_command = command
 
     def health(self) -> ComponentHealth:
         status = (

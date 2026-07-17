@@ -918,7 +918,7 @@ Native Traffic Engine MVP 已证明技术中性 Port、二维可视化、ROI 和
 MVP 阶段获得足够的模型验证。产品方向重新确定为使用 SUMO 承担真实交通仿真，PySide6 二维
 页面只负责展示，CARLA 只负责 ROI 三维镜像。
 
-用户已在本机准备 SUMO GUI、PySide6 和 CARLA，目标版本继续固定 Python 3.10、SUMO 1.27.1
+用户已在本机准备 SUMO、PySide6 和 CARLA，目标版本继续固定 Python 3.10、SUMO 1.27.1
 和 CARLA 0.9.16；目标端点固定为 SUMO TraCI
 `127.0.0.1:8813` 与 CARLA RPC `127.0.0.1:2000`。CARLA 官方 SUMO co-simulation 给出了
 同源地图转换、50 ms 固定步长、车辆同步和 `tls-manager` 的参考机制；TrafficVerse 需要在现有
@@ -928,7 +928,7 @@ MVP 阶段获得足够的模型验证。产品方向重新确定为使用 SUMO �
 
 SUMO 是生产运行中车辆存在性、路线、车道、位置、速度、加速度、跟驰、换道、到达和交通信号灯
 的唯一真值源。PySide6、CARLA、指标和记录器只消费标准化后的 SUMO 状态。保留技术中性的
-`TrafficEnginePort`、`TrafficEngineConfig` 和 `TrafficSnapshot`，由
+`TrafficEnginePort`、`SumoConfig` 和 `TrafficSnapshot`，由
 `SumoTrafficEngineAdapter` 作为生产实现；技术中性命名不表示支持双生产引擎。
 
 `SimulationManager` 是唯一推进者，每 tick 的固定顺序为：
@@ -954,10 +954,11 @@ Town04 Core Run 使用 CARLA 0.9.16 同源 OpenDRIVE，经官方 CARLA/SUMO 工�
 本地基线连接外部启动的 SUMO：
 
 ```bash
-sumo-gui -c map.sumocfg --remote-port 8813
+sumo -c map.sumocfg --remote-port 8813
 ```
 
-该命令需要用户点击播放；自动开始使用 `--start`。默认只有 TrafficVerse 一个 TraCI client。
+如需人工观察，可以单独使用 `sumo-gui --start`，但 TrafficVerse 不嵌入、控制或依赖
+SUMO GUI。默认只有 TrafficVerse 一个 TraCI client。
 CARLA endpoint 固定为 `127.0.0.1:2000`。官方 `run_synchronization.py` 只作为设计和验收参考，
 不得与 TrafficVerse 同时推进相同实例。
 
@@ -1028,7 +1029,7 @@ native window ID 或受测试的平台 locator 获得句柄，调用 `QWindow.fr
 4. 正式运行优先使用 `TRAFFICVERSE_CARLA_WINDOW_ID` 等显式句柄配置；平台 locator 必须校验
    进程身份和句柄有效性，不能用模糊标题猜测作为稳定契约；
 5. Core Run 不创建用于 UI 的 RGB sensor，不发布 `camera.frame`，不编码/解码 JPEG/base64；
-6. macOS 当前环境先执行阻断性原型 Gate，验证跨进程窗口句柄、Wine/原生窗口边界、resize、
+6. 目标桌面平台先执行阻断性原型 Gate，验证跨进程窗口句柄、原生窗口边界、resize、
    focus 和清理；
 7. 若 `QWindow.fromWinId()` 返回空或窗口无法稳定 reparent，readiness 返回
    `CARLA_WINDOW_EMBED_UNSUPPORTED` 并停止该验收，不静默回退 RGB。
@@ -1053,7 +1054,7 @@ native window ID 或受测试的平台 locator 获得句柄，调用 `QWindow.fr
 - 当前 RenderOffScreen CARLA 必须重启为 windowed；off-screen 模式没有可托管的显示窗口；
 - 本方案不支持远程无头 CARLA 直接嵌入本机 UI；如恢复跨主机部署，必须重新选择远程呈现协议并
   新增 ADR；
-- macOS/Wine foreign window 可行性是架构阻断项，应先于大规模 UI 重写验证；
+- 目标桌面平台的 foreign window 可行性是架构阻断项，必须通过实机 Gate；
 - `camera.frame` schema、生产者、队列、sensor、decoder、viewmodel 和相关配置在消费者切换后删除；
 - 原生窗口异常属于三维组件健康错误；不得影响 SUMO 真值，但 `carla.mode=required` 的 Core Run
   readiness 必须失败；
@@ -1069,9 +1070,9 @@ native window ID 或受测试的平台 locator 获得句柄，调用 `QWindow.fr
 以下事项需要实现和基准测试后量化，目前不构成新的架构方向：
 
 1. 在目标硬件上 CARLA 可稳定承载的最大 ROI Actor 数；
-2. Native Traffic Engine 在 50 ms step 下的 50/500/2,500 车辆实时因子；
+2. SUMO 在 50 ms step 下的 50/500/2,500 车辆实时因子；
 3. Parquet batch size、snapshot interval 与 seek 延迟的最优平衡；
-4. JSON JPEG 在高分辨率、多客户端下何时需要升级为二进制/WebRTC；
+4. 目标桌面平台上原生 CARLA 窗口的 resize、focus 和崩溃恢复稳定性；
 5. 单机多实验并发是否值得引入独立 worker。
 
 这些议题应通过 T10 性能和集成报告给出证据。若证据要求改变已接受方向，应新增 ADR，而不是在代码中局部绕开。

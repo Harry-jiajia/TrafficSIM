@@ -29,9 +29,9 @@
 
 任何代码变更都必须保持：
 
-1. Native Traffic Engine 是车辆、路线、车道和信号灯的全局真值源。
+1. SUMO/TraCI 是车辆、路线、车道和信号灯的全局真值源；SUMO GUI 不属于产品 UI。
 2. CARLA 是 ROI 内视觉镜像，不独立决定全局运动学状态。
-3. 只有 `SimulationManager` 可以调用 Native Traffic Engine `step` 和 CARLA `world.tick()`。
+3. 只有 `SimulationManager` 可以调用 TraCI `simulationStep` 和 CARLA `world.tick()`。
 4. Core Run 使用 50 ms 固定步长、Town04 同源资产和严格信号灯映射。
 5. ROI 使用核心区+Buffer 滞回，不得改回单阈值同步。
 6. 跨模块只使用公共领域模型、事件和 Port，不共享第三方 SDK 对象或全局可变状态。
@@ -159,9 +159,9 @@ TrafficSIM/
 | 依赖注入和具体 adapter 装配 | `src/trafficverse/bootstrap.py` | domain/application 内部 |
 | CARLA/SQLAlchemy/WebSocket 实现 | 对应 `adapters/` | `domain/`、`controllers/` |
 | OpenDRIVE 导入和原生地图编译 | `src/trafficverse/maps/` | CARLA adapter、UI |
-| 原生交通行为和步进 | `src/trafficverse/traffic/` | API handler、UI callback |
+| SUMO/TraCI adapter | `src/trafficverse/adapters/sumo/` | API handler、UI callback |
 | ROI、配准、信号灯纯逻辑 | `src/trafficverse/roi/` | CARLA adapter 私有函数 |
-| 车辆控制策略 | `src/trafficverse/controllers/` | Native Traffic Engine 内部状态、Simulation Manager |
+| 车辆控制策略 | `src/trafficverse/controllers/` | TraCI connection、Simulation Manager |
 | HTTP/WS 接入层 | `src/trafficverse/api/` | application/domain |
 | PySide6、Leaflet、Plotly | `ui/` | 后端 domain/application |
 | 公共机器契约 | `contracts/` | 手工复制在多个模块 |
@@ -194,9 +194,9 @@ bootstrap/cli → application + concrete adapters
 - `application` 可以导入 domain/ports，不导入具体 adapter SDK。
 - adapter 之间不得直接导入；协作由 application 层通过 Port 编排。
 - 只有 `bootstrap.py`/CLI composition root 可以同时导入 application 和具体 adapters，用于构造依赖；其中不得包含业务规则。
-- `api` 不直接导入 Native Traffic Engine 具体实现、CARLA 或 SQLAlchemy model。
+- `api` 不直接导入 TraCI、CARLA 或 SQLAlchemy model。
 - `ui` 不导入 `src/trafficverse`；只能使用 REST/WebSocket 和生成/本地镜像的协议模型。
-- `controllers` 不直接修改 Native Traffic Engine 状态、不调用 CARLA，不访问数据库或 WebSocket。
+- `controllers` 不持有 TraCI connection、不调用 CARLA，不访问数据库或 WebSocket。
 - `__init__.py` 保持轻量，不启动线程、不连接外部系统、不读取文件、不执行注册副作用。
 - 禁止循环导入。若出现循环，优先修正职责边界，不使用函数内 import 掩盖问题。
 
@@ -288,7 +288,7 @@ uv run pytest
 ### 4.7 错误处理
 
 - 领域和应用层抛出 `domain/errors.py` 中的稳定错误类型和错误码。
-- adapter 捕获 SDK 异常并转换，禁止将 CARLA/SQLAlchemy 原始异常泄漏到 API/UI；Native Traffic Engine 使用稳定领域错误。
+- adapter 捕获 SDK 异常并转换，禁止将 TraCI/CARLA/SQLAlchemy 原始异常泄漏到 API/UI。
 - 不写裸 `except:`；捕获 `Exception` 时必须在边界记录上下文并重新抛出或转换。
 - 不静默忽略失败。允许降级时必须发布领域事件并更新组件健康。
 - 错误信息不得包含凭证、完整环境变量、用户隐私或任意本机路径。
@@ -333,7 +333,7 @@ uv run pytest
 - WebSocket 消息必须使用统一 envelope，并携带 `schema_version`、`type`、`experiment_id`、`simulation_time_ms` 和 `sequence`。
 - 命令回复必须设置 `correlation_id`。
 - 新增消息类型必须同时更新 model、JSON Schema、契约测试和文档。
-- `camera.frame` 在 Core Run 使用 JSON base64 JPEG；不得放入通用状态队列无限积压。
+- Core Run 不定义或发布 `camera.frame`；CARLA 画面由 Qt 直接托管本机原生窗口。
 
 ### 5.3 契约变更
 
@@ -344,16 +344,14 @@ uv run pytest
 
 ## 6. Adapter 规范
 
-### 6.1 Native Traffic Engine / Map Compiler
+### 6.1 SUMO / Map Assets
 
-- Native Traffic Engine 只放在 `traffic/`，通过 `TrafficEnginePort` 向 application 暴露能力。
-- Map Compiler 只放在 `maps/`，运行时只加载已校验的 `network.json`，不重复解析 OpenDRIVE。
-- 每次 step 返回同一仿真时间的不可变 `TrafficSnapshot`；禁止返回半成功快照。
-- 所有车辆读取同一上一帧，先计算 proposed state，再统一安全检查和原子提交；禁止原地逐车更新导致顺序依赖。
-- 每车道邻车查询使用有序索引，禁止每车扫描全量车辆。
-- 地图编译和仿真必须确定：相同输入、配置和 seed 产生相同资产 hash 与快照序列。
-- 交通命令先经过限速、车道拓扑、信号和碰撞安全层；单车非法命令不得破坏其他车辆推进。
-- MVP 只实现 ADR-022 定义的 OpenDRIVE 子集和基础交通行为，不提前扩展成熟仿真器功能。
+- TraCI SDK 只放在 `adapters/sumo/`，通过 `TrafficEnginePort` 向 application 暴露能力。
+- SUMO 网络必须由同一 Town04 OpenDRIVE 生成；运行时只加载已校验的 `.sumocfg` 资产。
+- 每次 step 恰好调用一次 `simulationStep`，并返回同一 SUMO 时间的不可变 `TrafficSnapshot`。
+- SUMO 连接丢失、时间回退或 step 失败必须转换为稳定领域错误并使当前实验失败。
+- 控制命令在 step 前批量应用；单车非法命令不得阻断其他合法命令。
+- `network.json`/GeoJSON 只用于展示和查找，不参与车辆推进，不形成第二真值。
 
 ### 6.2 CARLA
 
@@ -361,9 +359,9 @@ uv run pytest
 - client/server 版本必须一致；不匹配时拒绝 READY。
 - Simulation Manager 是唯一 tick 发起者。
 - 车辆和信号灯使用 batch API；部分失败返回逐项结果。
-- 镜像车辆禁用 autopilot，不让 CARLA 物理反写 Native Traffic Engine。
+- 镜像车辆禁用 autopilot，不让 CARLA 物理反写 SUMO。
 - CARLA world reload 后必须重新解析 Actor 和 OpenDRIVE signal binding。
-- RGB sensor callback 只写有界队列；图像保留真实 CARLA frame/time。
+- 产品不创建 UI 专用 RGB sensor；CARLA 原生窗口由 Qt foreign-window 容器托管。
 - close 时恢复原始 world settings 并销毁本系统创建的全部 Actor/sensor。
 
 ### 6.3 Persistence
@@ -393,7 +391,7 @@ uv run pytest
 - 网络、JPEG 解码和大数据转换不得阻塞 Qt UI thread。
 - Qt signal/slot 名称表达领域事件，例如 `experiment_state_changed`。
 - Widget 不自行计算权威指标，不保存第二份业务状态。
-- Leaflet 只消费 `network.geojson` 和标准车辆/信号消息；不得导入 Native Traffic Engine 实现。
+- Leaflet 只消费 `network.geojson` 和 SUMO 派生的标准车辆/信号消息；不得嵌入 SUMO GUI。
 - JavaScript 代码放 `ui/web/`，不以内联字符串散落在 Python view 中。
 - 用户可见错误必须给出可执行恢复建议，不只显示 stack trace。
 - 控件启用状态由实验状态机驱动，不在多个页面重复判断。
@@ -420,7 +418,7 @@ tests/integration/carla/test_carla_adapter.py
 
 ### 9.2 测试层级
 
-- Unit：无网络、无真实时钟、无真实数据库、无 CARLA/GUI；Map Compiler 和 Native Traffic Engine 必须离线可测。
+- Unit：无网络、无真实时钟、无真实数据库、无 SUMO/CARLA/GUI；adapter 使用 Fake runtime。
 - Contract：验证 Port fake、JSON Schema、OpenAPI、错误结构和版本兼容。
 - Integration：验证单个真实 adapter；通过 marker 显式选择。
 - E2E：验证 Core Run/Product Gate 的完整用户路径。

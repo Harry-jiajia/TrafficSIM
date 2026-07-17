@@ -66,5 +66,5 @@ def test_town04_registration_has_three_control_points_and_valid_checksum_asset()
 
     assert transformer.maximum_control_point_error_m == 0.0
     assert transformer.transform_position(Vector3(x=7.0, y=-4.0, z=0.5)) == Vector3(
-        x=7.0, y=-4.0, z=0.5
+        x=7.0, y=4.0, z=0.5
     )

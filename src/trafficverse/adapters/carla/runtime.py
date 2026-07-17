@@ -1,20 +1,17 @@
 """CARLA Python SDK wrapper.
 
-The module deliberately loads ``carla`` lazily so macOS control-plane installs do
-not require an unsupported CARLA wheel.
+The module deliberately loads ``carla`` lazily so non-CARLA development environments do
+not require the SDK.
 """
 
 from __future__ import annotations
 
 import importlib
-import io
 import math
 from collections.abc import Sequence
 from typing import Any
 
 from trafficverse.adapters.carla.models import (
-    CameraCallback,
-    RuntimeCameraFrame,
     RuntimeOperationResult,
     RuntimeSpawnRequest,
     RuntimeSpawnResult,
@@ -33,7 +30,6 @@ class PythonCarlaRuntime:
         self._carla: Any = None
         self._client: Any = None
         self._world: Any = None
-        self._camera: Any = None
 
     def connect(
         self, host: str, port: int, timeout_s: float, worker_threads: int
@@ -42,8 +38,7 @@ class PythonCarlaRuntime:
             self._carla = importlib.import_module("carla")
         except ImportError as error:
             raise RuntimeError(
-                "CARLA Python SDK is unavailable; run this command on the remote "
-                "Linux x86_64 Simulation Runtime with the 'carla' extra installed"
+                "CARLA Python SDK is unavailable; install the matching local 'carla' extra"
             ) from error
         self._client = self._carla.Client(host, port, worker_threads)
         self._client.set_timeout(timeout_s)
@@ -192,65 +187,6 @@ class PythonCarlaRuntime:
                 actor.set_state(state_by_color[color])
                 results.append(RuntimeOperationResult(actor_id))
         return tuple(results)
-
-    def start_camera(
-        self,
-        *,
-        mode: str,
-        target_actor_id: int | None,
-        width: int,
-        height: int,
-        fps: int,
-        jpeg_quality: int,
-        callback: CameraCallback,
-    ) -> None:
-        self.stop_camera()
-        blueprint = self._world.get_blueprint_library().find("sensor.camera.rgb")
-        blueprint.set_attribute("image_size_x", str(width))
-        blueprint.set_attribute("image_size_y", str(height))
-        blueprint.set_attribute("sensor_tick", str(1.0 / fps))
-        if mode == "FOLLOW":
-            transform = self._carla.Transform(
-                self._carla.Location(x=-8.0, z=4.0),
-                self._carla.Rotation(pitch=-15.0),
-            )
-            target = self._world.get_actor(target_actor_id)
-            self._camera = self._world.spawn_actor(blueprint, transform, attach_to=target)
-        else:
-            transform = self._carla.Transform(
-                self._carla.Location(z=100.0),
-                self._carla.Rotation(pitch=-90.0),
-            )
-            self._camera = self._world.spawn_actor(blueprint, transform)
-        camera_id = str(self._camera.id)
-
-        def on_image(image: Any) -> None:
-            pillow_image_module = importlib.import_module("PIL.Image")
-            raw = bytes(image.raw_data)
-            rgba = pillow_image_module.frombytes(
-                "RGBA", (int(image.width), int(image.height)), raw, "raw", "BGRA"
-            )
-            stream = io.BytesIO()
-            rgba.convert("RGB").save(stream, format="JPEG", quality=jpeg_quality)
-            callback(
-                RuntimeCameraFrame(
-                    camera_id=camera_id,
-                    carla_frame=int(image.frame),
-                    simulation_time_ms=round(float(image.timestamp) * 1000),
-                    width=int(image.width),
-                    height=int(image.height),
-                    jpeg_bytes=stream.getvalue(),
-                )
-            )
-
-        self._camera.listen(on_image)
-
-    def stop_camera(self) -> None:
-        if self._camera is not None:
-            if self._camera.is_listening:
-                self._camera.stop()
-            self._camera.destroy()
-            self._camera = None
 
     def tick(self, timeout_s: float) -> int:
         return int(self._world.tick(timeout_s))

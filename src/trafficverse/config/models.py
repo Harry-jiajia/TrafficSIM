@@ -19,7 +19,8 @@ class RuntimeProfile(StrictModel):
     architectures: tuple[str, ...] = Field(min_length=1)
     python_version: str = Field(pattern=r"^\d+\.\d+$")
     carla: ComponentRequirement
-    traffic_engine: ComponentRequirement
+    sumo: ComponentRequirement
+    native_window: ComponentRequirement
     postgres: ComponentRequirement
 
 
@@ -58,6 +59,33 @@ class TrafficConfig(StrictModel):
     routes: str = Field(min_length=1)
     signals: str = Field(min_length=1)
     vehicles: int = Field(gt=0)
+
+
+class SumoConfig(StrictModel):
+    """External SUMO/TraCI endpoint used as the production traffic truth source."""
+
+    provider: Literal["sumo"] = "sumo"
+    launch_mode: Literal["external"] = "external"
+    host: str = Field(default="127.0.0.1", min_length=1)
+    port: int = Field(default=8813, ge=1, le=65535)
+    step_ms: int = Field(default=50, gt=0)
+    tls_manager: Literal["sumo"] = "sumo"
+    config_file: str = Field(min_length=1)
+    expected_version: str = Field(default="1.27.1", min_length=1)
+    connect_retries: int = Field(default=3, ge=0, le=100)
+
+
+class CarlaViewConfig(StrictModel):
+    mode: Literal["native_window"] = "native_window"
+    native_window_id_env: str = Field(
+        default="TRAFFICVERSE_CARLA_WINDOW_ID",
+        pattern=r"^[A-Z][A-Z0-9_]+$",
+    )
+
+
+class UiConfig(StrictModel):
+    api_url: str = Field(default="http://127.0.0.1:8000", min_length=1)
+    carla_view: CarlaViewConfig = Field(default_factory=CarlaViewConfig)
 
 
 class AutomationConfig(StrictModel):
@@ -103,7 +131,7 @@ class RoiConfig(StrictModel):
 
 class CarlaConfig(StrictModel):
     mode: RequirementMode
-    endpoint_mode: Literal["remote_server"] = "remote_server"
+    endpoint_mode: Literal["local_server"] = "local_server"
     host: str = Field(min_length=1)
     port: int = Field(ge=1, le=65535)
     timeout_s: float = Field(gt=0.0)
@@ -116,7 +144,6 @@ class CarlaConfig(StrictModel):
         min_length=1,
     )
     spawn_retries: int = Field(default=2, ge=0, le=10)
-    camera_queue_size: Literal[2] = 2
 
     @field_validator("fallback_blueprints")
     @classmethod
@@ -157,14 +184,6 @@ class MapRegistrationConfig(StrictModel):
     manifest: str = Field(min_length=1)
 
 
-class CameraConfig(StrictModel):
-    mode: Literal["BIRD_VIEW", "FOLLOW"]
-    width: int = Field(gt=0, le=4096)
-    height: int = Field(gt=0, le=2160)
-    fps: int = Field(gt=0, le=60)
-    jpeg_quality: int = Field(ge=1, le=100)
-
-
 class LoggingConfig(StrictModel):
     trajectory_hz: int = Field(gt=0)
     parquet_batch_rows: int = Field(gt=0)
@@ -175,50 +194,43 @@ class ReplayConfig(StrictModel):
 
 
 class ScenarioConfig(StrictModel):
-    schema_version: Literal["1.1"] = "1.1"
+    schema_version: Literal["1.2"] = "1.2"
     scenario: ScenarioIdentityConfig
     simulation: SimulationConfig
     traffic: TrafficConfig
+    sumo: SumoConfig
     automation: AutomationConfig
     roi: RoiConfig
     carla: CarlaConfig
-    traffic_engine: TrafficEngineConfig
     weather: WeatherConfig
     map_registration: MapRegistrationConfig
-    camera: CameraConfig
     logging: LoggingConfig
     replay: ReplayConfig
+    ui: UiConfig = Field(default_factory=UiConfig)
 
     @model_validator(mode="after")
     def duplicated_engine_values_must_match(self) -> "ScenarioConfig":
-        pairs = (
-            ("network", self.traffic.network, self.traffic_engine.network_path),
-            ("routes", self.traffic.routes, self.traffic_engine.routes_path),
-            ("signals", self.traffic.signals, self.traffic_engine.signals_path),
-        )
-        mismatches = [name for name, public, engine in pairs if public != engine]
-        if self.simulation.step_ms != self.traffic_engine.step_ms:
-            mismatches.append("step_ms")
+        mismatches = []
+        if self.simulation.step_ms != self.sumo.step_ms:
+            mismatches.append("sumo.step_ms")
         if self.simulation.step_ms != self.carla.step_ms:
             mismatches.append("carla.step_ms")
-        if self.scenario.seed != self.traffic_engine.seed:
-            mismatches.append("seed")
         if mismatches:
-            raise ValueError(
-                "traffic and traffic_engine values must match: " + ", ".join(mismatches)
-            )
+            raise ValueError("simulation step values must match: " + ", ".join(mismatches))
         return self
 
 
 class MapManifest(StrictModel):
-    schema_version: Literal["1.0"] = "1.0"
+    schema_version: Literal["1.1"] = "1.1"
     map_id: str = Field(min_length=1)
     carla_map: str = Field(min_length=1)
     carla_version: str = Field(min_length=1)
+    sumo_version: str = Field(min_length=1)
     network_schema_version: Literal["traffic-network/1.0"]
     compiler_version: str = Field(min_length=1)
     source_repository: str = Field(min_length=1)
     source_ref: str = Field(min_length=1)
+    sumo_generation_command: str = Field(min_length=1)
     validated: bool
     max_registration_error_m: float = Field(gt=0.0)
     strict_signal_mapping: bool

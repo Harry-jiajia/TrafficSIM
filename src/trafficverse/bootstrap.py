@@ -11,6 +11,7 @@ from fastapi import FastAPI
 from trafficverse.adapters.carla import CarlaAdapter
 from trafficverse.adapters.messaging import DiscardDataLogger, FrameBroker
 from trafficverse.adapters.persistence import InMemoryExperimentRepository
+from trafficverse.adapters.sumo import SumoTrafficEngineAdapter
 from trafficverse.api import ApiDependencies, RuntimeDirectory, create_app
 from trafficverse.api.command_bus import ExperimentCommandBus
 from trafficverse.api.map_catalog import MapCatalog
@@ -30,7 +31,6 @@ from trafficverse.ports import (
 )
 from trafficverse.roi import CoordinateTransformer, RoiDefinition, RoiSynchronizer
 from trafficverse.roi.signal_synchronizer import SignalSynchronizer
-from trafficverse.traffic import NativeTrafficEngine
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,7 +83,7 @@ class CoreRuntimeFactory:
         manager = SimulationManager(
             scenario=scenario,
             carla_map_name=manifest.carla_map,
-            traffic=NativeTrafficEngine(experiment_id),
+            traffic=SumoTrafficEngineAdapter(experiment_id),
             carla=CarlaAdapter(),
             experiments=self._repository,
             data_logger=DiscardDataLogger(),
@@ -96,8 +96,8 @@ class CoreRuntimeFactory:
                 blueprint_id=scenario.carla.fallback_blueprints[0],
             ),
             signal_planner=SignalSynchronizer.from_assets(
-                Path(scenario.traffic_engine.network_path),
-                Path(scenario.traffic_engine.signals_path),
+                Path(scenario.traffic.network),
+                Path(scenario.traffic.signals),
                 strict=manifest.strict_signal_mapping,
             ),
             frame_publisher=self._broker,
@@ -115,27 +115,22 @@ class CoreRuntimeFactory:
         manifest = validate_map_manifest(
             map_directory / "manifest.yaml",
             expected_carla_version=self._scenario.carla.expected_version,
-            expected_network_schema_version=self._scenario.traffic_engine.network_schema_version,
+            expected_sumo_version=self._scenario.sumo.expected_version,
         )
         network = str(map_directory / "network.json")
         routes = str(map_directory / "routes.yaml")
         signals = str(map_directory / "signals.yaml")
+        sumo_config_file = str(map_directory / "map.sumocfg")
         scenario = self._scenario.model_copy(
             update={
                 "scenario": self._scenario.scenario.model_copy(update={"map_id": selected_map_id}),
                 "traffic": self._scenario.traffic.model_copy(
                     update={"network": network, "routes": routes, "signals": signals}
                 ),
-                "traffic_engine": self._scenario.traffic_engine.model_copy(
-                    update={
-                        "network_path": network,
-                        "routes_path": routes,
-                        "signals_path": signals,
-                    }
-                ),
                 "map_registration": self._scenario.map_registration.model_copy(
                     update={"manifest": str(map_directory / "manifest.yaml")}
                 ),
+                "sumo": self._scenario.sumo.model_copy(update={"config_file": sumo_config_file}),
             }
         )
         return scenario, manifest, map_directory
@@ -162,9 +157,14 @@ class CoreRuntimeFactory:
             )
         return (
             ReadinessComponent(
-                component="traffic-engine",
-                status=ComponentStatus.HEALTHY,
+                component="sumo",
+                status=(
+                    ComponentStatus.HEALTHY
+                    if any(manager.experiment_id is not None for manager in self._managers.values())
+                    else ComponentStatus.DEGRADED
+                ),
                 required=True,
+                message="SUMO connection is validated while preparing the experiment",
             ),
             ReadinessComponent(
                 component="carla",
@@ -223,23 +223,18 @@ def _resolve_scenario_paths(scenario: ScenarioConfig, repository_root: Path) -> 
         path = Path(value)
         return str(path if path.is_absolute() else repository_root / path)
 
-    network = resolved(scenario.traffic_engine.network_path)
-    routes = resolved(scenario.traffic_engine.routes_path)
-    signals = resolved(scenario.traffic_engine.signals_path)
+    network = resolved(scenario.traffic.network)
+    routes = resolved(scenario.traffic.routes)
+    signals = resolved(scenario.traffic.signals)
+    sumo_config_file = resolved(scenario.sumo.config_file)
     return scenario.model_copy(
         update={
             "traffic": scenario.traffic.model_copy(
                 update={"network": network, "routes": routes, "signals": signals}
             ),
-            "traffic_engine": scenario.traffic_engine.model_copy(
-                update={
-                    "network_path": network,
-                    "routes_path": routes,
-                    "signals_path": signals,
-                }
-            ),
             "map_registration": scenario.map_registration.model_copy(
                 update={"manifest": resolved(scenario.map_registration.manifest)}
             ),
+            "sumo": scenario.sumo.model_copy(update={"config_file": sumo_config_file}),
         }
     )

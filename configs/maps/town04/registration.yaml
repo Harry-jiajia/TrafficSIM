@@ -17,7 +17,7 @@ control_points:
     z: 0.0
 - carla:
     x: 0.0
-    y: 100.0
+    y: -100.0
     z: 0.0
   traffic:
     x: 0.0
@@ -31,9 +31,9 @@ transform:
   - - 1.0
     - 0.0
   - - 0.0
-    - 1.0
+    - -1.0
   heading_offset_rad: 0.0
-  heading_sign: 1
+  heading_sign: -1
   translation_m:
     x: 0.0
     y: 0.0

@@ -15,7 +15,7 @@
 将当前“Native Traffic Engine + WebSocket RGB 相机帧”的实现迁移为：
 
 - SUMO/TraCI 是车辆和交通信号灯的唯一真值源；
-- PySide6 左侧二维地图只可视化 SUMO 派生状态；
+- PySide6 左侧二维地图只可视化 SUMO 派生状态，不嵌入或控制 SUMO GUI；
 - TrafficVerse 统一推进 SUMO 和 CARLA，并将 ROI 内 SUMO 状态镜像到 CARLA；
 - PySide6 右侧直接托管本机 CARLA 原生窗口，不传输 RGB/JPEG/base64；
 - 本地固定使用 SUMO `127.0.0.1:8813`、CARLA `127.0.0.1:2000` 和 API
@@ -86,13 +86,19 @@
 
 ### 4.2 SUMO 命令
 
-用户提供并要求保留的命令：
+产品默认使用 headless SUMO TraCI server：
+
+```bash
+sumo -c map.sumocfg --remote-port 8813
+```
+
+需要独立调试 SUMO 时可使用：
 
 ```bash
 sumo-gui -c map.sumocfg --remote-port 8813
 ```
 
-该模式需要在 GUI 点击播放。自动开始时使用：
+SUMO GUI 不属于 TrafficVerse 页面；该调试模式需要在 GUI 点击播放。自动开始时使用：
 
 ```bash
 sumo-gui -c map.sumocfg --remote-port 8813 --start

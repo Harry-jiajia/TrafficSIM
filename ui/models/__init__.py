@@ -1,5 +1,4 @@
 from ui.models.protocol import (
-    CameraFrame,
     ComponentHealth,
     ControlAvailability,
     Envelope,
@@ -15,7 +14,6 @@ from ui.models.protocol import (
 )
 
 __all__ = [
-    "CameraFrame",
     "ComponentHealth",
     "ControlAvailability",
     "Envelope",

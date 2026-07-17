@@ -33,7 +33,7 @@ def test_fake_ports_drive_minimal_external_free_tick() -> None:
         data_logger=FakeDataLogger(),
     )
 
-    container.traffic.load(scenario.traffic_engine)
+    container.traffic.load(scenario.sumo)
     container.carla.connect(scenario.carla)
     container.carla.load_world("Town04", scenario.weather)
     snapshot = container.traffic.step(50)

@@ -10,7 +10,13 @@ from typing import TypeVar, cast
 import yaml
 from pydantic import BaseModel, ValidationError
 
-from trafficverse.config.models import CarlaConfig, MapManifest, RuntimeBaseline, ScenarioConfig
+from trafficverse.config.models import (
+    CarlaConfig,
+    MapManifest,
+    RuntimeBaseline,
+    ScenarioConfig,
+    SumoConfig,
+)
 from trafficverse.domain.enums import ErrorCode
 from trafficverse.domain.errors import ConfigurationError
 
@@ -57,6 +63,21 @@ def load_scenario(path: Path, *, apply_environment: bool = True) -> ScenarioConf
     if not apply_environment:
         return scenario
 
+    sumo_host = os.getenv("TRAFFICVERSE_SUMO_HOST")
+    sumo_port_value = os.getenv("TRAFFICVERSE_SUMO_PORT")
+    sumo_updates: dict[str, object] = {}
+    if sumo_host:
+        sumo_updates["host"] = sumo_host
+    if sumo_port_value:
+        try:
+            sumo_updates["port"] = int(sumo_port_value)
+        except ValueError as error:
+            raise ConfigurationError(
+                ErrorCode.SCENARIO_VALIDATION_FAILED,
+                "TRAFFICVERSE_SUMO_PORT must be an integer",
+                details={"variable": "TRAFFICVERSE_SUMO_PORT"},
+            ) from error
+
     host = os.getenv("TRAFFICVERSE_CARLA_HOST")
     port_value = os.getenv("TRAFFICVERSE_CARLA_PORT")
     timeout_value = os.getenv("TRAFFICVERSE_CARLA_TIMEOUT_S")
@@ -81,11 +102,14 @@ def load_scenario(path: Path, *, apply_environment: bool = True) -> ScenarioConf
                 "TRAFFICVERSE_CARLA_TIMEOUT_S must be a number",
                 details={"variable": "TRAFFICVERSE_CARLA_TIMEOUT_S"},
             ) from error
-    if not carla_updates:
+    if not carla_updates and not sumo_updates:
         return scenario
     try:
         carla = CarlaConfig.model_validate(
             {**scenario.carla.model_dump(mode="python"), **carla_updates}
+        )
+        sumo = SumoConfig.model_validate(
+            {**scenario.sumo.model_dump(mode="python"), **sumo_updates}
         )
     except ValidationError as error:
         raise ConfigurationError(
@@ -93,7 +117,7 @@ def load_scenario(path: Path, *, apply_environment: bool = True) -> ScenarioConf
             "CARLA environment overrides are invalid",
             details={"reason": str(error)},
         ) from error
-    return scenario.model_copy(update={"carla": carla})
+    return scenario.model_copy(update={"carla": carla, "sumo": sumo})
 
 
 def load_map_manifest(path: Path) -> MapManifest:
@@ -113,6 +137,9 @@ def configuration_hash(model: BaseModel) -> str:
 def validate_scenario_environment(scenario: ScenarioConfig, *, repository_root: Path) -> None:
     missing: dict[str, str] = {}
     manifest = repository_root / scenario.map_registration.manifest
+    sumo_config = repository_root / scenario.sumo.config_file
+    if not sumo_config.is_file():
+        missing["sumo.config_file"] = str(sumo_config)
     for field in ("network", "routes", "signals"):
         asset = repository_root / str(getattr(scenario.traffic, field))
         if not asset.is_file():
@@ -132,6 +159,7 @@ def validate_map_manifest(
     *,
     expected_carla_version: str,
     expected_network_schema_version: str = "traffic-network/1.0",
+    expected_sumo_version: str | None = None,
 ) -> MapManifest:
     manifest = load_map_manifest(manifest_path)
     if not manifest.validated:
@@ -148,6 +176,10 @@ def validate_map_manifest(
     if manifest.network_schema_version != expected_network_schema_version:
         version_mismatches["traffic-network"] = (
             f"expected {expected_network_schema_version}, found {manifest.network_schema_version}"
+        )
+    if expected_sumo_version is not None and manifest.sumo_version != expected_sumo_version:
+        version_mismatches["sumo"] = (
+            f"expected {expected_sumo_version}, found {manifest.sumo_version}"
         )
     if version_mismatches:
         raise ConfigurationError(

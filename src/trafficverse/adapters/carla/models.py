@@ -1,6 +1,6 @@
 """Typed internal boundary between the CARLA adapter and the SDK wrapper."""
 
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -54,19 +54,6 @@ class RuntimeTrafficLight:
     frozen: bool
 
 
-@dataclass(frozen=True, slots=True)
-class RuntimeCameraFrame:
-    camera_id: str
-    carla_frame: int
-    simulation_time_ms: int
-    width: int
-    height: int
-    jpeg_bytes: bytes
-
-
-CameraCallback = Callable[[RuntimeCameraFrame], None]
-
-
 class CarlaRuntime(Protocol):
     """Small typed facade; concrete SDK objects never cross this boundary."""
 
@@ -103,20 +90,6 @@ class CarlaRuntime(Protocol):
     def update_traffic_lights(
         self, updates: Sequence[tuple[int, TrafficLightColor]]
     ) -> tuple[RuntimeOperationResult, ...]: ...
-
-    def start_camera(
-        self,
-        *,
-        mode: str,
-        target_actor_id: int | None,
-        width: int,
-        height: int,
-        fps: int,
-        jpeg_quality: int,
-        callback: CameraCallback,
-    ) -> None: ...
-
-    def stop_camera(self) -> None: ...
 
     def tick(self, timeout_s: float) -> int: ...
 

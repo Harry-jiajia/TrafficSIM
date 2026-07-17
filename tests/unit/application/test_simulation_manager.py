@@ -11,7 +11,7 @@ from trafficverse.application.clock import SimulationClock
 from trafficverse.application.experiment_registry import ExperimentRegistry
 from trafficverse.application.simulation_manager import SimulationManager
 from trafficverse.config.loader import load_scenario
-from trafficverse.config.models import CarlaConfig, TrafficEngineConfig, WeatherConfig
+from trafficverse.config.models import CarlaConfig, SumoConfig, WeatherConfig
 from trafficverse.domain.enums import (
     AutomationLevel,
     ComponentStatus,
@@ -25,8 +25,6 @@ from trafficverse.domain.enums import (
 from trafficverse.domain.errors import TrafficVerseError
 from trafficverse.domain.models import (
     ActorSpawnResult,
-    CameraCommand,
-    CameraFrame,
     CarlaFrame,
     CarlaTrafficLight,
     ComponentHealth,
@@ -66,7 +64,7 @@ class TraceTraffic:
         self.sequence = 0
         self.applied_commands: list[dict[str, ControlCommand]] = []
 
-    def load(self, config: TrafficEngineConfig) -> None:
+    def load(self, config: SumoConfig) -> None:
         del config
         self.trace.append("traffic.load")
         self.failures.check("traffic.load")
@@ -132,14 +130,6 @@ class TraceCarla:
         self.failures = failures
         self.closed = False
         self.frame = 0
-        self.old_camera_frame = CameraFrame(
-            camera_id="camera-1",
-            carla_frame=7,
-            simulation_time_ms=25,
-            width=2,
-            height=2,
-            data_base64="eA==",
-        )
 
     def connect(self, config: CarlaConfig) -> None:
         del config
@@ -190,16 +180,6 @@ class TraceCarla:
             carla_frame=self.frame,
             actor_count=0,
         )
-
-    def latest_camera_frame(self) -> CameraFrame | None:
-        self.trace.append("carla.camera")
-        self.failures.check("carla.camera")
-        return self.old_camera_frame
-
-    def set_camera(self, command: CameraCommand) -> None:
-        del command
-        self.trace.append("carla.set_camera")
-        self.failures.check("carla.set_camera")
 
     def health(self) -> ComponentHealth:
         self.trace.append("carla.health")
@@ -374,7 +354,7 @@ class Harness:
         await self.manager.start()
 
 
-def test_complete_lifecycle_tick_order_pause_speed_and_camera_truth() -> None:
+def test_complete_lifecycle_tick_order_pause_and_speed() -> None:
     async def exercise() -> None:
         harness = Harness()
         await harness.ready_and_started()
@@ -390,14 +370,10 @@ def test_complete_lifecycle_tick_order_pause_speed_and_camera_truth() -> None:
             "carla.update:0",
             "carla.signals:1",
             "carla.tick:50",
-            "carla.camera",
             "logger.frame",
             "publisher.frame",
         ]
         assert first.carla is not None
-        assert first.carla.camera_frame is not None
-        assert first.carla.camera_frame.carla_frame == 7
-        assert first.carla.camera_frame.simulation_time_ms == 25
 
         await harness.manager.pause()
         paused = await harness.manager.run_tick()
@@ -479,7 +455,6 @@ def test_repeated_lifecycle_commands_are_idempotent() -> None:
         "traffic.health",
         "carla.connect",
         "carla.load_world",
-        "carla.set_camera",
         "carla.health",
     ],
 )
@@ -513,7 +488,6 @@ def test_initialization_failure_enters_failed_and_cleans_reverse_order(
         "carla.update",
         "carla.signals",
         "carla.tick",
-        "carla.camera",
         "logger.frame",
         "publisher.frame",
     ],

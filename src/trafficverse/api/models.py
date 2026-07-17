@@ -106,7 +106,7 @@ class VehicleControlRequest(StrictModel):
 
 
 class SubscribeRequest(StrictModel):
-    topics: tuple[Literal["vehicles", "traffic_lights", "camera", "health", "events"], ...] = Field(
+    topics: tuple[Literal["vehicles", "traffic_lights", "health", "events"], ...] = Field(
         min_length=1
     )
     max_hz: float = Field(default=10.0, gt=0.0, le=20.0)

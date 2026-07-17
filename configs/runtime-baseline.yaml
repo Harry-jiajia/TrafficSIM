@@ -10,9 +10,12 @@ profiles:
     carla:
       mode: disabled
       version: "0.9.16"
-    traffic_engine:
+    sumo:
       mode: required
-      version: traffic-network/1.0
+      version: "1.27.1"
+    native_window:
+      mode: disabled
+      version: qt-foreign-window/1.0
     postgres:
       mode: disabled
       version: "16"
@@ -24,9 +27,12 @@ profiles:
     carla:
       mode: required
       version: "0.9.16"
-    traffic_engine:
+    sumo:
       mode: required
-      version: traffic-network/1.0
+      version: "1.27.1"
+    native_window:
+      mode: required
+      version: qt-foreign-window/1.0
     postgres:
       mode: optional
       version: "16"

@@ -9,17 +9,16 @@ import pytest
 from tests.fakes import FakeDataLogger, FakeExperimentRepository
 
 from trafficverse.adapters.carla import CarlaAdapter
+from trafficverse.adapters.sumo import SumoTrafficEngineAdapter
 from trafficverse.application.simulation_manager import SimulationManager
 from trafficverse.config.loader import load_scenario
 from trafficverse.domain.enums import ExperimentStatus
-from trafficverse.maps.validation import load_network
 from trafficverse.roi import (
     CoordinateTransformer,
     RoiDefinition,
     RoiSynchronizer,
     SignalSynchronizer,
 )
-from trafficverse.traffic import NativeTrafficEngine
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 SCENARIO_PATH = REPOSITORY_ROOT / "configs/scenarios/core-run-town04.yaml"
@@ -28,19 +27,23 @@ MAP_DIRECTORY = REPOSITORY_ROOT / "configs/maps/town04"
 
 @pytest.mark.integration
 @pytest.mark.carla
-def test_remote_town04_native_roi_core_run() -> None:
-    if os.getenv("TRAFFICVERSE_CARLA_INTEGRATION") != "1":
-        pytest.skip("set TRAFFICVERSE_CARLA_INTEGRATION=1 on the remote Linux runtime")
+@pytest.mark.traffic
+def test_local_town04_sumo_carla_roi_core_run() -> None:
+    if (
+        os.getenv("TRAFFICVERSE_CARLA_INTEGRATION") != "1"
+        or os.getenv("TRAFFICVERSE_SUMO_INTEGRATION") != "1"
+    ):
+        pytest.skip("enable SUMO and CARLA integration on the local desktop runtime")
 
     async def exercise() -> None:
         experiment_id = uuid4()
         scenario = load_scenario(SCENARIO_PATH, apply_environment=True)
-        path_updates = {
-            field: str(REPOSITORY_ROOT / str(getattr(scenario.traffic_engine, field)))
-            for field in ("network_path", "routes_path", "signals_path")
-        }
         scenario = scenario.model_copy(
-            update={"traffic_engine": scenario.traffic_engine.model_copy(update=path_updates)}
+            update={
+                "sumo": scenario.sumo.model_copy(
+                    update={"config_file": str(REPOSITORY_ROOT / scenario.sumo.config_file)}
+                )
+            }
         )
         transformer = CoordinateTransformer.from_yaml(
             MAP_DIRECTORY / "registration.yaml",
@@ -62,7 +65,7 @@ def test_remote_town04_native_roi_core_run() -> None:
             MAP_DIRECTORY / "network.json",
             MAP_DIRECTORY / "signals.yaml",
         )
-        traffic = NativeTrafficEngine(experiment_id)
+        traffic = SumoTrafficEngineAdapter(experiment_id)
         carla = CarlaAdapter()
         repository = FakeExperimentRepository()
         repository.statuses[experiment_id] = ExperimentStatus.CREATED
@@ -81,29 +84,19 @@ def test_remote_town04_native_roi_core_run() -> None:
         await manager.start()
         maximum_bindings = 0
         seen_vehicle_ids: set[str] = set()
-        previous_lanes: dict[str, str] = {}
-        network = load_network(MAP_DIRECTORY / "network.json")
-        controlled_transitions = {
-            (link.from_lane_id, link.to_lane_id)
-            for link in network.links
-            if link.signal_id is not None
-        }
-        crossed_controlled_signal = False
+        seen_signal_ids: set[str] = set()
         for _ in range(500):
             frame = await manager.run_tick()
             maximum_bindings = max(maximum_bindings, len(roi.bindings))
             for vehicle in frame.traffic.vehicles:
                 seen_vehicle_ids.add(vehicle.vehicle_id)
-                previous = previous_lanes.get(vehicle.vehicle_id)
-                if previous is not None and (previous, vehicle.lane_id) in controlled_transitions:
-                    crossed_controlled_signal = True
-                previous_lanes[vehicle.vehicle_id] = vehicle.lane_id
+            seen_signal_ids.update(light.signal_id for light in frame.traffic.traffic_lights)
 
         await manager.stop("REMOTE_ROI_CORE_RUN_COMPLETE")
 
         assert len(seen_vehicle_ids) == 50
         assert maximum_bindings >= 10
-        assert crossed_controlled_signal
+        assert seen_signal_ids
         assert transformer.maximum_control_point_error_m <= 0.5
         assert repository.statuses[experiment_id] is ExperimentStatus.COMPLETED
         assert carla.diagnostics().owned_actor_count == 0

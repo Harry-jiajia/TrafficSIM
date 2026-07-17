@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import yaml
+from pydantic import BaseModel
 
 from trafficverse.api.contracts import build_openapi_contract
 from trafficverse.api.models import ClientCommand
@@ -12,7 +13,7 @@ from trafficverse.domain.models import VehicleState, WebSocketEnvelope
 from trafficverse.maps.models import RoadNetwork
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-CONTRACTS = {
+CONTRACTS: dict[Path, type[BaseModel]] = {
     Path("contracts/runtime_baseline.schema.json"): RuntimeBaseline,
     Path("contracts/scenario.schema.json"): ScenarioConfig,
     Path("contracts/traffic_network.schema.json"): RoadNetwork,

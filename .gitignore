@@ -1,0 +1,102 @@
+# Python bytecode and interpreter caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python build and packaging outputs
+build/
+dist/
+*.egg-info/
+.eggs/
+wheels/
+pip-wheel-metadata/
+site/
+
+# Python test, coverage, lint, and type-check caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyright/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# JavaScript dependencies and package-manager caches
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# JavaScript build, framework, and test outputs
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+.vite/
+coverage/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# JavaScript package-manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Windows runtime and compiled dependency files
+*.dll
+*.exe
+*.pyd
+*.msi
+*.pdb
+*.lib
+*.exp
+
+# Local environment and secrets; keep the checked-in template
+.env
+.env.*
+!.env.example
+
+# TrafficVerse runtime outputs
+/artifacts/
+/logs/
+*.log
+*.parquet
+*.sqlite
+*.sqlite3
+*.db
+
+# Local temporary files
+/tmp/
+/temp/
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# Editors, IDEs, and operating-system metadata
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local agent workspace metadata
+/.agents/
+/.codex/

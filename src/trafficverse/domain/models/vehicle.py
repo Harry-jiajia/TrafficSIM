@@ -1,4 +1,4 @@
-"""Vehicle, signal, control, and camera contracts."""
+"""Vehicle, signal, and control contracts."""
 
 from typing import Literal
 from uuid import UUID
@@ -63,31 +63,6 @@ class SignalBinding(StrictModel):
         if len(set(value)) != len(value):
             raise ValueError("CARLA OpenDRIVE signal IDs must be unique")
         return value
-
-
-class CameraFrame(StrictModel):
-    camera_id: str = Field(min_length=1)
-    carla_frame: int = Field(ge=0)
-    simulation_time_ms: int = Field(ge=0)
-    width: int = Field(gt=0)
-    height: int = Field(gt=0)
-    encoding: Literal["jpeg"] = "jpeg"
-    data_base64: str = Field(min_length=1)
-
-
-class CameraCommand(StrictModel):
-    mode: Literal["BIRD_VIEW", "FOLLOW"]
-    vehicle_id: str | None = None
-    width: int = Field(gt=0, le=4096)
-    height: int = Field(gt=0, le=2160)
-    fps: int = Field(gt=0, le=60)
-    jpeg_quality: int = Field(ge=1, le=100)
-
-    @model_validator(mode="after")
-    def follow_requires_vehicle_id(self) -> "CameraCommand":
-        if self.mode == "FOLLOW" and not self.vehicle_id:
-            raise ValueError("FOLLOW camera mode requires vehicle_id")
-        return self
 
 
 class ActorSpawnResult(StrictModel):

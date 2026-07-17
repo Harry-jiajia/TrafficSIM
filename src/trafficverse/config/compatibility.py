@@ -1,7 +1,11 @@
 """Runtime profile selection and dependency compatibility reporting."""
 
 import importlib.metadata
+import os
 import platform
+import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Literal
@@ -11,7 +15,6 @@ from pydantic import Field
 from trafficverse.config.models import RuntimeBaseline, RuntimeProfile
 from trafficverse.domain.enums import RequirementMode
 from trafficverse.domain.models.common import StrictModel
-from trafficverse.maps.models import NETWORK_SCHEMA_VERSION
 
 
 class CompatibilityIssue(StrictModel):
@@ -67,6 +70,24 @@ def _detect_package_version(distribution: str) -> str | None:
         return None
 
 
+def _detect_sumo_version() -> str | None:
+    executable = shutil.which("sumo")
+    if executable is None:
+        return None
+    try:
+        result = subprocess.run(
+            (executable, "--version"),
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5.0,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    match = re.search(r"\bsumo\s+(\d+\.\d+\.\d+)\b", result.stdout)
+    return match.group(1) if match is not None else None
+
+
 def _requirement_issues(
     component: str,
     expected: str,
@@ -113,7 +134,13 @@ def inspect_runtime(
         "carla": _detect_package_version("carla")
         if selected.carla.mode is not RequirementMode.DISABLED
         else None,
-        "traffic_engine": NETWORK_SCHEMA_VERSION,
+        "sumo": _detect_sumo_version(),
+        "native_window": (
+            "qt-foreign-window/1.0"
+            if selected.native_window.mode is not RequirementMode.DISABLED
+            and bool(os.getenv("TRAFFICVERSE_CARLA_WINDOW_ID"))
+            else None
+        ),
         "postgres": None,
     }
     issues: list[CompatibilityIssue] = []
@@ -153,10 +180,18 @@ def inspect_runtime(
     )
     issues.extend(
         _requirement_issues(
-            "traffic_engine",
-            selected.traffic_engine.version,
-            selected.traffic_engine.mode,
-            detected["traffic_engine"],
+            "sumo",
+            selected.sumo.version,
+            selected.sumo.mode,
+            detected["sumo"],
+        )
+    )
+    issues.extend(
+        _requirement_issues(
+            "native_window",
+            selected.native_window.version,
+            selected.native_window.mode,
+            detected["native_window"],
         )
     )
     return CompatibilityReport(

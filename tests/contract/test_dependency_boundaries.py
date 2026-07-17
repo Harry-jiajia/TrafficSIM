@@ -30,10 +30,12 @@ def test_domain_and_ports_do_not_import_infrastructure_sdks() -> None:
     assert violations == {}
 
 
-def test_removed_external_traffic_sdk_imports_are_absent() -> None:
+def test_traci_sdk_boundary_is_confined_to_sumo_adapter() -> None:
     source_root = REPOSITORY_ROOT / "src" / "trafficverse"
     violations: dict[str, list[str]] = {}
     for path in source_root.rglob("*.py"):
+        if "adapters/sumo" in path.as_posix():
+            continue
         forbidden = sorted(_top_level_imports(path) & {"sumolib", "traci"})
         if forbidden:
             violations[str(path.relative_to(REPOSITORY_ROOT))] = forbidden

@@ -52,7 +52,7 @@ class RealtimeClient(QObject):
         return self.send_command(
             "subscribe",
             {
-                "topics": ["vehicles", "traffic_lights", "camera", "health", "events"],
+                "topics": ["vehicles", "traffic_lights", "health", "events"],
                 "max_hz": 10,
             },
         )

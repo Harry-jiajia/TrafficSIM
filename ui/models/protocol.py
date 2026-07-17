@@ -57,16 +57,6 @@ class TrafficLight(ProtocolModel):
     remaining_ms: int | None = Field(default=None, ge=0)
 
 
-class CameraFrame(ProtocolModel):
-    camera_id: str = Field(min_length=1)
-    carla_frame: int = Field(ge=0)
-    simulation_time_ms: int = Field(ge=0)
-    width: int = Field(gt=0)
-    height: int = Field(gt=0)
-    encoding: Literal["jpeg"] = "jpeg"
-    data_base64: str = Field(min_length=1)
-
-
 class ComponentHealth(ProtocolModel):
     component: str = Field(min_length=1)
     status: str = Field(min_length=1)
@@ -149,7 +139,6 @@ class WorldUpdate:
     sequence_gap: tuple[int, int] | None = None
     vehicles_changed: bool = False
     traffic_lights_changed: bool = False
-    camera_changed: bool = False
     health_changed: bool = False
     status_changed: bool = False
 
@@ -163,7 +152,6 @@ class WorldState:
     vehicles: dict[str, Vehicle] = field(default_factory=dict)
     traffic_lights: dict[str, TrafficLight] = field(default_factory=dict)
     components: dict[str, ComponentHealth] = field(default_factory=dict)
-    camera: CameraFrame | None = None
     status: ExperimentStatus | None = None
 
     def apply(self, envelope: Envelope) -> WorldUpdate:
@@ -184,9 +172,6 @@ class WorldState:
             lights = _model_list(payload, "traffic_lights", TrafficLight)
             self.traffic_lights = {light.signal_id: light for light in lights}
             return WorldUpdate(envelope.type, traffic_lights_changed=True)
-        if envelope.type == "camera.frame":
-            self.camera = CameraFrame.model_validate(envelope.payload)
-            return WorldUpdate(envelope.type, camera_changed=True)
         if envelope.type == "component.health":
             payload = _payload_dict(envelope.payload)
             components = _model_list(payload, "components", ComponentHealth)
@@ -206,14 +191,10 @@ class WorldState:
         self.vehicles = {vehicle.vehicle_id: vehicle for vehicle in vehicles}
         self.traffic_lights = {light.signal_id: light for light in lights}
         self.vehicle_sequence = envelope.sequence
-        carla = payload.get("carla")
-        if isinstance(carla, dict) and carla.get("camera_frame") is not None:
-            self.camera = CameraFrame.model_validate(carla["camera_frame"])
         return WorldUpdate(
             envelope.type,
             vehicles_changed=True,
             traffic_lights_changed=True,
-            camera_changed=self.camera is not None,
         )
 
     def _vehicle_gap(self, sequence: int) -> tuple[int, int] | None:

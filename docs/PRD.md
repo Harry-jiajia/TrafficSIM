@@ -42,7 +42,8 @@ CARLA 原生渲染窗口。
 
 1. 用户选择 Town04 场景；
 2. 系统校验同源 OpenDRIVE、SUMO `.net.xml`、`.sumocfg`、route、信号灯映射和 GeoJSON；
-3. 用户在本机启动 SUMO GUI、可见窗口模式的 CARLA 和 TrafficVerse；
+3. 用户在本机启动 SUMO TraCI server、可见窗口模式的 CARLA 和 TrafficVerse；SUMO 可使用
+   headless `sumo`，其 GUI 只允许作为独立调试工具，不属于 TrafficVerse 产品界面；
 4. TrafficVerse 连接 SUMO TraCI `8813` 和 CARLA RPC `2000`，完成版本、地图和步长校验；
 5. 用户启动实验，SUMO 按 50 ms 固定步长产生权威交通状态；
 6. PySide6 左侧二维页面显示全部 SUMO 车辆、路网和信号灯；
@@ -69,7 +70,7 @@ CARLA 原生渲染窗口。
 
 #### SUMO 全局交通仿真
 
-- 通过 TraCI 连接已启动的 `sumo-gui`；
+- 通过 TraCI 连接已启动的 SUMO server，产品默认使用无界面 `sumo`；
 - 使用 50 ms 固定仿真步长，SUMO `step-length`、CARLA `fixed_delta_seconds` 和
   TrafficVerse `step_ms` 必须一致；
 - SUMO 负责车辆生成、路线、跟驰、换道、交通信号灯、到达和移除；
@@ -96,6 +97,7 @@ CARLA 原生渲染窗口。
 - 页面不得使用墙上时间插值生成权威位置，不得在前端维护第二套车辆运动状态；
 - 支持缩放、拖拽、点击车辆、筛选及将控制命令提交到 TrafficVerse API；
 - sequence gap 时必须请求完整 snapshot，不能继续基于缺帧状态推演。
+- 不包装、嵌入或自动化 SUMO GUI 窗口；二维道路、车辆和信号灯全部由 TrafficVerse 自有页面绘制。
 
 #### SUMO 与 CARLA 联仿
 
@@ -274,13 +276,19 @@ ui:
 
 ### 6.2 SUMO 启动
 
-用户当前命令固定记录为：
+产品推荐使用无界面的 SUMO TraCI server：
+
+```bash
+sumo -c map.sumocfg --remote-port 8813
+```
+
+需要人工观察或调试 SUMO 时可以使用：
 
 ```bash
 sumo-gui -c map.sumocfg --remote-port 8813
 ```
 
-该命令启动 TraCI server 后，用户需要在 SUMO GUI 点击播放。无人值守或避免等待点击时推荐：
+SUMO GUI 始终是独立调试窗口，不会嵌入 PySide6。避免等待 GUI 点击播放时使用：
 
 ```bash
 sumo-gui -c map.sumocfg --remote-port 8813 --start
@@ -334,7 +342,7 @@ TrafficVerse 争用相同 `8813` 连接或 CARLA tick；官方脚本仅作为同
 3. 恢复 SUMO/TraCI adapter 与 Town04 SUMO 资产；
 4. 将 `SimulationManager` 切换到 SUMO 权威步进；
 5. 完成 SUMO↔CARLA 同步；
-6. 先验证 macOS Qt 外部窗口嵌入，再移除 RGB 链路；
+6. 在目标桌面平台验证 Qt 外部窗口嵌入，再通过原生窗口 Gate；
 7. 通过本地真实 SUMO + CARLA Core Run 后，才移除 Native Traffic Engine 生产路径。
 
 详细步骤、依赖和验收见 [SUMO_MIGRATION_PLAN.md](./SUMO_MIGRATION_PLAN.md)。迁移完成前，任何 Agent

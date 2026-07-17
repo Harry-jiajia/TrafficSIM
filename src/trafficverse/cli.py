@@ -10,6 +10,7 @@ from typing import NoReturn
 from uuid import UUID
 
 from trafficverse.adapters.carla import CarlaAdapter, CarlaDiagnostics
+from trafficverse.adapters.sumo import SumoTrafficEngineAdapter
 from trafficverse.config.compatibility import (
     default_baseline_path,
     inspect_runtime,
@@ -23,18 +24,15 @@ from trafficverse.config.loader import (
     validate_map_manifest,
     validate_scenario_environment,
 )
-from trafficverse.config.models import ScenarioConfig, TrafficEngineConfig
+from trafficverse.config.models import ScenarioConfig
 from trafficverse.domain.enums import (
     ErrorCode,
-    LaneChangeDirection,
     RequirementMode,
     TrafficLightColor,
 )
 from trafficverse.domain.errors import TrafficVerseError
 from trafficverse.domain.models import (
     ActorSpawnResult,
-    CameraCommand,
-    ControlCommand,
     TrafficLightUpdate,
     Vector3,
 )
@@ -44,7 +42,6 @@ from trafficverse.maps import (
     load_network,
     validate_compiled_bundle,
 )
-from trafficverse.traffic import NativeTrafficEngine
 
 
 def _repository_root() -> Path:
@@ -98,9 +95,9 @@ def _build_parser() -> argparse.ArgumentParser:
     map_compile.add_argument("--carla-map", default="Town04")
     map_compile.add_argument("--carla-version", default="0.9.16")
 
-    traffic = subcommands.add_parser("traffic", help="native traffic engine operations")
+    traffic = subcommands.add_parser("traffic", help="SUMO traffic adapter operations")
     traffic_commands = traffic.add_subparsers(dest="traffic_command", required=True)
-    smoke = traffic_commands.add_parser("smoke", help="run the native Town04 smoke test")
+    smoke = traffic_commands.add_parser("smoke", help="run the external SUMO smoke test")
     smoke.add_argument(
         "--scenario",
         type=Path,
@@ -108,10 +105,10 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     smoke.add_argument("--ticks", type=int, default=2400)
 
-    carla = subcommands.add_parser("carla", help="remote CARLA operations")
+    carla = subcommands.add_parser("carla", help="local CARLA operations")
     carla_commands = carla.add_subparsers(dest="carla_command", required=True)
     carla_doctor = carla_commands.add_parser(
-        "doctor", help="verify the remote CARLA version handshake"
+        "doctor", help="verify the local CARLA version handshake"
     )
     carla_doctor.add_argument(
         "--scenario",
@@ -119,7 +116,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=_repository_root() / "configs" / "scenarios" / "core-run-town04.yaml",
     )
     carla_smoke = carla_commands.add_parser(
-        "smoke", help="spawn, move, render, signal, and clean up remote actors"
+        "smoke", help="spawn, move, signal, and clean up local actors"
     )
     carla_smoke.add_argument(
         "--scenario",
@@ -128,7 +125,6 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     carla_smoke.add_argument("--vehicles", type=int, default=10)
     carla_smoke.add_argument("--ticks", type=int, default=240)
-    carla_smoke.add_argument("--required-camera-frames", type=int, default=100)
 
     ui = subcommands.add_parser("ui", help="open the TrafficVerse Core Run desktop UI")
     ui.add_argument(
@@ -198,7 +194,8 @@ def _run_map_validate(args: argparse.Namespace) -> int:
     manifest = validate_map_manifest(
         args.path,
         expected_carla_version=profile.carla.version,
-        expected_network_schema_version=profile.traffic_engine.version,
+        expected_network_schema_version=NETWORK_SCHEMA_VERSION,
+        expected_sumo_version=profile.sumo.version,
     )
     network = validate_compiled_bundle(args.path.parent)
     result = {
@@ -242,55 +239,31 @@ def _run_map_compile(args: argparse.Namespace) -> int:
     return 0
 
 
-def _resolved_engine_config(
-    scenario_path: Path,
-) -> tuple[ScenarioConfig, TrafficEngineConfig]:
+def _resolved_sumo_scenario(scenario_path: Path) -> ScenarioConfig:
     scenario = load_scenario(scenario_path)
-    updates = {}
-    for field in ("network_path", "routes_path", "signals_path"):
-        path = Path(str(getattr(scenario.traffic_engine, field)))
-        updates[field] = str(path if path.is_absolute() else _repository_root() / path)
-    return scenario, scenario.traffic_engine.model_copy(update=updates)
+    config_file = Path(scenario.sumo.config_file)
+    if not config_file.is_absolute():
+        config_file = _repository_root() / config_file
+    return scenario.model_copy(
+        update={"sumo": scenario.sumo.model_copy(update={"config_file": str(config_file)})}
+    )
 
 
 def _run_traffic_smoke(args: argparse.Namespace) -> int:
     if args.ticks <= 0:
         raise ValueError("--ticks must be greater than zero")
-    scenario, config = _resolved_engine_config(args.scenario)
-    engine = NativeTrafficEngine(UUID(int=scenario.scenario.seed))
-    network = load_network(Path(config.network_path))
-    lane_by_id = {lane.lane_id: lane for lane in network.lanes}
+    scenario = _resolved_sumo_scenario(args.scenario)
+    engine = SumoTrafficEngineAdapter(UUID(int=scenario.scenario.seed))
     seen_vehicle_ids: set[str] = set()
     seen_signal_ids: set[str] = set()
     maximum_active_vehicles = 0
-    requested_lane_change = False
     try:
-        engine.load(config)
+        engine.load(scenario.sumo)
         for sequence in range(1, args.ticks + 1):
             snapshot = engine.step(sequence * scenario.simulation.step_ms)
             seen_vehicle_ids.update(vehicle.vehicle_id for vehicle in snapshot.vehicles)
             seen_signal_ids.update(signal.signal_id for signal in snapshot.traffic_lights)
             maximum_active_vehicles = max(maximum_active_vehicles, len(snapshot.vehicles))
-            requested_lane_change = engine.diagnostics().completed_lane_changes > 0
-            if not requested_lane_change:
-                candidate = next(
-                    (
-                        vehicle
-                        for vehicle in snapshot.vehicles
-                        if lane_by_id[vehicle.lane_id].left_lane_id is not None
-                        or lane_by_id[vehicle.lane_id].right_lane_id is not None
-                    ),
-                    None,
-                )
-                if candidate is not None:
-                    direction = (
-                        LaneChangeDirection.LEFT
-                        if lane_by_id[candidate.lane_id].left_lane_id is not None
-                        else LaneChangeDirection.RIGHT
-                    )
-                    engine.apply_controls(
-                        {candidate.vehicle_id: ControlCommand(lane_change=direction)}
-                    )
     finally:
         engine.close()
 
@@ -302,12 +275,8 @@ def _run_traffic_smoke(args: argparse.Namespace) -> int:
         "seen_vehicles": len(seen_vehicle_ids),
         "traffic_lights": len(seen_signal_ids),
         "maximum_active_vehicles": maximum_active_vehicles,
-        "arrived_vehicles": diagnostics.arrived_vehicles,
-        "completed_lane_changes": diagnostics.completed_lane_changes,
-        "last_step_duration_ms": diagnostics.last_step_duration_ms,
-        "p95_step_duration_ms": diagnostics.p95_step_duration_ms,
-        "maximum_step_duration_ms": diagnostics.maximum_step_duration_ms,
-        "p95_below_50_ms": diagnostics.p95_step_duration_ms < 50.0,
+        "departed_vehicle_ids": diagnostics.departed_vehicle_ids,
+        "arrived_vehicle_ids": diagnostics.arrived_vehicle_ids,
         "closed": engine.health().status.value == "UNAVAILABLE",
     }
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
@@ -392,10 +361,10 @@ def _run_serve(args: argparse.Namespace) -> int:
 def _run_carla_smoke(args: argparse.Namespace) -> int:
     if args.vehicles < 10:
         raise ValueError("--vehicles must be at least 10")
-    if args.ticks <= 0 or args.required_camera_frames <= 0:
-        raise ValueError("--ticks and --required-camera-frames must be greater than zero")
+    if args.ticks <= 0:
+        raise ValueError("--ticks must be greater than zero")
     scenario = load_scenario(args.scenario)
-    network_path = Path(scenario.traffic_engine.network_path)
+    network_path = Path(scenario.traffic.network)
     if not network_path.is_absolute():
         network_path = _repository_root() / network_path
     network = load_network(network_path)
@@ -461,16 +430,6 @@ def _run_carla_smoke(args: argparse.Namespace) -> int:
                 )
                 signal_colors.append(color.value)
                 adapter.tick((len(signal_colors)) * scenario.simulation.step_ms)
-        adapter.set_camera(
-            CameraCommand(
-                mode=scenario.camera.mode,
-                vehicle_id=specs[0].vehicle_id if scenario.camera.mode == "FOLLOW" else None,
-                width=scenario.camera.width,
-                height=scenario.camera.height,
-                fps=scenario.camera.fps,
-                jpeg_quality=scenario.camera.jpeg_quality,
-            )
-        )
         time_offset = len(signal_colors)
         for sequence in range(1, args.ticks + 1):
             adapter.update_actors(
@@ -499,15 +458,11 @@ def _run_carla_smoke(args: argparse.Namespace) -> int:
         restored_actor_count = probe.actor_count()
     finally:
         probe.close()
-    camera_ok = diagnostics.camera_frames_received >= args.required_camera_frames
     result = {
-        "ok": camera_ok and frozen_lights and restored_actor_count == baseline_actor_count,
+        "ok": frozen_lights and restored_actor_count == baseline_actor_count,
         "endpoint": f"{scenario.carla.host}:{scenario.carla.port}",
         "spawned_vehicles": sum(result.success for result in spawn_results),
         "ticks": args.ticks,
-        "camera_frames_received": diagnostics.camera_frames_received,
-        "camera_frames_dropped": diagnostics.camera_frames_dropped,
-        "required_camera_frames": args.required_camera_frames,
         "latest_carla_frame": diagnostics.last_carla_frame,
         "traffic_lights_frozen": frozen_lights,
         "mapped_signal_id": mapped_light.opendrive_id,

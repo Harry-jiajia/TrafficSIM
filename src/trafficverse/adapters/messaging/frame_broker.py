@@ -15,7 +15,6 @@ _JSON: TypeAdapter[JsonValue] = TypeAdapter(JsonValue)
 _TYPE_TOPIC = {
     "vehicle.delta": "vehicles",
     "traffic_light.delta": "traffic_lights",
-    "camera.frame": "camera",
     "component.health": "health",
     "event.created": "events",
 }
@@ -24,7 +23,6 @@ _LATEST_ORDER = (
     "component.health",
     "vehicle.delta",
     "traffic_light.delta",
-    "camera.frame",
 )
 _CRITICAL_TYPES = {
     "command.accepted",
@@ -69,7 +67,6 @@ class ClientMessageBuffer:
         self._closed = False
         self._overflowed = False
         self.coalesced_vehicle_deltas = 0
-        self.dropped_camera_frames = 0
 
     @property
     def depth(self) -> int:
@@ -111,8 +108,6 @@ class ClientMessageBuffer:
                     }
                 }
             )
-        elif message.type == "camera.frame" and message.type in self._latest:
-            self.dropped_camera_frames += 1
         self._latest[message.type] = message
         self._event.set()
 
@@ -163,13 +158,12 @@ class Subscription:
 
 
 class FrameBroker:
-    """Non-blocking latest-frame publisher with one camera consumer."""
+    """Non-blocking latest-state publisher for TrafficVerse-owned UI data."""
 
     def __init__(self, *, critical_capacity: int = 64) -> None:
         self._critical_capacity = critical_capacity
         self._subscriptions: dict[UUID, set[Subscription]] = {}
         self._latest_frames: dict[UUID, SimulationFrame] = {}
-        self._camera_owner: Subscription | None = None
 
     async def publish_frame(self, frame: SimulationFrame) -> None:
         experiment_id = frame.traffic.experiment_id
@@ -198,17 +192,6 @@ class FrameBroker:
                 },
             ),
         ]
-        if frame.carla is not None and frame.carla.camera_frame is not None:
-            camera = frame.carla.camera_frame
-            messages.append(
-                make_envelope(
-                    "camera.frame",
-                    experiment_id,
-                    simulation_time_ms=camera.simulation_time_ms,
-                    sequence=frame.traffic.sequence,
-                    payload=camera.model_dump(mode="json"),
-                )
-            )
         for event in frame.events:
             messages.append(
                 make_envelope(
@@ -241,20 +224,11 @@ class FrameBroker:
             subscriptions.discard(subscription)
             if not subscriptions:
                 self._subscriptions.pop(subscription.experiment_id, None)
-        if self._camera_owner is subscription:
-            self._camera_owner = None
         subscription.buffer.close()
 
     def set_topics(
         self, subscription: Subscription, topics: frozenset[str], *, max_hz: float
     ) -> None:
-        wants_camera = "camera" in topics
-        if wants_camera and self._camera_owner not in {None, subscription}:
-            raise ValueError("camera topic already has a subscriber")
-        if wants_camera:
-            self._camera_owner = subscription
-        elif self._camera_owner is subscription:
-            self._camera_owner = None
         subscription.topics = topics
         subscription.max_hz = max_hz
 

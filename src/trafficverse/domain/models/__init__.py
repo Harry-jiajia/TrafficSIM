@@ -25,8 +25,6 @@ from trafficverse.domain.models.simulation import (
 )
 from trafficverse.domain.models.vehicle import (
     ActorSpawnResult,
-    CameraCommand,
-    CameraFrame,
     CarlaTrafficLight,
     ControlCommand,
     SignalBinding,
@@ -39,8 +37,6 @@ __all__ = [
     "ActorSpawnResult",
     "ArtifactCreate",
     "ArtifactRecord",
-    "CameraCommand",
-    "CameraFrame",
     "CarlaTrafficLight",
     "CarlaFrame",
     "ComponentHealth",

@@ -21,6 +21,9 @@ class FakeRest(QObject):
     def check_readiness(self) -> None:
         self.calls.append(("ready", None))
 
+    def check_health(self) -> None:
+        self.calls.append(("health", None))
+
     def list_maps(self) -> None:
         self.calls.append(("maps", None))
 
@@ -105,6 +108,21 @@ def _vehicle(sequence: int) -> dict[str, object]:
         "risk_score": 0.0,
         "route_id": "route-1",
     }
+
+
+def test_initialize_checks_api_health_without_requesting_experiment_readiness() -> None:
+    viewmodel, rest, _ = _viewmodel()
+    connection_states: list[str] = []
+    viewmodel.connection_changed.connect(connection_states.append)
+
+    viewmodel.initialize()
+    viewmodel.handle_rest_success(
+        "health",
+        {"status": "ok", "service": "trafficverse-api"},
+    )
+
+    assert rest.calls == [("health", None), ("maps", None)]
+    assert connection_states == ["API_CONNECTED"]
 
 
 def test_map_catalog_auto_selects_verified_map_and_loads_network() -> None:

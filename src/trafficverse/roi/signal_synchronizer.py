@@ -98,7 +98,7 @@ class SignalSynchronizer:
             binding = self._bindings.get(signal_id)
             if binding is None:
                 continue
-            color = binding.phase_map.get(state.phase)
+            color = binding.phase_map.get(state.phase) or _standard_color(state.phase)
             if color is None:
                 raise ValueError(f"unknown phase {state.phase!r} for signal {signal_id}")
             for actor_id in self._actors_by_signal.get(signal_id, ()):
@@ -110,3 +110,10 @@ class SignalSynchronizer:
             TrafficLightUpdate(carla_actor_id=actor_id, color=color)
             for actor_id, color in sorted(updates.items())
         )
+
+
+def _standard_color(phase: str) -> TrafficLightColor | None:
+    try:
+        return TrafficLightColor(phase)
+    except ValueError:
+        return None

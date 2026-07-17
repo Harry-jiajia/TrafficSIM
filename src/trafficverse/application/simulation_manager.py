@@ -20,7 +20,6 @@ from trafficverse.domain.enums import (
 from trafficverse.domain.errors import TrafficVerseError
 from trafficverse.domain.models import (
     ActorSpawnResult,
-    CameraCommand,
     CarlaTrafficLight,
     ControlCommand,
     DomainEvent,
@@ -196,11 +195,11 @@ class SimulationManager:
             try:
                 await self._transition(ExperimentStatus.PREPARING)
                 self._traffic_opened = True
-                self._traffic.load(self._scenario.traffic_engine)
+                self._traffic.load(self._scenario.sumo)
                 if self._traffic.health().status is not ComponentStatus.HEALTHY:
                     raise TrafficVerseError(
                         ErrorCode.COMPONENT_UNAVAILABLE,
-                        "Native Traffic Engine is not healthy after initialization",
+                        "SUMO is not healthy after initialization",
                     )
                 if self._scenario.carla.mode is not RequirementMode.DISABLED:
                     await self._prepare_carla()
@@ -215,16 +214,6 @@ class SimulationManager:
             self._carla.connect(self._scenario.carla)
             self._carla.load_world(self._carla_map_name, self._scenario.weather)
             self._signal_planner.initialize(self._carla.traffic_lights())
-            if self._scenario.camera.mode == "BIRD_VIEW":
-                self._carla.set_camera(
-                    CameraCommand(
-                        mode="BIRD_VIEW",
-                        width=self._scenario.camera.width,
-                        height=self._scenario.camera.height,
-                        fps=self._scenario.camera.fps,
-                        jpeg_quality=self._scenario.camera.jpeg_quality,
-                    )
-                )
             if self._carla.health().status is not ComponentStatus.HEALTHY:
                 raise TrafficVerseError(
                     ErrorCode.COMPONENT_UNAVAILABLE,
@@ -380,11 +369,6 @@ class SimulationManager:
                             RoiApplyResult(plan=roi_plan, spawn_results=spawn_results)
                         )
                         carla_frame = self._carla.tick(target_time_ms)
-                        camera_frame = self._carla.latest_camera_frame()
-                        if camera_frame is not None:
-                            carla_frame = carla_frame.model_copy(
-                                update={"camera_frame": camera_frame}
-                            )
                     except Exception as error:
                         if self._scenario.carla.mode is RequirementMode.REQUIRED:
                             raise

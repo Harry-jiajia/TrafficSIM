@@ -3,11 +3,9 @@
 from collections.abc import Mapping, Sequence
 from typing import Protocol
 
-from trafficverse.config.models import CarlaConfig, TrafficEngineConfig, WeatherConfig
+from trafficverse.config.models import CarlaConfig, SumoConfig, WeatherConfig
 from trafficverse.domain.models import (
     ActorSpawnResult,
-    CameraCommand,
-    CameraFrame,
     CarlaFrame,
     CarlaTrafficLight,
     ComponentHealth,
@@ -44,7 +42,7 @@ class ActorTransform(Protocol):
 
 
 class TrafficEnginePort(Protocol):
-    def load(self, config: TrafficEngineConfig) -> None: ...
+    def load(self, config: SumoConfig) -> None: ...
 
     def apply_controls(self, commands: Mapping[str, ControlCommand]) -> None: ...
 
@@ -77,10 +75,6 @@ class CarlaPort(Protocol):
     def update_traffic_lights(self, updates: Sequence[TrafficLightUpdate]) -> None: ...
 
     def tick(self, target_time_ms: int) -> CarlaFrame: ...
-
-    def latest_camera_frame(self) -> CameraFrame | None: ...
-
-    def set_camera(self, command: CameraCommand) -> None: ...
 
     def health(self) -> ComponentHealth: ...
 

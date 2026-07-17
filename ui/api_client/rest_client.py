@@ -32,6 +32,9 @@ class RestApiClient(QObject):
     def check_readiness(self) -> None:
         self._get("ready", "/api/v1/ready")
 
+    def check_health(self) -> None:
+        self._get("health", "/api/v1/health")
+
     def list_maps(self) -> None:
         self._get("maps.list", "/api/v1/maps")
 

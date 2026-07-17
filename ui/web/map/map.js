@@ -3,7 +3,7 @@
 
   const status = document.getElementById("map-status");
   if (typeof window.L === "undefined") {
-    status.textContent = "Leaflet 加载失败，请检查控制端网络连接。";
+    status.textContent = "Leaflet 本地资源缺失或损坏，请重新安装 TrafficVerse。";
     return;
   }
 

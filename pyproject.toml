@@ -5,12 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "trafficverse"
 version = "0.1.0"
-description = "Native 2D traffic and remote CARLA 3D mixed-traffic simulation platform"
+description = "SUMO traffic truth with TrafficVerse 2D UI and local CARLA 3D mirroring"
 readme = "README.md"
 requires-python = ">=3.10,<3.11"
 dependencies = [
   "alembic>=1.14,<2",
-  "fastapi>=0.115,<1",
+  "fastapi>=0.115,<0.116",
   "pydantic>=2.10,<3",
   "psycopg[binary]>=3.2,<4",
   "python-multipart>=0.0.20,<1",
@@ -22,7 +22,10 @@ dependencies = [
 [project.optional-dependencies]
 carla = [
   "carla==0.9.16; (sys_platform == 'linux' and platform_machine == 'x86_64') or (sys_platform == 'win32' and platform_machine == 'AMD64')",
-  "Pillow>=11,<13",
+]
+sumo = [
+  "sumolib==1.27.1",
+  "traci==1.27.1",
 ]
 ui = [
   "PySide6==6.11.1",
@@ -33,7 +36,7 @@ trafficverse = "trafficverse.cli:main"
 
 [dependency-groups]
 dev = [
-  "httpx2>=2.7,<3",
+  "httpx>=0.28,<1",
   "mypy>=1.14,<2",
   "pytest>=8.3,<9",
   "pytest-cov>=6,<7",
