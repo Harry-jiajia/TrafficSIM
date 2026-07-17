@@ -1,9 +1,12 @@
 # TrafficVerse Architecture Decision Record
 
-> 版本：v1.2
-> 状态：Baseline  
-> 输入：[PRD.md](./PRD.md)  
-> 设计：[SYSTEM_DESIGN.md](./SYSTEM_DESIGN.md)  
+> 版本：v1.3
+> 状态：Target Baseline（实现迁移中）
+>
+> 输入：[PRD.md](./PRD.md)
+>
+> 设计：[SYSTEM_DESIGN.md](./SYSTEM_DESIGN.md)
+>
 > 实施：[AGENT_DEVELOPMENT_GUIDE.md](./AGENT_DEVELOPMENT_GUIDE.md)
 
 ## 1. ADR 使用规则
@@ -45,12 +48,14 @@
 | ADR-015 | MVP 采用模块化单体，外部仿真器保持进程边界 | Accepted |
 | ADR-016 | 统一 ID、仿真时间、单位、版本与确定性规则 | Accepted |
 | ADR-017 | MVP 二维地图采用 Leaflet，指标图表采用 Plotly | Accepted |
-| ADR-018 | 固定首个可运行环境与版本矩阵 | Accepted |
+| ADR-018 | 固定首个可运行环境与版本矩阵 | Superseded by ADR-024/025 |
 | ADR-019 | 固定 Town04 同源地图资产并由 SUMO 主控信号灯 | Superseded by ADR-022 |
-| ADR-020 | MVP 采用 Leaflet 平面坐标与 JSON JPEG 相机帧 | Accepted |
-| ADR-021 | 先通过 Core Run Gate，再实现产品与优化能力 | Accepted |
-| ADR-022 | 自研 Native Traffic Engine 替代 SUMO，MVP 只实现基础交通能力 | Accepted |
-| ADR-023 | macOS 控制端使用远程 CARLA Simulation Runtime | Accepted |
+| ADR-020 | MVP 采用 Leaflet 平面坐标与 JSON JPEG 相机帧 | Superseded by ADR-025 |
+| ADR-021 | 先通过 Core Run Gate，再实现产品与优化能力 | Superseded by ADR-024/025 |
+| ADR-022 | 自研 Native Traffic Engine 替代 SUMO，MVP 只实现基础交通能力 | Superseded by ADR-024 |
+| ADR-023 | macOS 控制端使用远程 CARLA Simulation Runtime | Superseded by ADR-024/025 |
+| ADR-024 | 恢复 SUMO 为全局交通真值并由 TrafficVerse 统一联仿 | Accepted |
+| ADR-025 | PySide6 托管本机 CARLA 原生窗口，不传输 RGB 画面 | Accepted |
 
 ---
 
@@ -650,7 +655,7 @@ v1.0 在 PySide6 的 Web 视图中使用 Leaflet 实现二维地图和覆盖层�
 
 ## ADR-018 — 固定首个可运行环境与版本矩阵
 
-- 状态：Accepted
+- 状态：Superseded by ADR-024/025
 - 日期：2026-07-15
 
 ### 背景
@@ -723,7 +728,7 @@ Core Run 只支持 CARLA 0.9.16 Town04。SUMO 网络从同一 Town04 OpenDRIVE �
 
 ## ADR-020 — MVP 采用 Leaflet 平面坐标与 JSON JPEG 相机帧
 
-- 状态：Accepted
+- 状态：Superseded by ADR-025
 - 日期：2026-07-15
 
 ### 背景
@@ -758,7 +763,7 @@ Core Run 只支持 CARLA 0.9.16 Town04。SUMO 网络从同一 Town04 OpenDRIVE �
 
 ## ADR-021 — 先通过 Core Run Gate，再实现产品与优化能力
 
-- 状态：Accepted
+- 状态：Superseded by ADR-024/025
 - 日期：2026-07-15
 
 ### 背景
@@ -792,7 +797,7 @@ Core Run 只支持 CARLA 0.9.16 Town04。SUMO 网络从同一 Town04 OpenDRIVE �
 
 ## ADR-022 — 自研 Native Traffic Engine 替代 SUMO，MVP 只实现基础交通能力
 
-- 状态：Accepted
+- 状态：Superseded by ADR-024
 - 日期：2026-07-15
 - 替代：ADR-001、ADR-002、ADR-009、ADR-019
 - 同时替代：ADR-013、ADR-014、ADR-015、ADR-016、ADR-018、ADR-020、ADR-021 中所有以 SUMO、TraCI、SUMO 坐标或 SUMO 资产为前提的条款；其余原则继续有效
@@ -851,7 +856,7 @@ MVP 固定范围：
 
 ## ADR-023 — macOS 控制端使用远程 CARLA Simulation Runtime
 
-- 状态：Accepted
+- 状态：Superseded by ADR-024/025
 - 日期：2026-07-16
 - 澄清：ADR-015、ADR-018、ADR-020、ADR-022 的 CARLA 部署边界
 
@@ -894,6 +899,170 @@ CARLA RPC 默认端口 2000/2001 只向受控网络开放，产品用户入口�
 - 只有远程 Simulation Manager 可调用 `world.tick()`；UI、API handler 和相机 callback 均无此权限；
 - T09/T10 必须支持配置远程 API 地址和显示 CARLA 健康，不向浏览器暴露 CARLA RPC；
 - 若后续需要拆分独立 CARLA Bridge，必须先定义内部协议并新增 ADR，不得把第三方 SDK 对象跨网传输。
+
+---
+
+## ADR-024 — 恢复 SUMO 为全局交通真值并由 TrafficVerse 统一联仿
+
+- 状态：Accepted
+- 日期：2026-07-17
+- 替代：ADR-022
+- 同时替代：ADR-018 和 ADR-021 的旧运行环境与旧 Core Run 呈现基线；保留固定版本、先验收主链的原则
+- 恢复并更新：ADR-001、ADR-002、ADR-009、ADR-019 中关于 SUMO 真值、控制回写和信号灯主控的方向
+- 迁移计划：[SUMO_MIGRATION_PLAN.md](./SUMO_MIGRATION_PLAN.md)
+
+### 背景
+
+Native Traffic Engine MVP 已证明技术中性 Port、二维可视化、ROI 和 CARLA adapter 的模块边界，
+但继续自研路由、跟驰、换道、信号和交通需求会把项目资源投入到复刻成熟交通仿真器，且难以在
+MVP 阶段获得足够的模型验证。产品方向重新确定为使用 SUMO 承担真实交通仿真，PySide6 二维
+页面只负责展示，CARLA 只负责 ROI 三维镜像。
+
+用户已在本机准备 SUMO GUI、PySide6 和 CARLA，目标版本继续固定 Python 3.10、SUMO 1.27.1
+和 CARLA 0.9.16；目标端点固定为 SUMO TraCI
+`127.0.0.1:8813` 与 CARLA RPC `127.0.0.1:2000`。CARLA 官方 SUMO co-simulation 给出了
+同源地图转换、50 ms 固定步长、车辆同步和 `tls-manager` 的参考机制；TrafficVerse 需要在现有
+`SimulationManager`、Port、ROI 和 API 框架内吸收这些机制，而不是并行运行另一个同步主循环。
+
+### 决策
+
+SUMO 是生产运行中车辆存在性、路线、车道、位置、速度、加速度、跟驰、换道、到达和交通信号灯
+的唯一真值源。PySide6、CARLA、指标和记录器只消费标准化后的 SUMO 状态。保留技术中性的
+`TrafficEnginePort`、`TrafficEngineConfig` 和 `TrafficSnapshot`，由
+`SumoTrafficEngineAdapter` 作为生产实现；技术中性命名不表示支持双生产引擎。
+
+`SimulationManager` 是唯一推进者，每 tick 的固定顺序为：
+
+1. 读取并验证控制命令；
+2. 通过 TraCI 批量应用命令；
+3. 恰好调用一次 `traci.simulationStep()`；
+4. 采集 departed、arrived、车辆和 traffic-light subscription 结果，生成同一仿真时间的
+   `TrafficSnapshot`；
+5. 计算 ROI create/update/destroy 和 SUMO→CARLA 坐标转换；
+6. 批量更新 CARLA Actor、车辆灯光和信号灯；
+7. 恰好调用一次 CARLA `world.tick()`；
+8. 发布二维状态、指标和健康。
+
+固定步长为 50 ms。SUMO、CARLA 和 TrafficVerse 的 step 配置必须相同。SUMO 主控信号灯，
+配置固定 `tls_manager: sumo`。控制器产生意图并通过 SUMO adapter 应用，禁止直接操作 UI marker、
+Native 引擎状态或 CARLA Actor 形成第二条运动链。
+
+Town04 Core Run 使用 CARLA 0.9.16 同源 OpenDRIVE，经官方 CARLA/SUMO 工具
+`netconvert_carla.py --guess-tls` 生成 SUMO 网络。地图 manifest 同时追踪 XODR、`.net.xml`、
+`.sumocfg`、route、vtype、GeoJSON、配准和严格信号灯 mapping。
+
+本地基线连接外部启动的 SUMO：
+
+```bash
+sumo-gui -c map.sumocfg --remote-port 8813
+```
+
+该命令需要用户点击播放；自动开始使用 `--start`。默认只有 TrafficVerse 一个 TraCI client。
+CARLA endpoint 固定为 `127.0.0.1:2000`。官方 `run_synchronization.py` 只作为设计和验收参考，
+不得与 TrafficVerse 同时推进相同实例。
+
+### 选择理由
+
+- SUMO 已提供经过广泛使用的路由、跟驰、换道、信号灯和 TraCI 控制能力；
+- 重新采用成熟仿真器能把开发重点放回联仿、控制、可视化和实验能力；
+- 现有技术中性 Port、领域快照、ROI 滞回、坐标转换和 API 可以复用，迁移无需推翻全部框架；
+- 单一 SUMO 真值使二维显示、三维镜像、指标和回放具有一致来源；
+- 官方 co-simulation 流程降低 Town04 地图和信号灯对齐风险。
+
+### 放弃的方案
+
+- **继续扩展 Native Traffic Engine**：自主可控，但 MVP 成本和交通模型验证风险过高。
+- **SUMO 与 Native 长期双引擎**：会形成结果解释、命令裁决和验收双份语义。
+- **CARLA Traffic Manager 作为真值**：无法覆盖 ROI 外全路网，且破坏二维交通连续性。
+- **直接运行官方同步脚本作为第二主循环**：会与现有 SimulationManager 争用 step/tick 和生命周期。
+- **UI 直接连接 TraCI**：把真值生命周期分散到展示层，破坏 API 和回放边界。
+
+### 后果与迁移约束
+
+- ADR-022 不再指导新实现；Native Traffic Engine 在真实 Core Run 通过前可作为回归参考，之后从
+  生产装配、配置和运行依赖移除；
+- 恢复 SUMO/TraCI/sumolib 的可选集成依赖、doctor 检查、adapter、配置、marker 和真实集成测试；
+- `traffic-network/1.0` 和 `network.geojson` 只能作为展示/查找资产，不参与交通推进；
+- SUMO 断连属于真值丢失，实验默认 FAILED；CARLA 镜像失败不能改变 SUMO 状态；
+- 所有公共快照必须能追溯到具体 SUMO simulation time 和 sequence；UI 不得补算权威位置；
+- `SYSTEM_DESIGN.md`、Agent Guide、AGENTS、README、配置和协议必须在代码迁移前同步；
+- 迁移按 [SUMO_MIGRATION_PLAN.md](./SUMO_MIGRATION_PLAN.md) 执行，未完成真实本地验收前不得宣称
+  新架构已经可运行。
+
+参考：[CARLA SUMO co-simulation](https://carla.readthedocs.io/en/latest/adv_sumo/)、
+[SUMO TraCI](https://sumo.dlr.de/userdoc/TraCI/)。
+
+---
+
+## ADR-025 — PySide6 托管本机 CARLA 原生窗口，不传输 RGB 画面
+
+- 状态：Accepted
+- 日期：2026-07-17
+- 替代：ADR-020 中 JSON JPEG 相机帧的三维呈现方案
+- 同时替代：ADR-018、ADR-021 和 ADR-023 中以远程无头 Runtime、RGB 帧作为 CARLA 呈现的产品基线
+- 保留：ADR-020 的 Leaflet `CRS.Simple` 二维地图选择
+
+### 背景
+
+现有三维链路由 CARLA RGB sensor 产生图像，经 JPEG/base64 和 WebSocket `camera.frame` 传到
+PySide6。该方案支持跨主机，但增加传感器、编码、网络、队列、解码、帧时间和降级处理，并且
+不符合当前要求：右侧区域应直接集成 CARLA 页面，而不是远程传输 RGB 图像。
+
+当前 CARLA RPC 运行在本机 `127.0.0.1:2000`，因此可以探索将 CARLA 顶层 native window
+作为 foreign window 托管到 Qt。Qt 提供 `QWindow.fromWinId()` 包装 native window，并通过
+`QWidget.createWindowContainer()` 嵌入 QWidget 布局；但 Qt 同时明确该能力高度依赖平台，
+foreign window 主要支持 reparent，焦点、层叠和性能也有平台限制。
+
+### 决策
+
+MVP 三维视图使用本机 CARLA 原生窗口。PySide6 新增 `CarlaNativeWindowHost`，从显式配置的
+native window ID 或受测试的平台 locator 获得句柄，调用 `QWindow.fromWinId()`，再通过
+`QWidget.createWindowContainer()` 放入运行页右侧。
+
+以下约束为强制项：
+
+1. CARLA、PySide6 和被托管窗口必须在同一主机、同一用户、同一图形桌面会话；
+2. CARLA 必须 windowed 运行；`-RenderOffScreen` 或 no-rendering mode 不满足验收；
+3. 窗口容器只管理 attach、resize、focus、detach 和 health，不拥有仿真状态，不调用 TraCI，
+   不调用 CARLA `world.tick()`；
+4. 正式运行优先使用 `TRAFFICVERSE_CARLA_WINDOW_ID` 等显式句柄配置；平台 locator 必须校验
+   进程身份和句柄有效性，不能用模糊标题猜测作为稳定契约；
+5. Core Run 不创建用于 UI 的 RGB sensor，不发布 `camera.frame`，不编码/解码 JPEG/base64；
+6. macOS 当前环境先执行阻断性原型 Gate，验证跨进程窗口句柄、Wine/原生窗口边界、resize、
+   focus 和清理；
+7. 若 `QWindow.fromWinId()` 返回空或窗口无法稳定 reparent，readiness 返回
+   `CARLA_WINDOW_EMBED_UNSUPPORTED` 并停止该验收，不静默回退 RGB。
+
+### 选择理由
+
+- 直接满足“不通过 RGB 传输，集成 CARLA 页面”的产品要求；
+- 消除 UI 专用相机 Actor、JPEG/base64 开销、最新帧队列和图像解码故障；
+- 使用 CARLA 自身渲染窗口保留其原生画面和交互表现；
+- Qt 已提供 foreign-window 包装和 QWidget 容器 API，适合先做小型可行性验证。
+
+### 放弃的方案
+
+- **继续 WebSocket JPEG/base64**：跨主机兼容，但违反当前产品要求。
+- **WebRTC/MJPEG/共享内存视频**：可优化视频传输，但本质仍是传输 RGB 图像。
+- **截取 CARLA 窗口再绘制到 Qt**：仍是图像复制链路，且失去原生窗口语义。
+- **UI 内重新实现 CARLA 3D 渲染**：成本和维护风险远超 MVP。
+- **失败时静默打开冻结帧或 RGB fallback**：会掩盖不满足验收的事实。
+
+### 后果与迁移约束
+
+- 当前 RenderOffScreen CARLA 必须重启为 windowed；off-screen 模式没有可托管的显示窗口；
+- 本方案不支持远程无头 CARLA 直接嵌入本机 UI；如恢复跨主机部署，必须重新选择远程呈现协议并
+  新增 ADR；
+- macOS/Wine foreign window 可行性是架构阻断项，应先于大规模 UI 重写验证；
+- `camera.frame` schema、生产者、队列、sensor、decoder、viewmodel 和相关配置在消费者切换后删除；
+- 原生窗口异常属于三维组件健康错误；不得影响 SUMO 真值，但 `carla.mode=required` 的 Core Run
+  readiness 必须失败；
+- Qt 容器的 stacking、focus、键盘事件和大量 native child 性能限制必须纳入原型测试；
+- UI 仍只通过 TrafficVerse REST/WebSocket 进行业务控制，窗口嵌入不构成 UI 直连后端 SDK 的例外。
+
+参考：[QWindow.fromWinId](https://doc.qt.io/qtforpython-6/PySide6/QtGui/QWindow.html)、
+[QWidget.createWindowContainer](https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html)、
+[CARLA rendering options](https://carla.readthedocs.io/en/0.9.12/adv_rendering_options/)。
 
 ## 3. 待验证但不改变当前基线的议题
 
