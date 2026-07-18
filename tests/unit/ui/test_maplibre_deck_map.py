@@ -58,6 +58,18 @@ def test_map_source_uses_interleaved_meter_offset_layers_without_polling() -> No
     assert "requestAnimationFrame" not in source
 
 
+def test_flat_map_layers_disable_depth_test_to_prevent_zoom_z_fighting() -> None:
+    source = (MAP_WEB_ROOT / "src/app.js").read_text(encoding="utf-8")
+    bundle = (MAP_WEB_ROOT / "bundle/map.js").read_text(encoding="utf-8")
+
+    assert (
+        'const FLAT_LAYER_PARAMETERS = {depthCompare: "always", depthWriteEnabled: false};'
+        in source
+    )
+    assert source.count("parameters: FLAT_LAYER_PARAMETERS") == 4
+    assert 'depthCompare:"always",depthWriteEnabled:!1' in bundle
+
+
 def test_truck_model_is_local_and_checksum_documented() -> None:
     model_root = MAP_WEB_ROOT.parents[1] / "assets/models/truck"
     notice = (model_root / "README.md").read_text(encoding="utf-8")

@@ -22,6 +22,7 @@ const VIEW_CONFIG = {
   "2d": {pitch: 0, bearing: 0},
   "3d": {pitch: 48, bearing: -18}
 };
+const FLAT_LAYER_PARAMETERS = {depthCompare: "always", depthWriteEnabled: false};
 
 const lightingEffect = new LightingEffect({
   ambientLight: new AmbientLight({color: [210, 226, 242], intensity: 1.4}),
@@ -136,7 +137,8 @@ function roadLayers() {
     coordinateOrigin: [0, 0, 0],
     filled: false,
     stroked: true,
-    pickable: false
+    pickable: false,
+    parameters: FLAT_LAYER_PARAMETERS
   };
   return [
     new GeoJsonLayer({
@@ -176,6 +178,7 @@ function signalLayers(phaseTrigger) {
     getPosition: (signal) => signal.position,
     radiusUnits: "meters",
     pickable: false,
+    parameters: FLAT_LAYER_PARAMETERS,
     updateTriggers: {getFillColor: phaseTrigger}
   };
   return [
@@ -222,7 +225,8 @@ function vehicleLayers() {
             ? 4.6
             : 3.6,
       radiusUnits: "meters",
-      radiusMinPixels: 5
+      radiusMinPixels: 5,
+      parameters: FLAT_LAYER_PARAMETERS
     })
   ];
   if (state.viewMode === "3d") {
@@ -256,7 +260,8 @@ function vehicleLayers() {
         radiusMinPixels: 4,
         stroked: true,
         getLineColor: [226, 232, 240, 245],
-        lineWidthMinPixels: 1
+        lineWidthMinPixels: 1,
+        parameters: FLAT_LAYER_PARAMETERS
       })
     );
   }
