@@ -43,6 +43,12 @@ from trafficverse.maps import (
     validate_compiled_bundle,
 )
 
+SOFTWARE_WEBGL_FLAGS = (
+    "--ignore-gpu-blocklist",
+    "--enable-unsafe-swiftshader",
+    "--disable-gpu-compositing",
+)
+
 
 def _repository_root() -> Path:
     return Path(__file__).resolve().parents[2]
@@ -135,6 +141,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--scenario-id",
         type=UUID,
         default=UUID("00000000-0000-0000-0000-000000000042"),
+    )
+    ui.add_argument(
+        "--allow-software-webgl",
+        action="store_true",
+        help="allow Chromium WebGL on a blocklisted software renderer such as llvmpipe",
     )
     serve = subcommands.add_parser("serve", help="serve the Core Run REST/WebSocket API")
     serve.add_argument("--host", default="127.0.0.1")
@@ -323,7 +334,17 @@ def _run_carla_doctor(args: argparse.Namespace) -> int:
     return 0
 
 
+def _configure_software_webgl() -> None:
+    current_flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "").split()
+    for flag in SOFTWARE_WEBGL_FLAGS:
+        if flag not in current_flags:
+            current_flags.append(flag)
+    os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = " ".join(current_flags)
+
+
 def _run_ui(args: argparse.Namespace) -> int:
+    if args.allow_software_webgl:
+        _configure_software_webgl()
     try:
         from ui.app.main import run
     except ModuleNotFoundError as error:

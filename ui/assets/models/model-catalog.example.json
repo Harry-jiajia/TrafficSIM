@@ -1,0 +1,33 @@
+{
+  "models": [
+    {
+      "format": "gltf",
+      "model_key": "vehicle.low_poly_truck",
+      "orientation_calibration_deg": [
+        0.0,
+        180.0,
+        90.0
+      ],
+      "sha256": "fbd30d52ebef8079203e5e24bd963a75ffd060beb64bc1535cc2a05dd9e04da7",
+      "source_forward_axis": "+Z",
+      "source_up_axis": "+Y",
+      "unit_scale_m": 0.75,
+      "web_uri": "truck/truck.gltf"
+    },
+    {
+      "format": "glb",
+      "model_key": "debug.box",
+      "orientation_calibration_deg": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sha256": "ed52f7192b8311d700ac0ce80644e3852cd01537e4d62241b9acba023da3d54e",
+      "source_forward_axis": "+Z",
+      "source_up_axis": "+Y",
+      "unit_scale_m": 1.0,
+      "web_uri": "box.glb"
+    }
+  ],
+  "schema_version": "1.0"
+}

@@ -118,7 +118,8 @@ ROI/signal -> CARLA batch -> CARLA tick -> publish。pause 不 step，SUMO 失�
 
 允许修改：`ui/**`、messaging/API schema、相应测试。
 
-- 左侧 Leaflet 只处理 network/vehicle/TLS 协议，不嵌入 SUMO GUI；
+- 左侧 MapLibre/deck.gl 只处理 network/vehicle/TLS 协议，不嵌入 SUMO GUI；
+- Web bundle 使用 Node.js 16.20.2、npm 8.19.4 构建并通过 lockfile 固定，运行时不访问 CDN；
 - 右侧只使用 `CarlaNativeWindowHost`；
 - 删除 `camera.frame` topic、UI decoder、camera widget 与 UI 专用 sensor 调用；
 - 窗口失败显示明确恢复建议，不静默回退 RGB。

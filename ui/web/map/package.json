@@ -1,0 +1,26 @@
+{
+  "name": "trafficverse-map",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Offline MapLibre and deck.gl bundle for the TrafficVerse Qt map widget.",
+  "scripts": {
+    "build": "node scripts/build.mjs"
+  },
+  "engines": {
+    "node": ">=16.20.2 <17",
+    "npm": ">=8.19.4 <9"
+  },
+  "dependencies": {
+    "@deck.gl/core": "9.3.7",
+    "@deck.gl/layers": "9.3.7",
+    "@deck.gl/mapbox": "9.3.7",
+    "@deck.gl/mesh-layers": "9.3.7",
+    "maplibre-gl": "5.12.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.21.5"
+  },
+  "overrides": {
+    "@mapbox/jsonlint-lines-primitives": "2.0.2"
+  }
+}

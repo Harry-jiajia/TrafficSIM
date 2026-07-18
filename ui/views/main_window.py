@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
 
 from ui.models import ControlAvailability, MapSummary
 from ui.viewmodels import RunViewModel
-from ui.widgets import CarlaNativeWindowHost, LeafletMapWidget
+from ui.widgets import CarlaNativeWindowHost, MapLibreDeckMapWidget
 
 
 class MainWindow(QMainWindow):
@@ -81,7 +81,7 @@ class MainWindow(QMainWindow):
         return row
 
     def _workspace(self) -> QSplitter:
-        self._map = LeafletMapWidget(load_page=self._load_web_map)
+        self._map = MapLibreDeckMapWidget(load_page=self._load_web_map)
         self._map.vehicle_selected.connect(self._set_vehicle_id)
         self._carla_window = CarlaNativeWindowHost()
         map_panel = self._panel("全局二维交通", self._map)

@@ -1,0 +1,86 @@
+from __future__ import annotations
+
+import json
+import os
+from pathlib import Path
+
+import pytest
+
+from trafficverse.cli import SOFTWARE_WEBGL_FLAGS, _build_parser, _configure_software_webgl
+
+MAP_WEB_ROOT = Path(__file__).resolve().parents[3] / "ui/web/map"
+
+
+def test_map_page_uses_offline_maplibre_deck_bundle() -> None:
+    html = (MAP_WEB_ROOT / "index.html").read_text(encoding="utf-8")
+
+    assert "https://" not in html
+    assert "http://" not in html
+    assert 'href="bundle/maplibre-gl.css"' in html
+    assert 'src="bundle/map.js"' in html
+    assert (MAP_WEB_ROOT / "bundle/maplibre-gl.css").is_file()
+    assert (MAP_WEB_ROOT / "bundle/map.js").is_file()
+    assert (MAP_WEB_ROOT / "bundle/map.js.LEGAL.txt").is_file()
+
+
+def test_map_dependencies_and_server_build_engines_are_pinned() -> None:
+    package = json.loads((MAP_WEB_ROOT / "package.json").read_text(encoding="utf-8"))
+    lock = json.loads((MAP_WEB_ROOT / "package-lock.json").read_text(encoding="utf-8"))
+
+    assert package["engines"] == {"node": ">=16.20.2 <17", "npm": ">=8.19.4 <9"}
+    assert package["dependencies"] == {
+        "@deck.gl/core": "9.3.7",
+        "@deck.gl/layers": "9.3.7",
+        "@deck.gl/mapbox": "9.3.7",
+        "@deck.gl/mesh-layers": "9.3.7",
+        "maplibre-gl": "5.12.0",
+    }
+    assert package["overrides"] == {"@mapbox/jsonlint-lines-primitives": "2.0.2"}
+    assert lock["lockfileVersion"] == 2
+
+
+def test_map_source_uses_interleaved_meter_offset_layers_without_polling() -> None:
+    source = (MAP_WEB_ROOT / "src/app.js").read_text(encoding="utf-8")
+
+    assert "new MapboxOverlay" in source
+    assert "interleaved: true" in source
+    assert "COORDINATE_SYSTEM.METER_OFFSETS" in source
+    assert source.count("new GeoJsonLayer") == 3
+    assert source.count("new ScatterplotLayer") == 4
+    assert "new ScenegraphLayer" in source
+    assert "new LightingEffect" in source
+    assert "../../assets/models/truck/truck.gltf" in source
+    assert "setNetwork(network)" in source
+    assert "setVehicles(vehicles)" in source
+    assert "setTrafficLights(trafficLights)" in source
+    assert "focusVehicle(vehicleId)" in source
+    assert "setInterval" not in source
+    assert "requestAnimationFrame" not in source
+
+
+def test_truck_model_is_local_and_checksum_documented() -> None:
+    model_root = MAP_WEB_ROOT.parents[1] / "assets/models/truck"
+    notice = (model_root / "README.md").read_text(encoding="utf-8")
+
+    assert (model_root / "truck.gltf").stat().st_size == 58_706
+    assert (model_root / "truck.bin").stat().st_size == 198_096
+    assert "CC BY 4.0" in notice
+    assert "fbd30d52ebef8079203e5e24bd963a75ffd060beb64bc1535cc2a05dd9e04da7" in notice
+
+
+def test_ui_software_webgl_is_explicit_and_preserves_existing_flags(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    args = _build_parser().parse_args(["ui", "--allow-software-webgl"])
+    monkeypatch.setenv("QTWEBENGINE_CHROMIUM_FLAGS", "--remote-debugging-port=0")
+
+    _configure_software_webgl()
+
+    assert args.allow_software_webgl is True
+    assert os.environ["QTWEBENGINE_CHROMIUM_FLAGS"].split() == [
+        "--remote-debugging-port=0",
+        "--ignore-gpu-blocklist",
+        "--enable-unsafe-swiftshader",
+        "--disable-gpu-compositing",
+    ]
+    assert len(SOFTWARE_WEBGL_FLAGS) == 3

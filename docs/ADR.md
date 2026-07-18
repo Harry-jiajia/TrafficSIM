@@ -47,7 +47,7 @@
 | ADR-014 | 有界队列、可观察降级与差异化故障策略 | Accepted |
 | ADR-015 | MVP 采用模块化单体，外部仿真器保持进程边界 | Accepted |
 | ADR-016 | 统一 ID、仿真时间、单位、版本与确定性规则 | Accepted |
-| ADR-017 | MVP 二维地图采用 Leaflet，指标图表采用 Plotly | Accepted |
+| ADR-017 | MVP 二维地图采用 Leaflet，指标图表采用 Plotly | Superseded by ADR-026 |
 | ADR-018 | 固定首个可运行环境与版本矩阵 | Superseded by ADR-024/025 |
 | ADR-019 | 固定 Town04 同源地图资产并由 SUMO 主控信号灯 | Superseded by ADR-022 |
 | ADR-020 | MVP 采用 Leaflet 平面坐标与 JSON JPEG 相机帧 | Superseded by ADR-025 |
@@ -56,6 +56,7 @@
 | ADR-023 | macOS 控制端使用远程 CARLA Simulation Runtime | Superseded by ADR-024/025 |
 | ADR-024 | 恢复 SUMO 为全局交通真值并由 TrafficVerse 统一联仿 | Accepted |
 | ADR-025 | PySide6 托管本机 CARLA 原生窗口，不传输 RGB 画面 | Accepted |
+| ADR-026 | 左侧地图迁移到 MapLibre + deck.gl | Accepted |
 
 ---
 
@@ -620,7 +621,7 @@ TrafficVerse 代码库采用清晰依赖方向的模块化单体。API、应用�
 
 ## ADR-017 — MVP 二维地图采用 Leaflet，指标图表采用 Plotly
 
-- 状态：Accepted
+- 状态：Superseded by ADR-026
 - 日期：2026-07-15
 
 ### 背景
@@ -1064,6 +1065,78 @@ native window ID 或受测试的平台 locator 获得句柄，调用 `QWindow.fr
 参考：[QWindow.fromWinId](https://doc.qt.io/qtforpython-6/PySide6/QtGui/QWindow.html)、
 [QWidget.createWindowContainer](https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QWidget.html)、
 [CARLA rendering options](https://carla.readthedocs.io/en/0.9.12/adv_rendering_options/)。
+
+## ADR-026 — 左侧地图迁移到 MapLibre + deck.gl
+
+- 状态：Accepted
+- 日期：2026-07-17
+- 替代：ADR-017 中 Leaflet 作为左侧地图技术栈的决定
+- 详细设计：[MAPLIBRE_DECKGL_ARCHITECTURE.md](./MAPLIBRE_DECKGL_ARCHITECTURE.md)
+
+### 背景
+
+当前 Leaflet `CRS.Simple` 已满足 Town04 平面路网和少量车辆的二维展示，但后续需要在同一左侧地图
+中切换二维和三维、使用 GPU 批量渲染车辆、加载 glTF 模型并扩展热力图、轨迹和大型三维场景。
+MapLibre GL JS 提供 WebGL 地图相机与 style layer，deck.gl 提供面向大量数据和三维 scenegraph 的
+GPU layer，并能通过 `MapboxOverlay` 与 MapLibre 共享相机和 WebGL2 context。
+
+UI 当前运行在 PySide6 6.11.1 `QWebEngineView` 中。Qt WebEngine 使用 Chromium，因此首版应走标准
+WebGL2 路径，不为尚未复现的 GPU、worker、CSP 或 driver 问题增加大规模兼容与诊断代码。
+
+### 提议决策
+
+左侧地图改用 MapLibre GL JS + deck.gl：
+
+1. MapLibre 负责地图相机、交互、背景 style 和可选底图；
+2. deck.gl 负责 TrafficVerse 路网、车辆、信号灯、选择、分析图层和三维模型；
+3. 使用 `MapboxOverlay({interleaved: true})`，前置条件为目标 Qt WebEngine 支持 WebGL2；
+4. 二维和三维共用同一 `WorldState`，切换只改变 camera 与 layer，不建立第二份车辆状态；
+5. deck.gl 使用 meter-offset coordinate system 和展示专用 registration，继续消费 SUMO 局部米制
+   位置；当前局部 `network.geojson` 不直接作为 WGS84 MapLibre source；
+6. 右侧 CARLA 原生窗口和 ADR-025 保持不变，左侧三维不是 CARLA 画面的替代品；
+7. 第一版继续使用 `QUrl.fromLocalFile()`、本地 JS bundle 和现有 Qt bridge。只处理 MapLibre/deck
+   初始化失败与 GLB load error；其他兼容代码必须由可复现故障或性能数据驱动；
+8. 迁移期间 Leaflet 只作为显式开发 fallback，新方案通过 Gate 后删除，产品不长期维护双地图栈。
+
+Web 构建基线固定为服务器现有 Node.js 16.20.2 和 npm 8.19.4。MapLibre、deck.gl 和构建工具必须
+选择兼容该基线的固定版本并提交 npm lockfile；运行时使用本地 bundle，不依赖 Node.js、CDN 或公网。
+
+三维格式采用双导出而非强行统一运行时文件：
+
+- OpenDRIVE `.xodr` 继续作为道路拓扑和坐标同源输入；
+- DCC 源资产导出 `.fbx` 给 CARLA 0.9.16/Unreal 导入链；
+- 同一源资产导出 glTF 2.0 Binary `.glb` 给 deck.gl `ScenegraphLayer`；
+- 大型 Web 场景按需生成 3D Tiles；
+- 资产 manifest 统一 `asset_id`、米制单位、坐标轴、pivot、LOD、许可证、生成命令和 checksum。
+
+### 选择理由
+
+- MapLibre 提供二维/三维共用的相机、倾斜和 WebGL 地图能力；
+- deck.gl 更适合高频车辆的批量 GPU layer 和重复 GLB 实例；
+- meter-offset 可以保持 Town04 局部米制数据，避免每 tick 转换全部车辆到经纬度；
+- 双导出尊重 CARLA 的 FBX/Unreal 边界和 Web 的 glTF 生态；
+- 以真实问题驱动兼容处理，避免在 Chromium 正常路径前增加无效检查和分支。
+
+### 放弃的方案
+
+- **继续扩展 Leaflet 到三维**：适合简单二维，但不是目标 GPU 三维栈；
+- **只使用 MapLibre style layer**：可以画道路和 extrusion，但高频车辆和 GLB 实例扩展不如 deck.gl；
+- **只使用 deck.gl，不使用 MapLibre**：可使用独立 view，但会重复地图相机、控件和未来底图能力；
+- **让 MapLibre/deck.gl 直接读取 CARLA cooked assets**：Web 运行时无法使用 Unreal cooked assets；
+- **要求 GLB 同时作为 CARLA 输入**：CARLA 0.9.16 官方地图导入链要求 XODR + FBX；
+- **预先实现完整兼容诊断框架**：没有故障证据，增加代码、状态和测试成本。
+
+### 后果与实施 Gate
+
+- 必须先在目标 PySide6/QWebEngine 中加载本地 MapLibre、deck overlay 和仓库 Box GLB；
+- 必须与 windowed CARLA 同时运行，完成 resize、DPI、焦点和 10 分钟稳定性 Gate；
+- 必须证明二维行为与当前 Leaflet 等价，且位置仍只来自同 tick SUMO snapshot；
+- 必须用控制点验证 Web meter-offset 配准误差不超过 0.5 m；
+- 必须证明至少 50 辆三维实例在目标机器按当前 20 Hz snapshot 稳定显示；
+- 同步 PRD、System Design、Agent Guide、UI 测试、依赖 lockfile 和离线构建流程；
+- 二维等价 Gate 完成前不删除 Leaflet 文件；完成后不得长期保留双生产地图栈。
+
+---
 
 ## 3. 待验证但不改变当前基线的议题
 

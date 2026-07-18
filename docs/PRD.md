@@ -1,6 +1,6 @@
 # TrafficVerse 产品需求文档（PRD）
 
-> 版本：v1.3
+> 版本：v1.4
 >
 > 状态：Target Baseline（实现迁移中）
 >
@@ -89,10 +89,11 @@ CARLA 原生渲染窗口。
 - SUMO 对命令执行、车辆运动和安全行为拥有最终裁决权；UI 不直接修改二维 marker 或 CARLA Actor；
 - 单车命令失败必须返回稳定错误和 vehicle ID，不得阻断其他合法命令或产生本地伪状态。
 
-#### PySide6 二维可视化
+#### PySide6 MapLibre/deck.gl 可视化
 
-- 左侧使用 Leaflet `CRS.Simple` 加载 `network.geojson`；
+- 左侧使用 MapLibre GL JS 管理相机和地图样式，使用 deck.gl GPU layer 绘制本地米制路网；
 - 显示道路、车道、路口、信号灯和全部 SUMO 车辆；
+- 首个 Gate 实现二维模式；后续三维模式复用同一 `WorldState`，不建立第二份车辆状态；
 - 车辆和信号灯只消费后端发布的版本化 WebSocket snapshot/delta；
 - 页面不得使用墙上时间插值生成权威位置，不得在前端维护第二套车辆运动状态；
 - 支持缩放、拖拽、点击车辆、筛选及将控制命令提交到 TrafficVerse API；
@@ -152,7 +153,7 @@ flowchart LR
     API --> SM["Simulation Manager / 唯一时钟"]
     SM --> SUMO["SUMO + TraCI / 全局真值"]
     SUMO --> SNAP["TrafficSnapshot"]
-    SNAP --> MAP["左侧 Leaflet 二维可视化"]
+    SNAP --> MAP["左侧 MapLibre + deck.gl 可视化"]
     SNAP --> ROI["ROI + Coordinate Synchronizer"]
     ROI --> CARLA["CARLA / 三维镜像"]
     CARLA --> NATIVE["CARLA 原生渲染窗口"]
@@ -169,7 +170,7 @@ flowchart LR
 | 信号灯相位和放行状态 | SUMO | PySide6、CARLA |
 | 仿真时间和 tick 顺序 | SimulationManager + SUMO step | CARLA、UI、记录器 |
 | ROI Actor 和三维视觉 | CARLA | Qt 原生窗口容器 |
-| 二维显示状态 | 标准化 TrafficSnapshot | Leaflet，不自行推演 |
+| 左侧显示状态 | 标准化 TrafficSnapshot | MapLibre/deck.gl，不自行推演 |
 | 用户命令 | API 接收，SUMO 执行 | UI 不直接改状态 |
 
 ### 4.2 固定 tick 顺序
@@ -237,7 +238,7 @@ class TrafficEnginePort(Protocol):
 - REST 提供地图、manifest、场景、实验生命周期和命令；
 - WebSocket 提供 `world.snapshot`、`vehicle.delta`、`traffic_light.delta`、指标和健康事件；
 - 不提供 `camera.frame` 作为 MVP 三维视图协议；
-- 左侧 Leaflet 消费 SUMO 派生状态，右侧 `CarlaNativeWindowHost` 承载原生窗口；
+- 左侧 MapLibre/deck.gl 消费 SUMO 派生状态，右侧 `CarlaNativeWindowHost` 承载原生窗口；
 - UI 仍是 API 客户端，不直接调用 TraCI 或 CARLA RPC。
 
 ## 6. 固化的本地运行基线

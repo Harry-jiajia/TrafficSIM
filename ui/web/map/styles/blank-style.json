@@ -1,0 +1,14 @@
+{
+  "version": 8,
+  "name": "TrafficVerse blank canvas",
+  "sources": {},
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": "#07101a"
+      }
+    }
+  ]
+}

@@ -163,7 +163,7 @@ TrafficSIM/
 | ROI、配准、信号灯纯逻辑 | `src/trafficverse/roi/` | CARLA adapter 私有函数 |
 | 车辆控制策略 | `src/trafficverse/controllers/` | TraCI connection、Simulation Manager |
 | HTTP/WS 接入层 | `src/trafficverse/api/` | application/domain |
-| PySide6、Leaflet、Plotly | `ui/` | 后端 domain/application |
+| PySide6、MapLibre、deck.gl、Plotly | `ui/` | 后端 domain/application |
 | 公共机器契约 | `contracts/` | 手工复制在多个模块 |
 | 用户可调配置 | `configs/` | Python 常量、UI 默认值 |
 | 数据库 schema 变更 | `migrations/` | 应用启动时动态建表 |
@@ -391,7 +391,7 @@ uv run pytest
 - 网络、JPEG 解码和大数据转换不得阻塞 Qt UI thread。
 - Qt signal/slot 名称表达领域事件，例如 `experiment_state_changed`。
 - Widget 不自行计算权威指标，不保存第二份业务状态。
-- Leaflet 只消费 `network.geojson` 和 SUMO 派生的标准车辆/信号消息；不得嵌入 SUMO GUI。
+- MapLibre/deck.gl 只消费路网和 SUMO 派生的标准车辆/信号消息；不得嵌入 SUMO GUI。
 - JavaScript 代码放 `ui/web/`，不以内联字符串散落在 Python view 中。
 - 用户可见错误必须给出可执行恢复建议，不只显示 stack trace。
 - 控件启用状态由实验状态机驱动，不在多个页面重复判断。

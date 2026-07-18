@@ -1,13 +1,13 @@
 # TrafficVerse System Design
 
-> 版本：v1.4
+> 版本：v1.5
 > 状态：Target Baseline（SUMO/CARLA 迁移中）
 > 产品基线：[PRD](./PRD.md)
 > 决策基线：[ADR-024、ADR-025](./ADR.md)
 
 ## 1. 系统边界与不可变原则
 
-TrafficVerse 使用 SUMO 产生全局二维交通真值，使用自有 PySide6/Leaflet 页面显示二维状态，
+TrafficVerse 使用 SUMO 产生全局二维交通真值，使用自有 PySide6/MapLibre/deck.gl 页面显示状态，
 使用 CARLA 显示 ROI 内三维镜像。SUMO 与 CARLA 的原生窗口采取不同策略：
 
 - SUMO 只通过 TraCI 接入，不包装、不嵌入、不自动化 SUMO GUI；
@@ -29,7 +29,7 @@ flowchart LR
     API --> SM["SimulationManager"]
     SM <-->|"TraCI 127.0.0.1:8813"| SUMO["SUMO headless / external"]
     SUMO --> SNAP["TrafficSnapshot"]
-    SNAP --> MAP["Leaflet CRS.Simple"]
+    SNAP --> MAP["MapLibre + deck.gl"]
     SNAP --> ROI["ROI + CoordinateTransformer"]
     ROI --> CA["CarlaAdapter"]
     CA <-->|"RPC 127.0.0.1:2000"| CARLA["CARLA windowed"]
@@ -56,6 +56,8 @@ CARLA RPC；CARLA 原生窗口嵌入只提供视觉容器，不提供业务控�
 | 组件 | 版本/端点 | 约束 |
 |---|---|---|
 | Python | 3.10 | 项目运行时 |
+| Node.js | 16.20.2 | Web bundle 构建时；不进入产品运行时 |
+| npm | 8.19.4 | JS 依赖锁定与离线 bundle 构建 |
 | SUMO | 1.27.1 / `127.0.0.1:8813` | 外部 TraCI server，唯一 client |
 | CARLA | 0.9.16 / `127.0.0.1:2000` | 本机、windowed、同步模式 |
 | API | `127.0.0.1:8000` | loopback 默认 |
@@ -191,11 +193,12 @@ settings。任何 CARLA 物理或 Traffic Manager 结果都不反写 SUMO。
 
 ## 9. 可视化
 
-### 9.1 TrafficVerse 自有二维页面
+### 9.1 TrafficVerse 自有 MapLibre/deck.gl 页面
 
-Leaflet 使用 `CRS.Simple` 加载 `network.geojson`，通过 WebSocket `world.snapshot`、
-`vehicle.delta` 和 `traffic_light.delta` 更新。页面不使用 SUMO GUI，不调用 TraCI，不按墙上时间积分
-权威位置。sequence gap 时请求完整 snapshot。
+MapLibre 管理相机、交互和空白本地 style，deck.gl 使用 meter-offset layer 绘制局部米制
+`network.geojson`、车辆和信号灯。页面通过 WebSocket `world.snapshot`、`vehicle.delta` 和
+`traffic_light.delta` 更新，不使用 SUMO GUI，不调用 TraCI，不按墙上时间积分权威位置。
+sequence gap 时请求完整 snapshot。二维和后续三维模式共用同一 `WorldState`。
 
 ### 9.2 CARLA 原生窗口
 

@@ -11,6 +11,7 @@ TrafficVerse 的目标架构是“SUMO 全局交通真值 + TrafficVerse 自有�
 ## 固定版本与端点
 
 - Python 3.10
+- Node.js 16.20.2、npm 8.19.4（仅构建左侧 Web 地图）
 - SUMO 1.27.1：`127.0.0.1:8813`
 - CARLA 0.9.16：`127.0.0.1:2000`
 - TrafficVerse API：`127.0.0.1:8000`
@@ -51,7 +52,28 @@ uv run trafficverse ui --api-url http://127.0.0.1:8000
 
 UI 左侧从 REST/WebSocket 获取 SUMO 派生的标准快照并自行绘制；右侧直接显示 CARLA 原生窗口。
 系统不传输 `camera.frame` 或 JPEG/base64 图像。
-二维页面使用仓库内置的 Leaflet 1.9.4 静态资源，运行时不访问 CDN 或公网。
+二维页面使用仓库内置的 MapLibre/deck.gl 离线 bundle，运行时不需要 Node.js、CDN 或公网。
+Town04 没有真实地理 `geoReference`，所以地图采用由本地 OpenDRIVE/GeoJSON 派生的 OSM 风格道路
+分层，而不叠加会与仿真坐标错位的现实 OpenStreetMap 瓦片。车辆模型和所有 Web 资源同样离线加载。
+
+服务器的 Web 地图构建环境为 Node.js 16.20.2、npm 8.19.4：
+
+```bash
+cd ui/web/map
+npm ci
+npm run build
+```
+
+Python/Qt 运行使用 conda `carla` 环境。当前服务器 X11 的 Mesa `llvmpipe` 会被 Chromium 的
+WebGL blocklist 拦截，因此仅在该软件渲染环境显式启用已验证的覆盖参数：
+
+```bash
+DISPLAY=:1 conda run -n carla python -m trafficverse.cli ui \
+  --api-url http://127.0.0.1:8000 \
+  --allow-software-webgl
+```
+
+有受支持硬件 GPU 的桌面环境不要添加 `--allow-software-webgl`。
 
 ## 验证
 

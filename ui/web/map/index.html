@@ -4,14 +4,28 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>TrafficVerse Global 2D</title>
-    <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+    <link rel="stylesheet" href="bundle/maplibre-gl.css">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <div id="map"></div>
-    <div id="map-status">正在加载 Leaflet 地图组件……</div>
+    <div id="map-grid" aria-hidden="true"></div>
+    <section id="map-hud" aria-label="地图状态">
+      <div class="map-eyebrow">TOWN04 DIGITAL TWIN</div>
+      <div class="map-title">全局交通态势</div>
+      <div id="map-status">正在加载离线地图组件……</div>
+      <div class="map-legend">
+        <span><i class="legend-dot human"></i>人工驾驶</span>
+        <span><i class="legend-dot automated"></i>自动驾驶</span>
+        <span><i class="legend-dot signal"></i>交通信号</span>
+      </div>
+    </section>
+    <div id="view-controls" aria-label="地图视角">
+      <button type="button" data-view-mode="2d">2D</button>
+      <button type="button" data-view-mode="3d" class="active">3D</button>
+      <button type="button" id="reset-view">复位</button>
+    </div>
     <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
-    <script src="vendor/leaflet/leaflet.js"></script>
-    <script src="map.js"></script>
+    <script src="bundle/map.js"></script>
   </body>
 </html>
