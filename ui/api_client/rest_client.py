@@ -41,6 +41,12 @@ class RestApiClient(QObject):
     def get_map_network(self, map_id: str) -> None:
         self._get(f"map.network:{map_id}", f"/api/v1/maps/{map_id}/network")
 
+    def get_asset_map_network(self, map_id: str) -> None:
+        self._get(f"asset.map.network:{map_id}", f"/api/v1/maps/{map_id}/network")
+
+    def get_map_manifest(self, map_id: str) -> None:
+        self._get(f"map.manifest:{map_id}", f"/api/v1/maps/{map_id}/manifest")
+
     def get_import_job(self, job_id: UUID) -> None:
         self._get(f"map.import:{job_id}", f"/api/v1/maps/import/{job_id}")
 

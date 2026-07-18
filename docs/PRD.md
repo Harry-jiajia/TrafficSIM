@@ -100,6 +100,17 @@ CARLA 原生渲染窗口。
 - sequence gap 时必须请求完整 snapshot，不能继续基于缺帧状态推演。
 - 不包装、嵌入或自动化 SUMO GUI 窗口；二维道路、车辆和信号灯全部由 TrafficVerse 自有页面绘制。
 
+#### 地图资产目录
+
+- 资产中心以 manifest 驱动的目录树展示地图包和完整文件后缀，并支持按名称、地图 ID、平台、格式
+  和文件名搜索；
+- 选择目录或文件后，右侧使用独立 MapLibre/deck.gl 实例展示该地图包的标准
+  `network.geojson`，支持二维/三维相机模式；
+- 资产目录是可复用 UI 组件，不访问后端文件系统，只消费 REST 返回的地图摘要、manifest 和标准路网；
+- 当前直接导入源仍为 OpenDRIVE `.xodr`；SUMO、CARLA、deck.gl、MapLibre 相关文件可由 manifest
+  收录，支持级别与转换边界见 [地图资产目录与支持格式](./MAP_ASSET_CATALOG.md)；
+- 目录收录不扩大权威地图编译范围，OSM、Shapefile、Vissim 等多格式转换仍不进入 MVP。
+
 #### SUMO 与 CARLA 联仿
 
 - `SimulationManager` 是唯一 step/tick 发起者；

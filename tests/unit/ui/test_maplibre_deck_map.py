@@ -70,6 +70,58 @@ def test_flat_map_layers_disable_depth_test_to_prevent_zoom_z_fighting() -> None
     assert 'depthCompare:"always",depthWriteEnabled:!1' in bundle
 
 
+def test_map_supports_command_drag_camera_rotation() -> None:
+    source = (MAP_WEB_ROOT / "src/app.js").read_text(encoding="utf-8")
+    bundle = (MAP_WEB_ROOT / "bundle/map.js").read_text(encoding="utf-8")
+
+    assert "function enableCommandDragRotation()" in source
+    assert "event.metaKey" in source
+    assert 'addEventListener("mousedown", startRotation, true)' in source
+    assert "map.jumpTo({bearing, pitch})" in source
+    assert "enableCommandDragRotation();" in source
+    assert "metaKey" in bundle
+
+
+def test_map_view_mode_is_not_exposed_to_the_qt_host() -> None:
+    html = (MAP_WEB_ROOT / "index.html").read_text(encoding="utf-8")
+    source = (MAP_WEB_ROOT / "src/app.js").read_text(encoding="utf-8")
+    host = (MAP_WEB_ROOT.parents[1] / "widgets/maplibre_deck_map.py").read_text(encoding="utf-8")
+
+    assert 'data-view-mode="2d"' in html
+    assert 'data-view-mode="3d"' in html
+    assert "function setViewMode(viewMode)" in source
+    assert "setViewMode(viewMode) {\n    setViewMode(viewMode);\n  }" not in source
+    assert "def set_view_mode(self, view_mode: str)" not in host
+    assert 'self._dispatch("setViewMode", view_mode)' not in host
+
+
+def test_map_visuals_are_externalized_and_support_light_theme() -> None:
+    source = (MAP_WEB_ROOT / "src/app.js").read_text(encoding="utf-8")
+    style = (MAP_WEB_ROOT / "src/style.js").read_text(encoding="utf-8")
+    css = (MAP_WEB_ROOT / "styles.css").read_text(encoding="utf-8")
+    bundle = (MAP_WEB_ROOT / "bundle/map.js").read_text(encoding="utf-8")
+
+    assert 'from "./style.js"' in source
+    assert "setTheme(themeName)" in source
+    assert "dark: {" in style
+    assert "light: {" in style
+    assert 'background: "#141414"' in style
+    assert "automated: [64, 158, 255]" in style
+    assert ':root[data-theme="light"]' in css
+    assert "setTheme" in bundle
+    assert "#f2f3f5" in bundle
+
+
+def test_map_hud_has_a_safe_inset_from_the_webview_edge() -> None:
+    css = (MAP_WEB_ROOT / "styles.css").read_text(encoding="utf-8")
+    hud_rules = css.split("#map-hud {", maxsplit=1)[1].split("}", maxsplit=1)[0]
+
+    assert "left: 18px;" in hud_rules
+    assert "padding: 15px 17px 13px;" in hud_rules
+    assert "padding-left: 0;" not in hud_rules
+    assert "border-left: 0;" not in hud_rules
+
+
 def test_truck_model_is_local_and_checksum_documented() -> None:
     model_root = MAP_WEB_ROOT.parents[1] / "assets/models/truck"
     notice = (model_root / "README.md").read_text(encoding="utf-8")

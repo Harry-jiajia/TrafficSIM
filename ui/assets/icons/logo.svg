@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_图层_1" data-name="图层 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 350">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #f7fbfd;
+      }
+
+      .cls-2 {
+        fill: none;
+        stroke: #eef6fa;
+        stroke-dasharray: 14 14;
+        stroke-linecap: round;
+      }
+
+      .cls-2, .cls-3 {
+        stroke-width: 8px;
+      }
+
+      .cls-3 {
+        stroke: #2f80ed;
+      }
+
+      .cls-3, .cls-4 {
+        fill: #f6fbfd;
+      }
+
+      .cls-5 {
+        fill: #2f80ed;
+      }
+
+      .cls-6 {
+        fill: #fff;
+      }
+    </style>
+  </defs>
+  <rect class="cls-6" width="350" height="350"/>
+  <rect class="cls-5" x="7.37" y="31.58" width="336" height="92" rx="44" ry="44"/>
+  <path class="cls-5" d="M172.37,31.58h4c24.3,0,44,23.36,44,52.17v192.09c0,28.81-19.7,52.17-44,52.17h-4c-24.3,0-44-23.36-44-52.17V83.75c0-28.81,19.7-52.17,44-52.17Z"/>
+  <path class="cls-2" d="M28.37,77.58h107.63"/>
+  <path class="cls-2" d="M222.37,77.58h110.63"/>
+  <path class="cls-2" d="M174.37,136.58v176.44"/>
+  <rect class="cls-1" x="100.37" y="41.58" width="6" height="24" rx="2" ry="2"/>
+  <rect class="cls-1" x="242.37" y="41.58" width="6" height="24" rx="2" ry="2"/>
+  <rect class="cls-1" x="138.37" y="129.58" width="24" height="6" rx="2" ry="2"/>
+  <rect class="cls-1" x="186.37" y="129.58" width="24" height="6" rx="2" ry="2"/>
+  <circle class="cls-4" cx="174.37" cy="77.58" r="28"/>
+  <circle class="cls-3" cx="174.37" cy="77.58" r="16"/>
+  <rect class="cls-1" x="100.37" y="93.58" width="6" height="24" rx="2" ry="2"/>
+  <rect class="cls-1" x="242.37" y="93.58" width="6" height="24" rx="2" ry="2"/>
+</svg>

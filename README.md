@@ -95,4 +95,5 @@ CARLA 与 Qt foreign-window 验收需要 PySide6、CARLA 和目标窗口处于�
 图形桌面会话。远程 tty、无头 CARLA 或 RenderOffScreen 无法完成该 Gate。
 
 设计详情见 [PRD](docs/PRD.md)、[System Design](docs/SYSTEM_DESIGN.md)、
-[ADR](docs/ADR.md) 和 [Agent Guide](docs/AGENT_DEVELOPMENT_GUIDE.md)。
+[ADR](docs/ADR.md)、[地图资产目录与支持格式](docs/MAP_ASSET_CATALOG.md) 和
+[Agent Guide](docs/AGENT_DEVELOPMENT_GUIDE.md)。

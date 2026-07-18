@@ -1,280 +1,202 @@
-"""Core Run desktop window."""
+"""TrafficVerse desktop application shell."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Slot
+from PySide6.QtCore import Slot
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
-    QComboBox,
-    QDoubleSpinBox,
     QFileDialog,
-    QFrame,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QMainWindow,
-    QPushButton,
-    QSizePolicy,
-    QSplitter,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from ui.models import ControlAvailability, MapSummary
 from ui.viewmodels import RunViewModel
-from ui.widgets import CarlaNativeWindowHost, MapLibreDeckMapWidget
+from ui.views.asset_center_page import AssetCenterPage
+from ui.views.data_analysis_page import DataAnalysisPage
+from ui.views.experiment_management_page import ExperimentManagementPage
+from ui.views.live_monitor_page import LiveMonitorPage
+from ui.views.navigation import NavigationRail
+from ui.views.scene_configuration_page import SceneConfigurationPage
+from ui.views.system_settings_page import SystemSettingsPage
+from ui.views.theme import ThemeMode, configure_application_font, load_stylesheet
+
+_WINDOW_ICON_PATH = Path(__file__).resolve().parents[1] / "assets/icons/logo.svg"
 
 
 class MainWindow(QMainWindow):
+    """Compose the navigation shell and route view-model state into pages."""
+
     def __init__(self, viewmodel: RunViewModel, *, load_web_map: bool = True) -> None:
+        configure_application_font()
         super().__init__()
         self._viewmodel = viewmodel
-        self._load_web_map = load_web_map
-        self.setWindowTitle("TrafficVerse · 全局二维 + 局部三维")
-        self.resize(1500, 900)
-        self.setMinimumSize(1100, 700)
+        self.setWindowIcon(QIcon(str(_WINDOW_ICON_PATH)))
+        self.setWindowTitle("TrafficVerse · 交互式交通仿真系统")
+        self.resize(1600, 960)
+        self.setMinimumSize(1180, 720)
 
-        root = QWidget()
-        layout = QVBoxLayout(root)
-        layout.setContentsMargins(18, 16, 18, 16)
-        layout.setSpacing(12)
-        layout.addLayout(self._header())
-        layout.addWidget(self._notice)
-        layout.addWidget(self._workspace(), 1)
-        layout.addWidget(self._hud())
-        layout.addWidget(self._controls())
-        self.setCentralWidget(root)
+        self.navigation = NavigationRail()
+        self.page_stack = QStackedWidget()
+        self.page_stack.setObjectName("pageStack")
+        self.notice = QLabel()
+        self.notice.setObjectName("notice")
+        self.notice.setWordWrap(True)
+        self.notice.hide()
+
+        self.live_page = LiveMonitorPage(load_web_map=load_web_map)
+        self.scene_page = SceneConfigurationPage()
+        self.experiments_page = ExperimentManagementPage()
+        self.analysis_page = DataAnalysisPage()
+        self.assets_page = AssetCenterPage(load_web_map=load_web_map)
+        self.settings_page = SystemSettingsPage()
+        self._pages = {
+            "live": self.live_page,
+            "scene": self.scene_page,
+            "experiments": self.experiments_page,
+            "analysis": self.analysis_page,
+            "assets": self.assets_page,
+            "settings": self.settings_page,
+        }
+        for page in self._pages.values():
+            self.page_stack.addWidget(page)
+
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
+        content_layout.addWidget(self.notice)
+        content_layout.addWidget(self.page_stack, 1)
+
+        shell = QWidget()
+        shell.setObjectName("appShell")
+        shell_layout = QHBoxLayout(shell)
+        shell_layout.setContentsMargins(0, 0, 0, 0)
+        shell_layout.setSpacing(0)
+        shell_layout.addWidget(self.navigation)
+        shell_layout.addWidget(content, 1)
+        self.setCentralWidget(shell)
+
+        self._connect_pages()
         self._connect_viewmodel()
-        self._apply_theme()
+        self._apply_theme(ThemeMode.DARK.value)
 
-    def _header(self) -> QHBoxLayout:
-        title = QLabel("TrafficVerse")
-        title.setObjectName("title")
-        subtitle = QLabel("Town04 Core Run · SUMO 真值 + 本机 CARLA 原生窗口")
-        subtitle.setObjectName("subtitle")
-        title_stack = QVBoxLayout()
-        title_stack.setSpacing(1)
-        title_stack.addWidget(title)
-        title_stack.addWidget(subtitle)
-
-        self._map_combo = QComboBox()
-        self._map_combo.setMinimumWidth(310)
-        self._map_combo.currentIndexChanged.connect(self._select_map)
-        self._import_button = QPushButton("导入 .xodr")
-        self._import_button.clicked.connect(self._choose_map)
-        self._connection = QLabel("API 连接中")
-        self._connection.setObjectName("badge")
-        self._notice = QLabel("")
-        self._notice.setVisible(False)
-        self._notice.setWordWrap(True)
-        self._notice.setObjectName("notice")
-
-        row = QHBoxLayout()
-        row.addLayout(title_stack)
-        row.addStretch(1)
-        row.addWidget(QLabel("地图"))
-        row.addWidget(self._map_combo)
-        row.addWidget(self._import_button)
-        row.addWidget(self._connection)
-        return row
-
-    def _workspace(self) -> QSplitter:
-        self._map = MapLibreDeckMapWidget(load_page=self._load_web_map)
-        self._map.vehicle_selected.connect(self._set_vehicle_id)
-        self._carla_window = CarlaNativeWindowHost()
-        map_panel = self._panel("全局二维交通", self._map)
-        carla_panel = self._panel("ROI 局部三维 · CARLA 原生窗口", self._carla_window)
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        splitter.addWidget(map_panel)
-        splitter.addWidget(carla_panel)
-        splitter.setSizes([850, 600])
-        splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 2)
-        return splitter
-
-    def _hud(self) -> QFrame:
-        frame = QFrame()
-        frame.setObjectName("panel")
-        layout = QGridLayout(frame)
-        self._experiment_status = self._metric("实验状态", "未创建")
-        self._simulation_time = self._metric("仿真时间", "0.00 s")
-        self._vehicle_count = self._metric("全局车辆", "0")
-        self._carla_status = self._metric("CARLA", "等待")
-        for column, widget in enumerate(
-            (
-                self._experiment_status,
-                self._simulation_time,
-                self._vehicle_count,
-                self._carla_status,
-            )
-        ):
-            layout.addWidget(widget, 0, column)
-        return frame
-
-    def _controls(self) -> QFrame:
-        frame = QFrame()
-        frame.setObjectName("panel")
-        layout = QHBoxLayout(frame)
-        self._create = QPushButton("创建实验")
-        self._start = QPushButton("开始")
-        self._pause = QPushButton("暂停")
-        self._resume = QPushButton("恢复")
-        self._stop = QPushButton("停止")
-        self._create.clicked.connect(self._viewmodel.create_experiment)
-        self._start.clicked.connect(self._viewmodel.start)
-        self._pause.clicked.connect(self._viewmodel.pause)
-        self._resume.clicked.connect(self._viewmodel.resume)
-        self._stop.clicked.connect(self._viewmodel.stop)
-        for button in (self._create, self._start, self._pause, self._resume, self._stop):
-            layout.addWidget(button)
-
-        layout.addSpacing(16)
-        layout.addWidget(QLabel("倍率"))
-        self._speed = QComboBox()
-        self._speed.addItems(["0.5×", "1×", "2×"])
-        self._speed.setCurrentIndex(1)
-        self._speed.currentIndexChanged.connect(self._set_speed)
-        layout.addWidget(self._speed)
-        layout.addStretch(1)
-
-        self._vehicle_id = QLineEdit()
-        self._vehicle_id.setPlaceholderText("车辆 ID（可在地图点击）")
-        self._vehicle_id.setMinimumWidth(190)
-        self._desired_speed = QDoubleSpinBox()
-        self._desired_speed.setRange(0.0, 60.0)
-        self._desired_speed.setValue(8.0)
-        self._desired_speed.setSuffix(" m/s")
-        self._apply_speed = QPushButton("设置车速")
-        self._left = QPushButton("左换道")
-        self._right = QPushButton("右换道")
-        self._vehicle_stop = QPushButton("单车停车")
-        self._apply_speed.clicked.connect(self._control_speed)
-        self._left.clicked.connect(lambda: self._control_lane("LEFT"))
-        self._right.clicked.connect(lambda: self._control_lane("RIGHT"))
-        self._vehicle_stop.clicked.connect(self._control_stop)
-        layout.addWidget(self._vehicle_id)
-        layout.addWidget(self._desired_speed)
-        layout.addWidget(self._apply_speed)
-        layout.addWidget(self._left)
-        layout.addWidget(self._right)
-        layout.addWidget(self._vehicle_stop)
-        return frame
-
-    @staticmethod
-    def _panel(title: str, content: QWidget) -> QFrame:
-        frame = QFrame()
-        frame.setObjectName("panel")
-        layout = QVBoxLayout(frame)
-        label = QLabel(title)
-        label.setObjectName("panelTitle")
-        layout.addWidget(label)
-        layout.addWidget(content, 1)
-        return frame
-
-    @staticmethod
-    def _metric(label: str, value: str) -> QWidget:
-        widget = QWidget()
-        widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        layout = QVBoxLayout(widget)
-        layout.setContentsMargins(12, 4, 12, 4)
-        name = QLabel(label)
-        name.setObjectName("metricName")
-        number = QLabel(value)
-        number.setObjectName("metricValue")
-        layout.addWidget(name)
-        layout.addWidget(number)
-        return widget
+    def _connect_pages(self) -> None:
+        vm = self._viewmodel
+        self.navigation.page_selected.connect(self._show_page)
+        self.live_page.create_requested.connect(vm.create_experiment)
+        self.live_page.start_requested.connect(vm.start)
+        self.live_page.pause_requested.connect(vm.pause)
+        self.live_page.resume_requested.connect(vm.resume)
+        self.live_page.stop_requested.connect(vm.stop)
+        self.live_page.speed_changed.connect(vm.set_speed)
+        self.live_page.vehicle_speed_requested.connect(self._control_speed)
+        self.live_page.lane_change_requested.connect(self._control_lane)
+        self.live_page.vehicle_stop_requested.connect(self._control_stop)
+        self.scene_page.map_selected.connect(vm.select_map)
+        self.scene_page.import_requested.connect(self._choose_map)
+        self.scene_page.create_requested.connect(vm.create_experiment)
+        self.assets_page.import_requested.connect(self._choose_map)
+        self.assets_page.preview_requested.connect(vm.preview_map_asset)
+        self.settings_page.theme_changed.connect(self._apply_theme)
 
     def _connect_viewmodel(self) -> None:
         vm = self._viewmodel
         vm.map_catalog_changed.connect(self._set_maps)
-        vm.network_changed.connect(self._map.set_network)
+        vm.map_manifest_changed.connect(self.assets_page.set_manifest)
+        vm.asset_network_changed.connect(self.assets_page.set_preview_network)
+        vm.network_changed.connect(self.live_page.map_widget.set_network)
         vm.vehicles_changed.connect(self._set_vehicles)
-        vm.traffic_lights_changed.connect(self._map.set_traffic_lights)
+        vm.traffic_lights_changed.connect(self.live_page.map_widget.set_traffic_lights)
         vm.component_health_changed.connect(self._set_health)
         vm.experiment_status_changed.connect(self._set_status)
         vm.simulation_time_changed.connect(self._set_time)
         vm.control_availability_changed.connect(self._set_controls)
-        vm.connection_changed.connect(self._set_connection)
+        vm.connection_changed.connect(self.live_page.set_connection)
         vm.notification.connect(self._show_notice)
+
+    @Slot(str)
+    def _show_page(self, key: str) -> None:
+        page = self._pages.get(key)
+        if page is None:
+            return
+        self.page_stack.setCurrentWidget(page)
+        self.navigation.set_active(key)
 
     @Slot(object)
     def _set_maps(self, maps: object) -> None:
-        values = maps if isinstance(maps, tuple) else ()
-        self._map_combo.blockSignals(True)
-        self._map_combo.clear()
-        for item in values:
-            if isinstance(item, MapSummary):
-                self._map_combo.addItem(f"{item.carla_map} · {item.map_id}", item.map_id)
-        self._map_combo.blockSignals(False)
-        if self._map_combo.count():
-            self._map_combo.setCurrentIndex(0)
+        values = (
+            tuple(item for item in maps if isinstance(item, MapSummary))
+            if isinstance(maps, tuple)
+            else ()
+        )
+        self.scene_page.set_maps(values)
+        self.assets_page.set_maps(values)
 
     @Slot(object)
     def _set_vehicles(self, vehicles: object) -> None:
-        self._map.set_vehicles(vehicles)
+        self.live_page.map_widget.set_vehicles(vehicles)
         count = len(vehicles) if isinstance(vehicles, tuple) else 0
-        self._metric_value(self._vehicle_count).setText(str(count))
+        self.live_page.set_vehicle_count(count)
 
     @Slot(object)
     def _set_health(self, components: object) -> None:
         values = components if isinstance(components, tuple) else ()
-        carla = next(
-            (item for item in values if getattr(item, "component", "") == "carla"),
-            None,
-        )
-        status = getattr(carla, "status", "UNKNOWN")
-        self._metric_value(self._carla_status).setText(str(status))
-        if carla is not None and str(status) not in {"HEALTHY", "ComponentStatus.HEALTHY"}:
+        carla = next((item for item in values if getattr(item, "component", "") == "carla"), None)
+        status = str(getattr(carla, "status", "UNKNOWN"))
+        normalized_status = status.removeprefix("ComponentStatus.")
+        health_labels = {
+            "HEALTHY": "正常",
+            "DEGRADED": "降级",
+            "UNAVAILABLE": "不可用",
+            "UNKNOWN": "未知",
+        }
+        self.live_page.set_carla_status(health_labels.get(normalized_status, normalized_status))
+        if carla is not None and normalized_status != "HEALTHY":
             message = getattr(carla, "message", None) or "本机 CARLA 当前不可用"
-            self._carla_window.show_unavailable(str(message))
+            self.live_page.carla_window.show_unavailable(str(message))
 
     @Slot(str)
     def _set_status(self, status: str) -> None:
-        self._metric_value(self._experiment_status).setText(status)
+        labels = {
+            "CREATED": "已创建",
+            "PREPARING": "准备中",
+            "READY": "已就绪",
+            "RUNNING": "运行中",
+            "PAUSED": "已暂停",
+            "STOPPING": "停止中",
+            "COMPLETED": "已完成",
+            "FAILED": "失败",
+        }
+        display_status = labels.get(status, status)
+        self.live_page.set_status(display_status)
+        self.experiments_page.set_status(display_status)
 
     @Slot(int)
     def _set_time(self, simulation_time_ms: int) -> None:
-        self._metric_value(self._simulation_time).setText(f"{simulation_time_ms / 1000:.2f} s")
+        self.live_page.set_time(simulation_time_ms)
+        self.experiments_page.set_time(simulation_time_ms)
 
     @Slot(object)
     def _set_controls(self, availability: object) -> None:
         if not isinstance(availability, ControlAvailability):
             return
-        self._create.setEnabled(availability.can_create)
-        self._start.setEnabled(availability.can_start)
-        self._pause.setEnabled(availability.can_pause)
-        self._resume.setEnabled(availability.can_resume)
-        self._stop.setEnabled(availability.can_stop)
-        for widget in (self._apply_speed, self._left, self._right, self._vehicle_stop):
-            widget.setEnabled(availability.can_control_vehicle)
-
-    @Slot(str)
-    def _set_connection(self, state: str) -> None:
-        labels = {
-            "API_CONNECTED": "API 已连接",
-            "CONNECTED": "实时已连接",
-            "CONNECTING": "实时连接中",
-            "RECONNECTING": "实时重连中",
-            "DISCONNECTED": "实时已断开",
-        }
-        self._connection.setText(labels.get(state, state))
+        self.live_page.set_controls(availability)
+        self.scene_page.set_create_enabled(availability.can_create)
 
     @Slot(str, str)
     def _show_notice(self, level: str, message: str) -> None:
-        self._notice.setProperty("level", level)
-        self._notice.setText(message)
-        self._notice.setVisible(True)
-        self._notice.style().unpolish(self._notice)
-        self._notice.style().polish(self._notice)
-
-    @Slot(int)
-    def _select_map(self, index: int) -> None:
-        map_id = self._map_combo.itemData(index)
-        if isinstance(map_id, str):
-            self._viewmodel.select_map(map_id)
+        self.notice.setProperty("level", level)
+        self.notice.setText(message)
+        self.notice.show()
+        self.notice.style().unpolish(self.notice)
+        self.notice.style().polish(self.notice)
 
     def _choose_map(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
@@ -286,50 +208,26 @@ class MainWindow(QMainWindow):
         if path:
             self._viewmodel.import_map(Path(path))
 
-    def _set_speed(self, index: int) -> None:
-        self._viewmodel.set_speed((0.5, 1.0, 2.0)[index])
+    @Slot(str, float)
+    def _control_speed(self, vehicle_id: str, desired_speed_mps: float) -> None:
+        self._viewmodel.control_vehicle(vehicle_id, desired_speed_mps=desired_speed_mps)
 
-    def _control_speed(self) -> None:
-        self._viewmodel.control_vehicle(
-            self._vehicle_id.text().strip(), desired_speed_mps=self._desired_speed.value()
-        )
-
-    def _control_lane(self, direction: str) -> None:
-        self._viewmodel.control_vehicle(self._vehicle_id.text().strip(), lane_change=direction)
-
-    def _control_stop(self) -> None:
-        self._viewmodel.control_vehicle(self._vehicle_id.text().strip(), stop_requested=True)
+    @Slot(str, str)
+    def _control_lane(self, vehicle_id: str, direction: str) -> None:
+        self._viewmodel.control_vehicle(vehicle_id, lane_change=direction)
 
     @Slot(str)
-    def _set_vehicle_id(self, vehicle_id: str) -> None:
-        self._vehicle_id.setText(vehicle_id)
+    def _control_stop(self, vehicle_id: str) -> None:
+        self._viewmodel.control_vehicle(vehicle_id, stop_requested=True)
 
-    @staticmethod
-    def _metric_value(widget: QWidget) -> QLabel:
-        values = widget.findChildren(QLabel, "metricValue")
-        return values[0]
-
-    def _apply_theme(self) -> None:
-        self.setStyleSheet(
-            """
-            QMainWindow, QWidget { background:#090e15; color:#dbe6f1; font-size:13px; }
-            QLabel#title { font-size:25px; font-weight:700; color:#f5f9ff; }
-            QLabel#subtitle, QLabel#metricName { color:#8193a8; }
-            QLabel#badge { background:#142234; color:#64d7ff; padding:7px 11px; border-radius:9px; }
-            QLabel#notice {
-              background:#162334; padding:9px 12px; border-radius:7px; color:#b9d7ed;
-            }
-            QLabel#notice[level="error"] { background:#391c25; color:#ff9baa; }
-            QLabel#notice[level="success"] { background:#123326; color:#77e6ad; }
-            QFrame#panel { background:#101722; border:1px solid #1e2a3a; border-radius:10px; }
-            QLabel#panelTitle { font-size:15px; font-weight:600; color:#eef5fc; }
-            QLabel#metricValue { font-size:20px; font-weight:650; color:#f3f8ff; }
-            QPushButton, QComboBox, QLineEdit, QDoubleSpinBox {
-              background:#162233; border:1px solid #2a3a50; border-radius:7px; padding:7px 10px;
-            }
-            QPushButton:hover { border-color:#3bbff2; }
-            QPushButton:disabled { color:#536174; background:#111923; border-color:#1b2634; }
-            QPushButton#primary { background:#087cab; color:white; }
-            QSplitter::handle { background:#090e15; width:8px; }
-            """
-        )
+    @Slot(str)
+    def _apply_theme(self, theme_name: str) -> None:
+        try:
+            theme = ThemeMode(theme_name)
+        except ValueError:
+            return
+        self.setProperty("theme", theme.value)
+        self.setStyleSheet(load_stylesheet(theme))
+        self.navigation.refresh_icons(theme)
+        self.live_page.map_widget.set_theme(theme.value)
+        self.assets_page.map_widget.set_theme(theme.value)

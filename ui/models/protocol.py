@@ -84,6 +84,23 @@ class MapSummary(ProtocolModel):
     network_schema_version: str = Field(min_length=1)
 
 
+class MapManifest(ProtocolModel):
+    schema_version: Literal["1.1"] = "1.1"
+    map_id: str = Field(min_length=1)
+    carla_map: str = Field(min_length=1)
+    carla_version: str = Field(min_length=1)
+    sumo_version: str = Field(min_length=1)
+    network_schema_version: Literal["traffic-network/1.0"]
+    compiler_version: str = Field(min_length=1)
+    source_repository: str = Field(min_length=1)
+    source_ref: str = Field(min_length=1)
+    sumo_generation_command: str = Field(min_length=1)
+    validated: bool
+    max_registration_error_m: float = Field(gt=0.0)
+    strict_signal_mapping: bool
+    files: dict[str, str] = Field(min_length=1)
+
+
 class MapImportJob(ProtocolModel):
     job_id: UUID
     status: Literal["PENDING", "RUNNING", "SUCCEEDED", "FAILED"]

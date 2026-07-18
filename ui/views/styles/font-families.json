@@ -1,0 +1,18 @@
+{
+  "macos": {
+    "ui": "PingFang SC",
+    "mono": "Menlo"
+  },
+  "windows": {
+    "ui": "Segoe UI",
+    "mono": "Consolas"
+  },
+  "linux": {
+    "ui": "DejaVu Sans",
+    "mono": "DejaVu Sans Mono"
+  },
+  "default": {
+    "ui": "Arial",
+    "mono": "Courier New"
+  }
+}

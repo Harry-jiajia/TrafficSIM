@@ -10,6 +10,7 @@ import {ScenegraphLayer} from "@deck.gl/mesh-layers";
 import maplibregl from "maplibre-gl";
 
 import blankStyle from "../styles/blank-style.json";
+import {LAYER_STYLE, MAP_THEMES} from "./style.js";
 
 const EARTH_RADIUS_M = 6378137;
 const RAD_TO_DEG = 180 / Math.PI;
@@ -24,14 +25,16 @@ const VIEW_CONFIG = {
 };
 const FLAT_LAYER_PARAMETERS = {depthCompare: "always", depthWriteEnabled: false};
 
-const lightingEffect = new LightingEffect({
-  ambientLight: new AmbientLight({color: [210, 226, 242], intensity: 1.4}),
-  keyLight: new DirectionalLight({
-    color: [255, 244, 214],
-    intensity: 2.2,
-    direction: [-3, -5, -8]
-  })
-});
+function createLightingEffect(theme) {
+  return new LightingEffect({
+    ambientLight: new AmbientLight({color: theme.ambientLight, intensity: 1.4}),
+    keyLight: new DirectionalLight({
+      color: theme.keyLight,
+      intensity: 2.2,
+      direction: [-3, -5, -8]
+    })
+  });
+}
 
 const state = {
   bridge: null,
@@ -42,8 +45,12 @@ const state = {
   vehicles: [],
   networkBounds: null,
   viewMode: "3d",
-  selectedVehicleId: null
+  selectedVehicleId: null,
+  theme: "dark",
+  lightingEffect: createLightingEffect(MAP_THEMES.dark)
 };
+
+document.documentElement.dataset.theme = state.theme;
 
 const statusElement = document.getElementById("map-status");
 const viewButtons = Array.from(document.querySelectorAll("[data-view-mode]"));
@@ -62,6 +69,7 @@ try {
     zoom: 15,
     pitch: VIEW_CONFIG[state.viewMode].pitch,
     bearing: VIEW_CONFIG[state.viewMode].bearing,
+    maxPitch: 85,
     attributionControl: false,
     antialias: true
   });
@@ -72,9 +80,13 @@ try {
 
 const overlay = new MapboxOverlay({
   interleaved: true,
-  effects: [lightingEffect],
+  effects: [state.lightingEffect],
   layers: []
 });
+
+function activeTheme() {
+  return MAP_THEMES[state.theme];
+}
 
 function toMapPosition(position) {
   if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y)) {
@@ -85,22 +97,24 @@ function toMapPosition(position) {
 
 function phaseColor(signalId, alpha = 245) {
   const phase = state.trafficLights.get(signalId)?.toUpperCase();
+  const colors = activeTheme().signal;
   if (phase === "GREEN") {
-    return [52, 211, 153, alpha];
+    return [...colors.green, alpha];
   }
   if (phase === "YELLOW") {
-    return [250, 204, 21, alpha];
+    return [...colors.yellow, alpha];
   }
   if (phase === "RED") {
-    return [248, 86, 103, alpha];
+    return [...colors.red, alpha];
   }
-  return [111, 140, 166, alpha];
+  return [...colors.unknown, alpha];
 }
 
 function vehicleColor(vehicle, alpha = 245) {
-  return vehicle.automation_level === "HUMAN"
-    ? [244, 114, 182, alpha]
-    : [56, 189, 248, alpha];
+  const color = vehicle.automation_level === "HUMAN"
+    ? activeTheme().vehicle.human
+    : activeTheme().vehicle.automated;
+  return [...color, alpha];
 }
 
 function focusVehicle(vehicleId, duration = 600) {
@@ -131,6 +145,7 @@ function selectVehicle({object}) {
 }
 
 function roadLayers() {
+  const theme = activeTheme();
   const common = {
     data: state.roadNetwork,
     coordinateSystem: COORDINATE_SYSTEM.METER_OFFSETS,
@@ -145,32 +160,33 @@ function roadLayers() {
       ...common,
       id: "trafficverse-road-casing",
       lineWidthUnits: "meters",
-      getLineWidth: 5.6,
+      getLineWidth: LAYER_STYLE.roadCasingWidthM,
       lineWidthMinPixels: 3,
-      getLineColor: [5, 12, 20, 255]
+      getLineColor: theme.roadCasing
     }),
     new GeoJsonLayer({
       ...common,
       id: "trafficverse-road-surface",
       lineWidthUnits: "meters",
-      getLineWidth: 3.8,
+      getLineWidth: LAYER_STYLE.roadSurfaceWidthM,
       lineWidthMinPixels: 2,
       getLineColor: (feature) =>
         feature.properties?.speed_limit_mps >= 20
-          ? [42, 64, 80, 255]
-          : [34, 51, 66, 255]
+          ? theme.roadFast
+          : theme.roadRegular
     }),
     new GeoJsonLayer({
       ...common,
       id: "trafficverse-lane-guides",
       lineWidthUnits: "pixels",
-      getLineWidth: 0.85,
-      getLineColor: [132, 164, 186, 180]
+      getLineWidth: LAYER_STYLE.laneGuideWidthPx,
+      getLineColor: theme.laneGuide
     })
   ];
 }
 
 function signalLayers(phaseTrigger) {
+  const theme = activeTheme();
   const common = {
     data: state.signalPoints,
     coordinateSystem: COORDINATE_SYSTEM.METER_OFFSETS,
@@ -186,7 +202,7 @@ function signalLayers(phaseTrigger) {
       ...common,
       id: "trafficverse-signal-halo",
       getFillColor: (signal) => phaseColor(signal.signalId, 45),
-      getRadius: 6,
+      getRadius: LAYER_STYLE.signalHaloRadiusM,
       radiusMinPixels: 5,
       radiusMaxPixels: 12
     }),
@@ -194,17 +210,18 @@ function signalLayers(phaseTrigger) {
       ...common,
       id: "trafficverse-signals",
       getFillColor: (signal) => phaseColor(signal.signalId),
-      getRadius: 2.2,
+      getRadius: LAYER_STYLE.signalRadiusM,
       radiusMinPixels: 3,
       radiusMaxPixels: 7,
       stroked: true,
-      getLineColor: [7, 17, 27, 255],
+      getLineColor: theme.signalOutline,
       lineWidthMinPixels: 1
     })
   ];
 }
 
 function vehicleLayers() {
+  const theme = activeTheme();
   const common = {
     data: state.vehicles,
     coordinateSystem: COORDINATE_SYSTEM.METER_OFFSETS,
@@ -226,7 +243,8 @@ function vehicleLayers() {
             : 3.6,
       radiusUnits: "meters",
       radiusMinPixels: 5,
-      parameters: FLAT_LAYER_PARAMETERS
+      parameters: FLAT_LAYER_PARAMETERS,
+      updateTriggers: {getFillColor: state.theme}
     })
   ];
   if (state.viewMode === "3d") {
@@ -235,7 +253,7 @@ function vehicleLayers() {
         ...common,
         id: "trafficverse-vehicle-models",
         scenegraph: TRUCK_MODEL_URL,
-        sizeScale: 0.75,
+        sizeScale: LAYER_STYLE.vehicleModelScale,
         sizeMinPixels: 18,
         sizeMaxPixels: 80,
         getTranslation: [0, 0, 0.45],
@@ -246,6 +264,7 @@ function vehicleLayers() {
           90
         ],
         _lighting: "pbr",
+        updateTriggers: {getColor: state.theme},
         onError: (error) => setStatus(`三维车辆模型加载失败：${error.message}`, true)
       })
     );
@@ -255,13 +274,14 @@ function vehicleLayers() {
         ...common,
         id: "trafficverse-vehicle-markers",
         getFillColor: vehicleColor,
-        getRadius: 2.2,
+        getRadius: LAYER_STYLE.vehicleMarkerRadiusM,
         radiusUnits: "meters",
         radiusMinPixels: 4,
         stroked: true,
-        getLineColor: [226, 232, 240, 245],
+        getLineColor: theme.vehicleOutline,
         lineWidthMinPixels: 1,
-        parameters: FLAT_LAYER_PARAMETERS
+        parameters: FLAT_LAYER_PARAMETERS,
+        updateTriggers: {getFillColor: state.theme, getLineColor: state.theme}
       })
     );
   }
@@ -269,9 +289,9 @@ function vehicleLayers() {
 }
 
 function renderLayers() {
-  const phaseTrigger = Array.from(state.trafficLights.entries()).flat();
+  const phaseTrigger = [state.theme, ...Array.from(state.trafficLights.entries()).flat()];
   overlay.setProps({
-    effects: [lightingEffect],
+    effects: [state.lightingEffect],
     layers: [...roadLayers(), ...signalLayers(phaseTrigger), ...vehicleLayers()]
   });
   setStatus(
@@ -325,6 +345,72 @@ function resetView(duration = 500) {
   });
   const view = VIEW_CONFIG[state.viewMode];
   map.easeTo({pitch: view.pitch, bearing: view.bearing, duration});
+}
+
+function enableCommandDragRotation() {
+  const container = map.getCanvasContainer();
+  let dragStart = null;
+
+  function startRotation(event) {
+    if (event.button !== 0 || !event.metaKey) {
+      return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    dragStart = {
+      x: event.clientX,
+      y: event.clientY,
+      bearing: map.getBearing(),
+      pitch: map.getPitch()
+    };
+    container.style.cursor = "grabbing";
+  }
+
+  function rotate(event) {
+    if (!dragStart) {
+      return;
+    }
+    event.preventDefault();
+    const bearing = dragStart.bearing + (event.clientX - dragStart.x) * 0.35;
+    const pitch = Math.max(
+      0,
+      Math.min(85, dragStart.pitch - (event.clientY - dragStart.y) * 0.3)
+    );
+    map.jumpTo({bearing, pitch});
+  }
+
+  function stopRotation() {
+    if (!dragStart) {
+      return;
+    }
+    dragStart = null;
+    container.style.cursor = "";
+  }
+
+  container.addEventListener("mousedown", startRotation, true);
+  window.addEventListener("mousemove", rotate, true);
+  window.addEventListener("mouseup", stopRotation, true);
+  window.addEventListener("blur", stopRotation);
+  map.once("remove", () => {
+    container.removeEventListener("mousedown", startRotation, true);
+    window.removeEventListener("mousemove", rotate, true);
+    window.removeEventListener("mouseup", stopRotation, true);
+    window.removeEventListener("blur", stopRotation);
+  });
+}
+
+function applyTheme(themeName) {
+  if (!(themeName in MAP_THEMES)) {
+    return;
+  }
+  state.theme = themeName;
+  const theme = activeTheme();
+  state.lightingEffect = createLightingEffect(theme);
+  document.documentElement.dataset.theme = themeName;
+  if (map.isStyleLoaded()) {
+    map.setPaintProperty("background", "background-color", theme.background);
+    renderLayers();
+  }
 }
 
 function fitNetwork(network) {
@@ -384,6 +470,9 @@ window.TrafficVerseMap = {
   },
   focusVehicle(vehicleId) {
     focusVehicle(vehicleId);
+  },
+  setTheme(themeName) {
+    applyTheme(themeName);
   }
 };
 
@@ -402,6 +491,8 @@ function connectQtBridge() {
 map.once("load", () => {
   map.addControl(overlay);
   map.addControl(new maplibregl.NavigationControl({visualizePitch: true}), "top-right");
+  enableCommandDragRotation();
+  applyTheme(state.theme);
   setViewMode(state.viewMode);
   connectQtBridge();
 });

@@ -1,0 +1,10 @@
+{
+  "dark": {
+    "normal": "#cfd3dc",
+    "active": "#409eff"
+  },
+  "light": {
+    "normal": "#606266",
+    "active": "#409eff"
+  }
+}

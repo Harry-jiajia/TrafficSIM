@@ -67,6 +67,11 @@ class MapLibreDeckMapWidget(QWebEngineView):
         ]
         self._dispatch("setTrafficLights", payload)
 
+    @Slot(str)
+    def set_theme(self, theme: str) -> None:
+        if theme in {"dark", "light"}:
+            self._dispatch("setTheme", theme)
+
     def _dispatch(self, method: str, payload: object) -> None:
         self._pending[method] = payload
         if not self._ready:

@@ -14,6 +14,7 @@ from ui.models import (
     ExperimentStatus,
     ExperimentView,
     MapImportJob,
+    MapManifest,
     MapSummary,
     ReadinessResponse,
     WorldState,
@@ -22,6 +23,8 @@ from ui.models import (
 
 class RunViewModel(QObject):
     map_catalog_changed = Signal(object)
+    map_manifest_changed = Signal(str, object)
+    asset_network_changed = Signal(str, object)
     selected_map_changed = Signal(str)
     network_changed = Signal(object)
     vehicles_changed = Signal(object)
@@ -84,6 +87,12 @@ class RunViewModel(QObject):
         self._selected_map_id = map_id
         self.selected_map_changed.emit(map_id)
         self._rest.get_map_network(map_id)
+
+    def preview_map_asset(self, map_id: str) -> None:
+        if map_id not in {item.map_id for item in self._maps}:
+            self.notification.emit("error", "所选地图资产不在目录中。")
+            return
+        self._rest.get_asset_map_network(map_id)
 
     def import_map(self, path: Path) -> None:
         if path.suffix.lower() != ".xodr":
@@ -148,8 +157,19 @@ class RunViewModel(QObject):
         elif operation == "maps.list":
             self._maps = tuple(MapSummary.model_validate(item) for item in _items(payload))
             self.map_catalog_changed.emit(self._maps)
+            for item in self._maps:
+                self._rest.get_map_manifest(item.map_id)
             if self._maps and self._selected_map_id is None:
                 self.select_map(self._maps[0].map_id)
+        elif operation.startswith("map.manifest:"):
+            map_id = operation.removeprefix("map.manifest:")
+            manifest = MapManifest.model_validate(payload)
+            if manifest.map_id != map_id:
+                raise ValueError("map manifest id does not match the requested asset")
+            self.map_manifest_changed.emit(map_id, manifest)
+        elif operation.startswith("asset.map.network:"):
+            map_id = operation.removeprefix("asset.map.network:")
+            self.asset_network_changed.emit(map_id, payload)
         elif operation.startswith("map.network:"):
             self.network_changed.emit(payload)
         elif operation == "map.import.submit" or operation.startswith("map.import:"):

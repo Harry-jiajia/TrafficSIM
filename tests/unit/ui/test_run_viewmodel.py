@@ -30,6 +30,12 @@ class FakeRest(QObject):
     def get_map_network(self, map_id: str) -> None:
         self.calls.append(("network", map_id))
 
+    def get_asset_map_network(self, map_id: str) -> None:
+        self.calls.append(("asset-network", map_id))
+
+    def get_map_manifest(self, map_id: str) -> None:
+        self.calls.append(("manifest", map_id))
+
     def get_import_job(self, job_id: UUID) -> None:
         self.calls.append(("import-job", job_id))
 
@@ -142,7 +148,56 @@ def test_map_catalog_auto_selects_verified_map_and_loads_network() -> None:
     viewmodel.create_experiment()
 
     assert ("network", "town04") in rest.calls
+    assert ("manifest", "town04") in rest.calls
     assert ("create", (SCENARIO_ID, "town04")) in rest.calls
+
+
+def test_asset_manifest_and_preview_network_are_forwarded_separately() -> None:
+    viewmodel, rest, _ = _viewmodel()
+    manifests: list[tuple[str, object]] = []
+    previews: list[tuple[str, object]] = []
+    viewmodel.map_manifest_changed.connect(
+        lambda map_id, manifest: manifests.append((map_id, manifest))
+    )
+    viewmodel.asset_network_changed.connect(
+        lambda map_id, network: previews.append((map_id, network))
+    )
+    viewmodel.handle_rest_success(
+        "maps.list",
+        [
+            {
+                "map_id": "town04",
+                "carla_map": "Town04",
+                "carla_version": "0.9.16",
+                "validated": True,
+                "network_schema_version": "traffic-network/1.0",
+            }
+        ],
+    )
+    manifest = {
+        "schema_version": "1.1",
+        "map_id": "town04",
+        "carla_map": "Town04",
+        "carla_version": "0.9.16",
+        "sumo_version": "1.27.1",
+        "network_schema_version": "traffic-network/1.0",
+        "compiler_version": "1.1.0",
+        "source_repository": "https://example.invalid/maps",
+        "source_ref": "fixture",
+        "sumo_generation_command": "fixture",
+        "validated": True,
+        "max_registration_error_m": 0.001,
+        "strict_signal_mapping": True,
+        "files": {"network.geojson": "sha256:" + "a" * 64},
+    }
+    viewmodel.handle_rest_success("map.manifest:town04", manifest)
+    viewmodel.preview_map_asset("town04")
+    network = {"type": "FeatureCollection", "features": []}
+    viewmodel.handle_rest_success("asset.map.network:town04", network)
+
+    assert manifests and manifests[0][0] == "town04"
+    assert ("asset-network", "town04") in rest.calls
+    assert previews == [("town04", network)]
 
 
 def test_start_prepares_created_experiment_then_starts_when_ready() -> None:

@@ -35,9 +35,9 @@ class CarlaNativeWindowHost(QWidget):
         self._foreign_window: QWindow | None = None
         self._container: QWidget | None = None
         self._status = QLabel()
+        self._status.setObjectName("carlaStatus")
         self._status.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._status.setWordWrap(True)
-        self._status.setStyleSheet("background:#101722;color:#8ea0b8;border-radius:8px;")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self._status, 1)
@@ -54,8 +54,7 @@ class CarlaNativeWindowHost(QWidget):
         raw_window_id = os.getenv(self._window_id_env)
         if not raw_window_id:
             self._show_recovery(
-                f"未设置 {self._window_id_env}；请启动 windowed CARLA，"
-                "设置其 native window ID 后重试"
+                f"未设置 {self._window_id_env}；请以窗口模式启动 CARLA，设置其原生窗口 ID 后重试"
             )
             return
         try:
@@ -66,18 +65,18 @@ class CarlaNativeWindowHost(QWidget):
 
     def attach(self, window_id: int) -> None:
         if window_id <= 0:
-            raise CarlaWindowEmbedError("CARLA native window ID 必须是正整数")
+            raise CarlaWindowEmbedError("CARLA 原生窗口 ID 必须是正整数")
         if self.attached:
             self.detach()
         foreign_window = self._window_factory(window_id)
         if foreign_window is None:
             raise CarlaWindowEmbedError(
-                "当前平台无法包装 CARLA native window；请确认 CARLA 与 PySide6 位于同一图形会话"
+                "当前平台无法包装 CARLA 原生窗口；请确认 CARLA 与 PySide6 位于同一图形会话"
             )
         container = self._container_factory(foreign_window, self)
         if container is None:
             foreign_window.setParent(None)
-            raise CarlaWindowEmbedError("Qt 无法为 CARLA native window 创建容器")
+            raise CarlaWindowEmbedError("Qt 无法为 CARLA 原生窗口创建容器")
         container.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         container.setMinimumSize(480, 270)
         layout = self.layout()
