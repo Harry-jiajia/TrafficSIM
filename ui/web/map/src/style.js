@@ -2,6 +2,7 @@ export const MAP_THEMES = {
   dark: {
     background: "#141414",
     roadCasing: [48, 49, 51, 255],
+    junctionSurface: [96, 98, 102, 255],
     roadFast: [64, 158, 255, 255],
     roadRegular: [96, 98, 102, 255],
     laneGuide: [163, 166, 173, 180],
@@ -20,6 +21,7 @@ export const MAP_THEMES = {
   light: {
     background: "#f2f3f5",
     roadCasing: [220, 223, 230, 255],
+    junctionSurface: [144, 147, 153, 255],
     roadFast: [64, 158, 255, 255],
     roadRegular: [144, 147, 153, 255],
     laneGuide: [255, 255, 255, 230],
@@ -38,7 +40,7 @@ export const MAP_THEMES = {
 };
 
 export const LAYER_STYLE = {
-  roadCasingWidthM: 5.6,
+  roadCasingExtraWidthM: 1.8,
   roadSurfaceWidthM: 3.8,
   laneGuideWidthPx: 0.85,
   signalHaloRadiusM: 6,

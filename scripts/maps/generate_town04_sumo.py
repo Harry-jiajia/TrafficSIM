@@ -15,6 +15,8 @@ import tempfile
 import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
+from trafficverse.maps.sumo_display import augment_geojson_with_sumo_display
+
 GENERATED_COMMENT = re.compile(r"\n?<!-- generated .*?-->\n?", re.DOTALL)
 
 
@@ -25,20 +27,31 @@ def main() -> int:
         type=Path,
         default=Path("configs/maps/town04"),
     )
+    parser.add_argument(
+        "--display-only",
+        action="store_true",
+        help="only rebuild display geometry from the tracked SUMO network",
+    )
     args = parser.parse_args()
     map_directory = args.map_dir.resolve()
-    xodr_path = map_directory / "Town04.xodr"
-    with tempfile.TemporaryDirectory(prefix="trafficverse-sumo-") as temporary:
-        temporary_directory = Path(temporary)
-        temporary_network = temporary_directory / "Town04.net.xml"
-        temporary_routes = temporary_directory / "Town04.rou.xml"
-        _run_netconvert(xodr_path, temporary_network)
-        _run_random_trips(temporary_network, temporary_routes)
-        network_text = GENERATED_COMMENT.sub("\n", temporary_network.read_text(encoding="utf-8"))
-        (map_directory / "Town04.net.xml").write_text(network_text, encoding="utf-8")
-        _write_routes(temporary_routes, map_directory / "Town04.rou.xml")
-    _write_vtypes(map_directory / "vtypes.rou.xml")
-    _write_sumocfg(map_directory / "map.sumocfg")
+    if not args.display_only:
+        xodr_path = map_directory / "Town04.xodr"
+        with tempfile.TemporaryDirectory(prefix="trafficverse-sumo-") as temporary:
+            temporary_directory = Path(temporary)
+            temporary_network = temporary_directory / "Town04.net.xml"
+            temporary_routes = temporary_directory / "Town04.rou.xml"
+            _run_netconvert(xodr_path, temporary_network)
+            _run_random_trips(temporary_network, temporary_routes)
+            network_text = GENERATED_COMMENT.sub(
+                "\n", temporary_network.read_text(encoding="utf-8")
+            )
+            (map_directory / "Town04.net.xml").write_text(network_text, encoding="utf-8")
+            _write_routes(temporary_routes, map_directory / "Town04.rou.xml")
+        _write_vtypes(map_directory / "vtypes.rou.xml")
+        _write_sumocfg(map_directory / "map.sumocfg")
+    augment_geojson_with_sumo_display(
+        map_directory / "network.geojson", map_directory / "Town04.net.xml"
+    )
     _update_manifest(map_directory)
     return 0
 

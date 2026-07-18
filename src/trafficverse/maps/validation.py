@@ -11,6 +11,7 @@ from pydantic import ValidationError
 
 from trafficverse.maps.errors import MapCompileError
 from trafficverse.maps.models import NETWORK_SCHEMA_VERSION, RoadNetwork
+from trafficverse.maps.sumo_display import SUMO_DISPLAY_ROLES
 
 
 def load_network(path: Path) -> RoadNetwork:
@@ -118,6 +119,7 @@ def validate_compiled_bundle(directory: Path, *, expected_routes: int = 50) -> R
         if isinstance(feature, Mapping)
         and isinstance(feature.get("geometry"), Mapping)
         and cast("Mapping[object, object]", feature["geometry"]).get("type") == "LineString"
+        and _geojson_feature_role(feature) not in SUMO_DISPLAY_ROLES
     }
     network_lane_ids = {lane.lane_id for lane in network.lanes}
     if feature_ids != network_lane_ids:
@@ -132,3 +134,11 @@ def validate_compiled_bundle(directory: Path, *, expected_routes: int = 50) -> R
     if signal_feature_ids != network_signal_ids:
         raise MapCompileError("GeoJSON point features do not exactly cover network signals")
     return network
+
+
+def _geojson_feature_role(feature: Mapping[object, object]) -> str | None:
+    properties = feature.get("properties")
+    if not isinstance(properties, Mapping):
+        return None
+    role = properties.get("trafficverse_role")
+    return str(role) if role is not None else None

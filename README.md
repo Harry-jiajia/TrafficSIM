@@ -55,6 +55,10 @@ UI 左侧从 REST/WebSocket 获取 SUMO 派生的标准快照并自行绘制；�
 二维页面使用仓库内置的 MapLibre/deck.gl 离线 bundle，运行时不需要 Node.js、CDN 或公网。
 Town04 没有真实地理 `geoReference`，所以地图采用由本地 OpenDRIVE/GeoJSON 派生的 OSM 风格道路
 分层，而不叠加会与仿真坐标错位的现实 OpenStreetMap 瓦片。车辆模型和所有 Web 资源同样离线加载。
+`network.geojson` 保留标准车道与信号灯要素，并从同一份 `Town04.net.xml` 追加 SUMO 车道、路口
+内部连接线和路口面作为显示专用几何；这些附加要素只用于 MapLibre/deck.gl 预览，不参与车辆推进。
+执行 `python scripts/maps/generate_town04_sumo.py --display-only` 可在不重建路线的情况下刷新显示几何。
+点击“开始运行”后，车辆位置和灯色由 SUMO 的实时快照更新；Web 地图不使用墙上时间自行推算车辆位置。
 
 服务器的 Web 地图构建环境为 Node.js 16.20.2、npm 8.19.4：
 

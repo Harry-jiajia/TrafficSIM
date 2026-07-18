@@ -24,6 +24,8 @@ const VIEW_CONFIG = {
   "3d": {pitch: 48, bearing: -18}
 };
 const FLAT_LAYER_PARAMETERS = {depthCompare: "always", depthWriteEnabled: false};
+const SUMO_LANE_ROLES = new Set(["sumo_lane", "sumo_internal_lane"]);
+const SUMO_JUNCTION_ROLE = "sumo_junction";
 
 function createLightingEffect(theme) {
   return new LightingEffect({
@@ -40,6 +42,9 @@ const state = {
   bridge: null,
   network: EMPTY_NETWORK,
   roadNetwork: EMPTY_NETWORK,
+  roadCasings: EMPTY_NETWORK,
+  roadGuides: EMPTY_NETWORK,
+  junctionSurfaces: EMPTY_NETWORK,
   signalPoints: [],
   trafficLights: new Map(),
   vehicles: [],
@@ -152,15 +157,31 @@ function roadLayers() {
     coordinateOrigin: [0, 0, 0],
     filled: false,
     stroked: true,
+    lineCapRounded: true,
+    lineJointRounded: true,
     pickable: false,
     parameters: FLAT_LAYER_PARAMETERS
   };
   return [
     new GeoJsonLayer({
+      id: "trafficverse-junction-surfaces",
+      data: state.junctionSurfaces,
+      coordinateSystem: COORDINATE_SYSTEM.METER_OFFSETS,
+      coordinateOrigin: [0, 0, 0],
+      filled: true,
+      stroked: false,
+      pickable: false,
+      getFillColor: theme.junctionSurface,
+      parameters: FLAT_LAYER_PARAMETERS
+    }),
+    new GeoJsonLayer({
       ...common,
       id: "trafficverse-road-casing",
+      data: state.roadCasings,
       lineWidthUnits: "meters",
-      getLineWidth: LAYER_STYLE.roadCasingWidthM,
+      getLineWidth: (feature) =>
+        (feature.properties?.width_m ?? LAYER_STYLE.roadSurfaceWidthM) +
+        LAYER_STYLE.roadCasingExtraWidthM,
       lineWidthMinPixels: 3,
       getLineColor: theme.roadCasing
     }),
@@ -168,7 +189,8 @@ function roadLayers() {
       ...common,
       id: "trafficverse-road-surface",
       lineWidthUnits: "meters",
-      getLineWidth: LAYER_STYLE.roadSurfaceWidthM,
+      getLineWidth: (feature) =>
+        feature.properties?.width_m ?? LAYER_STYLE.roadSurfaceWidthM,
       lineWidthMinPixels: 2,
       getLineColor: (feature) =>
         feature.properties?.speed_limit_mps >= 20
@@ -178,6 +200,7 @@ function roadLayers() {
     new GeoJsonLayer({
       ...common,
       id: "trafficverse-lane-guides",
+      data: state.roadGuides,
       lineWidthUnits: "pixels",
       getLineWidth: LAYER_STYLE.laneGuideWidthPx,
       getLineColor: theme.laneGuide
@@ -445,9 +468,29 @@ document.getElementById("reset-view").addEventListener("click", () => resetView(
 window.TrafficVerseMap = {
   setNetwork(network) {
     state.network = network?.type === "FeatureCollection" ? network : EMPTY_NETWORK;
+    const lineFeatures = state.network.features.filter(
+      (feature) => feature.geometry?.type === "LineString"
+    );
+    const sumoLineFeatures = lineFeatures.filter((feature) =>
+      SUMO_LANE_ROLES.has(feature.properties?.trafficverse_role)
+    );
+    const roadFeatures = sumoLineFeatures.length > 0 ? sumoLineFeatures : lineFeatures;
     state.roadNetwork = {
       type: "FeatureCollection",
-      features: state.network.features.filter((feature) => feature.geometry?.type === "LineString")
+      features: roadFeatures
+    };
+    state.roadGuides = {
+      type: "FeatureCollection",
+      features: roadFeatures.filter(
+        (feature) => feature.properties?.trafficverse_role !== "sumo_internal_lane"
+      )
+    };
+    state.roadCasings = state.roadGuides;
+    state.junctionSurfaces = {
+      type: "FeatureCollection",
+      features: state.network.features.filter(
+        (feature) => feature.properties?.trafficverse_role === SUMO_JUNCTION_ROLE
+      )
     };
     state.signalPoints = state.network.features
       .map(signalPointFromFeature)

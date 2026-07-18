@@ -13,6 +13,7 @@ MAP_WEB_ROOT = Path(__file__).resolve().parents[3] / "ui/web/map"
 
 def test_map_page_uses_offline_maplibre_deck_bundle() -> None:
     html = (MAP_WEB_ROOT / "index.html").read_text(encoding="utf-8")
+    blank_style = json.loads((MAP_WEB_ROOT / "styles/blank-style.json").read_text(encoding="utf-8"))
 
     assert "https://" not in html
     assert "http://" not in html
@@ -21,6 +22,14 @@ def test_map_page_uses_offline_maplibre_deck_bundle() -> None:
     assert (MAP_WEB_ROOT / "bundle/maplibre-gl.css").is_file()
     assert (MAP_WEB_ROOT / "bundle/map.js").is_file()
     assert (MAP_WEB_ROOT / "bundle/map.js.LEGAL.txt").is_file()
+    assert blank_style["sources"] == {}
+    assert blank_style["layers"] == [
+        {
+            "id": "background",
+            "type": "background",
+            "paint": {"background-color": "#141414"},
+        }
+    ]
 
 
 def test_map_dependencies_and_server_build_engines_are_pinned() -> None:
@@ -45,7 +54,9 @@ def test_map_source_uses_interleaved_meter_offset_layers_without_polling() -> No
     assert "new MapboxOverlay" in source
     assert "interleaved: true" in source
     assert "COORDINATE_SYSTEM.METER_OFFSETS" in source
-    assert source.count("new GeoJsonLayer") == 3
+    assert "lineCapRounded: true" in source
+    assert "lineJointRounded: true" in source
+    assert source.count("new GeoJsonLayer") == 4
     assert source.count("new ScatterplotLayer") == 4
     assert "new ScenegraphLayer" in source
     assert "new LightingEffect" in source
@@ -53,6 +64,9 @@ def test_map_source_uses_interleaved_meter_offset_layers_without_polling() -> No
     assert "setNetwork(network)" in source
     assert "setVehicles(vehicles)" in source
     assert "setTrafficLights(trafficLights)" in source
+    assert 'new Set(["sumo_lane", "sumo_internal_lane"])' in source
+    assert 'const SUMO_JUNCTION_ROLE = "sumo_junction";' in source
+    assert "state.roadCasings = state.roadGuides" in source
     assert "focusVehicle(vehicleId)" in source
     assert "setInterval" not in source
     assert "requestAnimationFrame" not in source
@@ -66,7 +80,7 @@ def test_flat_map_layers_disable_depth_test_to_prevent_zoom_z_fighting() -> None
         'const FLAT_LAYER_PARAMETERS = {depthCompare: "always", depthWriteEnabled: false};'
         in source
     )
-    assert source.count("parameters: FLAT_LAYER_PARAMETERS") == 4
+    assert source.count("parameters: FLAT_LAYER_PARAMETERS") == 5
     assert 'depthCompare:"always",depthWriteEnabled:!1' in bundle
 
 

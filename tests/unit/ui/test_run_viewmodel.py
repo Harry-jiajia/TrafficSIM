@@ -248,3 +248,28 @@ def test_vehicle_sequence_gap_requests_world_snapshot() -> None:
     viewmodel.handle_envelope(_envelope("vehicle.delta", 4, {"vehicles": [_vehicle(4)]}))
 
     assert realtime.snapshot_requests == 1
+
+
+def test_running_world_deltas_forward_new_vehicle_positions_to_the_map() -> None:
+    viewmodel, _, _ = _viewmodel()
+    viewmodel.handle_rest_success(
+        "experiment.create",
+        {
+            "experiment_id": str(EXPERIMENT_ID),
+            "status": "RUNNING",
+            "simulation_time_ms": 0,
+            "speed_multiplier": 1.0,
+        },
+    )
+    positions: list[tuple[float, float]] = []
+    viewmodel.vehicles_changed.connect(
+        lambda vehicles: positions.append((vehicles[0].position.x, vehicles[0].position.y))
+    )
+    first = _vehicle(1)
+    second = _vehicle(2)
+    second["position"] = {"x": 8.0, "y": 5.0, "z": 0.0}
+
+    viewmodel.handle_envelope(_envelope("vehicle.delta", 1, {"vehicles": [first]}))
+    viewmodel.handle_envelope(_envelope("vehicle.delta", 2, {"vehicles": [second]}))
+
+    assert positions == [(1.0, 2.0), (8.0, 5.0)]

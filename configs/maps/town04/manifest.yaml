@@ -17,7 +17,7 @@ files:
   Town04.rou.xml: sha256:889e42afb63bd1750bcf956ae346ebabefe40a938a2fffdd7cd5df0f3f83eed7
   vtypes.rou.xml: sha256:7acc925d32a5b9e537d0009d3c86b0ae59db07373c02e6fd338ceea25bcb7989
   map.sumocfg: sha256:7c971bb699983fe69ebdb32246e0441654dc5721bd37a86a48245c536c88437e
-  network.geojson: sha256:d24a810f1c60c8efc750c60678fd027ed24a0967709587d2f02b401be9b51525
+  network.geojson: sha256:a140f978656fdcad52d9ea8e026d965d1a9cdf8b10f9868028ddf8df21d0d61f
   network.json: sha256:cb4fa33665117c8d3b5ef7adb371d1ebb4f4e76c6bd4a028aee68043f73ad060
   registration.yaml: sha256:6c15dd9ca8c5935a378b493060a1d8ffca4f11aefeaffd4ba6794aff126df079
   routes.yaml: sha256:ae920c11a360d06f5029f567f7b04bbad5c14aaf718ef0b9213e0a8b7d8949b7
