@@ -93,7 +93,7 @@ sumo -c configs/maps/town04/map.sumocfg --remote-port 8813
 `<directory>-<config-stem>`。显式 input file 必须位于 `configs/maps` 根内。配置无效时目录仍可
 出现在资产列表并携带 validation errors，但 create/preview 会拒绝它。
 
-桌面端场景选择器只消费 `kind=sumo` 条目。Town04 的 manifest 条目继续服务资产中心和独立
+桌面端仿真配置和交通场景目录只消费 `kind=sumo` 条目。Town04 的 manifest 条目继续服务地图资产和独立
 SUMO/CARLA Core Run，不进入通用二维选择器；这避免 UI 同时维护两套二维启动语义。
 
 ## 4. 配置与资产
@@ -259,8 +259,14 @@ Core Run 不定义 `camera.frame` topic 或 payload。CARLA 画面不经过 API/
 - `PATCH/DELETE /api/v1/workspaces/{workspace_id}` 提供重命名和删除；
 - `GET /api/v1/workspaces/{workspace_id}/overview` 当前返回类型化 mock 总览，后续保持响应模型并
   替换为真实聚合数据；
+- `GET/POST /api/v1/workspaces/{workspace_id}/agent-assets` 列出和配置远程智能体 API，
+  `DELETE /api/v1/workspaces/{workspace_id}/agent-assets/{agent_api_id}` 删除配置；只持久化
+  凭证环境变量名称，不接收或返回 secret；
 - 创建实验必须携带已存在的 `workspace_id`，返回的 `ExperimentView` 同时携带该 ID；
-- 桌面端启动只加载工作区。用户进入工作区后才加载地图并显示仿真配置、运行和历史导航。
+- 桌面端启动只加载工作区。进入工作区后展示“交通仿真/资产中心”分组导航；历史仿真、交通场景、
+  地图和智能体的子级默认折叠；
+- 实时监控不在导航中常驻。仿真配置创建实验成功后，ViewModel 发出监控跳转信号并发送
+  `experiment.prepare`，收到 READY 后继续发送 `experiment.start`。
 
 当前 Core Run 使用进程内工作区 repository，服务重启后恢复内置示例；接入 PostgreSQL 产品
 持久化时复用 `WorkspaceRepositoryPort`，不改变 REST 或 UI 协议。

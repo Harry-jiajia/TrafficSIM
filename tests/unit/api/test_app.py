@@ -197,6 +197,25 @@ def test_workspace_search_create_rename_overview_and_delete(tmp_path: Path) -> N
         assert overview.json()["workspace_id"] == workspace_id
         assert overview.json()["recent_simulations"]
 
+        configured_agent = client.post(
+            f"/api/v1/workspaces/{workspace_id}/agent-assets",
+            json={
+                "name": "城市驾驶智能体",
+                "api_base_url": "https://agents.example.com/v1",
+                "model_id": "urban-driver-v1",
+                "credential_env_var": "TRAFFICVERSE_AGENT_API_KEY",
+                "description": "通过远程 API 接入",
+            },
+        )
+        assert configured_agent.status_code == 201
+        agent_api_id = configured_agent.json()["agent_api_id"]
+        agents = client.get(f"/api/v1/workspaces/{workspace_id}/agent-assets")
+        assert [item["agent_api_id"] for item in agents.json()] == [agent_api_id]
+        removed_agent = client.delete(
+            f"/api/v1/workspaces/{workspace_id}/agent-assets/{agent_api_id}"
+        )
+        assert removed_agent.status_code == 204
+
         deleted = client.delete(f"/api/v1/workspaces/{workspace_id}")
         assert deleted.status_code == 204
         assert client.get(f"/api/v1/workspaces/{workspace_id}/overview").status_code == 404

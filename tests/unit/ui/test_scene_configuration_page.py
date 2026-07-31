@@ -40,6 +40,6 @@ def test_scene_configuration_only_lists_direct_sumo_packages() -> None:
     assert page.map_combo.count() == 1
     assert page.map_combo.itemData(0) == "image2road"
     assert "Town04" not in page.map_combo.itemText(0)
-    assert {button.text() for button in page.findChildren(QPushButton)} == {"创建实验"}
+    assert {button.text() for button in page.findChildren(QPushButton)} == {"开始仿真"}
 
     page.close()

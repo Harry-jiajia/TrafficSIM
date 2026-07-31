@@ -29,7 +29,6 @@ from ui.widgets import CarlaNativeWindowHost, MapLibreDeckMapWidget
 
 
 class LiveMonitorPage(QWidget):
-    create_requested = Signal()
     start_requested = Signal()
     pause_requested = Signal()
     resume_requested = Signal()
@@ -177,16 +176,13 @@ class LiveMonitorPage(QWidget):
             row.addWidget(button)
         return widget
 
-    def _create_start_controls(self) -> QWidget:
+    def _start_controls(self) -> QWidget:
         widget = QWidget()
         row = QHBoxLayout(widget)
         row.setContentsMargins(0, 0, 0, 0)
-        self.create_button = QPushButton("创建实验")
         self.start_button = QPushButton("开始运行")
         self.start_button.setObjectName("primaryButton")
-        self.create_button.clicked.connect(self.create_requested)
         self.start_button.clicked.connect(self.start_requested)
-        row.addWidget(self.create_button)
         row.addWidget(self.start_button)
         return widget
 
@@ -205,7 +201,7 @@ class LiveMonitorPage(QWidget):
         row.addWidget(self.time_label)
         row.addWidget(self.status_label)
         row.addWidget(self._speed_controls())
-        row.addWidget(self._create_start_controls())
+        row.addWidget(self._start_controls())
         self.pause_button = QPushButton("暂停")
         self.resume_button = QPushButton("恢复")
         self.stop_button = QPushButton("停止")
@@ -239,7 +235,6 @@ class LiveMonitorPage(QWidget):
         self.time_label.setText(f"{hours:02d}:{minutes:02d}:{seconds:02d}.{milliseconds:03d}")
 
     def set_controls(self, availability: ControlAvailability) -> None:
-        self.create_button.setEnabled(availability.can_create)
         self.start_button.setEnabled(availability.can_start)
         self.pause_button.setEnabled(availability.can_pause)
         self.resume_button.setEnabled(availability.can_resume)

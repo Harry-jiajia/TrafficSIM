@@ -29,6 +29,9 @@ class _Rest(QObject):
     def list_maps(self) -> None:
         return
 
+    def list_agent_assets(self, workspace_id: UUID) -> None:
+        del workspace_id
+
 
 class _Realtime(QObject):
     connection_changed = Signal(str)
@@ -56,7 +59,7 @@ def test_core_run_window_constructs_and_closes_without_backend_or_carla() -> Non
 
     page_stack = window.findChild(QStackedWidget, "pageStack")
     assert page_stack is not None
-    assert page_stack.count() == 7
+    assert page_stack.count() == 8
     assert page_stack.currentWidget().objectName() == "workspaceOverviewPage"
     assert window.findChild(MapLibreDeckMapWidget) is not None
     map_splitter = window.findChild(QSplitter, "monitorMapSplitter")
@@ -122,10 +125,10 @@ def test_core_run_window_constructs_and_closes_without_backend_or_carla() -> Non
     expected_pages = {
         "scene": "sceneConfigurationPage",
         "experiments": "experimentManagementPage",
-        "analysis": "dataAnalysisPage",
-        "assets": "assetCenterPage",
+        "traffic_scenes": "trafficScenePage",
+        "maps": "mapAssetPage",
+        "agents": "agentAssetPage",
         "settings": "systemSettingsPage",
-        "live": "liveMonitorPage",
     }
     for navigation_key, page_name in expected_pages.items():
         button = window.findChild(QPushButton, f"nav_{navigation_key}")
@@ -136,7 +139,7 @@ def test_core_run_window_constructs_and_closes_without_backend_or_carla() -> Non
         button.click()
         assert page_stack.currentWidget().objectName() == page_name
 
-    assets_button = window.findChild(QPushButton, "nav_assets")
+    assets_button = window.findChild(QPushButton, "nav_maps")
     assert assets_button is not None
     assets_button.click()
     assert window.findChild(QLineEdit, "assetSearchInput") is not None
@@ -144,8 +147,8 @@ def test_core_run_window_constructs_and_closes_without_backend_or_carla() -> Non
     assert window.findChild(QPushButton, "assetImportButton") is not None
     assert window.findChild(QPushButton, "assetPreview2d") is None
     assert window.findChild(QPushButton, "assetPreview3d") is None
-    asset_button_texts = {button.text() for button in window.assets_page.findChildren(QPushButton)}
+    asset_button_texts = {button.text() for button in window.maps_page.findChildren(QPushButton)}
     assert "2D 预览" not in asset_button_texts
     assert "3D 预览" not in asset_button_texts
-    assert len(window.assets_page.findChildren(MapLibreDeckMapWidget)) == 1
+    assert len(window.maps_page.findChildren(MapLibreDeckMapWidget)) == 1
     window.close()

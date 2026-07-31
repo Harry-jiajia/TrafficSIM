@@ -72,6 +72,44 @@ class RestApiClient(QObject):
             ),
         )
 
+    def list_agent_assets(self, workspace_id: UUID) -> None:
+        self._get(
+            f"agent-assets.list:{workspace_id}",
+            f"/api/v1/workspaces/{workspace_id}/agent-assets",
+        )
+
+    def configure_agent_asset(
+        self,
+        workspace_id: UUID,
+        name: str,
+        api_base_url: str,
+        model_id: str,
+        credential_env_var: str,
+        description: str,
+    ) -> None:
+        self._post_json(
+            f"agent-assets.create:{workspace_id}",
+            f"/api/v1/workspaces/{workspace_id}/agent-assets",
+            {
+                "name": name,
+                "api_base_url": api_base_url,
+                "model_id": model_id,
+                "credential_env_var": credential_env_var,
+                "description": description,
+            },
+        )
+
+    def delete_agent_asset(self, workspace_id: UUID, agent_api_id: UUID) -> None:
+        operation = f"agent-assets.delete:{workspace_id}:{agent_api_id}"
+        self._watch(
+            operation,
+            self._network.deleteResource(
+                QNetworkRequest(
+                    self._url(f"/api/v1/workspaces/{workspace_id}/agent-assets/{agent_api_id}")
+                )
+            ),
+        )
+
     def get_map_network(self, map_id: str) -> None:
         self._get(f"map.network:{map_id}", f"/api/v1/maps/{map_id}/network")
 

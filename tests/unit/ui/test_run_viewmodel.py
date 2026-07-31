@@ -35,6 +35,35 @@ class FakeRest(QObject):
     def get_workspace_overview(self, workspace_id: UUID) -> None:
         self.calls.append(("workspace-overview", workspace_id))
 
+    def list_agent_assets(self, workspace_id: UUID) -> None:
+        self.calls.append(("agent-assets", workspace_id))
+
+    def configure_agent_asset(
+        self,
+        workspace_id: UUID,
+        name: str,
+        api_base_url: str,
+        model_id: str,
+        credential_env_var: str,
+        description: str,
+    ) -> None:
+        self.calls.append(
+            (
+                "agent-configure",
+                (
+                    workspace_id,
+                    name,
+                    api_base_url,
+                    model_id,
+                    credential_env_var,
+                    description,
+                ),
+            )
+        )
+
+    def delete_agent_asset(self, workspace_id: UUID, agent_api_id: UUID) -> None:
+        self.calls.append(("agent-delete", (workspace_id, agent_api_id)))
+
     def create_workspace(self, name: str, description: str) -> None:
         self.calls.append(("workspace-create", (name, description)))
 
@@ -197,6 +226,7 @@ def test_workspace_crud_search_selection_and_entry_drive_backend_calls() -> None
     assert ("workspace-create", ("新工作区", "描述")) in rest.calls
     assert ("workspace-update", (workspace_id, "新名称", "新描述")) in rest.calls
     assert ("maps", None) in rest.calls
+    assert ("agent-assets", workspace_id) in rest.calls
     assert contexts and getattr(contexts[-1], "workspace_id", None) == workspace_id
 
 
@@ -371,6 +401,41 @@ def test_asset_manifest_and_preview_network_are_forwarded_separately() -> None:
     assert previews == [("town04", network)]
 
 
+def test_agent_api_configuration_is_validated_and_scoped_to_active_workspace() -> None:
+    viewmodel, rest, _ = _viewmodel()
+    _enter_workspace(viewmodel)
+    notifications: list[tuple[str, str]] = []
+    viewmodel.notification.connect(lambda level, message: notifications.append((level, message)))
+
+    viewmodel.configure_agent_api(
+        "城市驾驶智能体",
+        "https://agents.example.com/v1",
+        "urban-driver-v1",
+        "TRAFFICVERSE_AGENT_API_KEY",
+        "远程接入",
+    )
+    viewmodel.configure_agent_api(
+        "无效智能体",
+        "not-a-url",
+        "invalid",
+        "invalid-key",
+        "",
+    )
+
+    assert (
+        "agent-configure",
+        (
+            WORKSPACE_ID,
+            "城市驾驶智能体",
+            "https://agents.example.com/v1",
+            "urban-driver-v1",
+            "TRAFFICVERSE_AGENT_API_KEY",
+            "远程接入",
+        ),
+    ) in rest.calls
+    assert notifications[-1] == ("error", "请填写名称、有效的 API 地址和模型 ID。")
+
+
 def test_start_prepares_created_experiment_then_starts_when_ready() -> None:
     viewmodel, _, realtime = _viewmodel()
     _enter_workspace(viewmodel)
@@ -393,6 +458,49 @@ def test_start_prepares_created_experiment_then_starts_when_ready() -> None:
         ("experiment.start", {}),
     ]
     assert viewmodel.status is ExperimentStatus.READY
+
+
+def test_launch_creates_experiment_then_opens_monitor_and_starts() -> None:
+    viewmodel, rest, realtime = _viewmodel()
+    _enter_workspace(viewmodel)
+    viewmodel.handle_rest_success(
+        "maps.list",
+        [
+            {
+                "map_id": "image2road",
+                "kind": "sumo",
+                "display_name": "图像识别路网",
+                "validated": True,
+                "network_schema_version": "sumo-net/display-1.0",
+                "manifest_available": False,
+                "sumo_config_file": "image2road.sumocfg",
+                "sumo_step_ms": 1000,
+            }
+        ],
+    )
+    monitor_requests = 0
+
+    def record_monitor_request() -> None:
+        nonlocal monitor_requests
+        monitor_requests += 1
+
+    viewmodel.monitor_requested.connect(record_monitor_request)
+
+    viewmodel.launch_experiment()
+    viewmodel.handle_rest_success(
+        "experiment.create",
+        {
+            "experiment_id": str(EXPERIMENT_ID),
+            "workspace_id": str(WORKSPACE_ID),
+            "status": "CREATED",
+            "simulation_time_ms": 0,
+            "speed_multiplier": 1.0,
+        },
+    )
+
+    assert ("create", (WORKSPACE_ID, SCENARIO_ID, "image2road")) in rest.calls
+    assert monitor_requests == 1
+    assert realtime.sent == [("experiment.prepare", {})]
 
 
 def test_vehicle_sequence_gap_requests_world_snapshot() -> None:

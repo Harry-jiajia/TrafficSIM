@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import UUID
 
 from PySide6.QtCore import QObject, QTimer, Signal
 
 from ui.api_client import RealtimeClient, RestApiClient
 from ui.models import (
+    AgentApiSummary,
     ControlAvailability,
     Envelope,
     ExperimentStatus,
@@ -28,6 +31,7 @@ class RunViewModel(QObject):
     workspace_selected_changed = Signal(object)
     workspace_overview_changed = Signal(object)
     workspace_context_changed = Signal(object)
+    agent_catalog_changed = Signal(object)
     map_catalog_changed = Signal(object)
     map_manifest_changed = Signal(str, object)
     asset_network_changed = Signal(str, object)
@@ -40,6 +44,7 @@ class RunViewModel(QObject):
     simulation_time_changed = Signal(int)
     control_availability_changed = Signal(object)
     connection_changed = Signal(str)
+    monitor_requested = Signal()
     notification = Signal(str, str)
 
     def __init__(
@@ -57,6 +62,7 @@ class RunViewModel(QObject):
         self._selected_workspace_id: UUID | None = None
         self._active_workspace_id: UUID | None = None
         self._enter_created_workspace_id: UUID | None = None
+        self._agent_apis: tuple[AgentApiSummary, ...] = ()
         self._maps: tuple[MapSummary, ...] = ()
         self._selected_map_id: str | None = None
         self._import_job_id: UUID | None = None
@@ -64,6 +70,7 @@ class RunViewModel(QObject):
         self._experiment_workspace_id: UUID | None = None
         self._status: ExperimentStatus | None = None
         self._world: WorldState | None = None
+        self._launch_after_create = False
         self._start_after_prepare = False
         self._import_timer = QTimer(self)
         self._import_timer.setInterval(500)
@@ -139,11 +146,14 @@ class RunViewModel(QObject):
             self._reset_experiment_context()
         self._active_workspace_id = workspace.workspace_id
         self.workspace_context_changed.emit(workspace)
+        self._rest.list_agent_assets(workspace.workspace_id)
         if not self._maps:
             self._rest.list_maps()
 
     def leave_workspace(self) -> None:
         self._active_workspace_id = None
+        self._agent_apis = ()
+        self.agent_catalog_changed.emit(())
         self.workspace_context_changed.emit(None)
 
     def select_map(self, map_id: str) -> None:
@@ -175,18 +185,58 @@ class RunViewModel(QObject):
         self.notification.emit("info", "正在上传并校验地图……")
         self._rest.import_map(path)
 
-    def create_experiment(self) -> None:
+    def configure_agent_api(
+        self,
+        name: str,
+        api_base_url: str,
+        model_id: str,
+        credential_env_var: str,
+        description: str,
+    ) -> None:
+        if self._active_workspace_id is None:
+            self.notification.emit("error", "请先进入工作区，再配置智能体。")
+            return
+        parsed = urlparse(api_base_url)
+        if not name or not model_id or parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            self.notification.emit("error", "请填写名称、有效的 API 地址和模型 ID。")
+            return
+        if re.fullmatch(r"[A-Z][A-Z0-9_]*", credential_env_var) is None:
+            self.notification.emit("error", "凭证环境变量必须使用大写字母、数字和下划线。")
+            return
+        self._rest.configure_agent_asset(
+            self._active_workspace_id,
+            name,
+            api_base_url,
+            model_id,
+            credential_env_var,
+            description,
+        )
+
+    def delete_agent_api(self, agent_api_id: UUID) -> None:
+        if self._active_workspace_id is None:
+            self.notification.emit("error", "请先进入工作区。")
+            return
+        self._rest.delete_agent_asset(self._active_workspace_id, agent_api_id)
+
+    def create_experiment(self) -> bool:
         if self._active_workspace_id is None:
             self.notification.emit("error", "请先进入工作区，再创建仿真实验。")
-            return
+            return False
         if self._selected_map_id is None:
             self.notification.emit("error", "请先选择一份已验证的 SUMO 场景包。")
-            return
+            return False
         self._rest.create_experiment(
             self._active_workspace_id,
             self._scenario_id,
             self._selected_map_id,
         )
+        return True
+
+    def launch_experiment(self) -> None:
+        """Create the configured experiment, then enter and start live monitoring."""
+        self._launch_after_create = True
+        if not self.create_experiment():
+            self._launch_after_create = False
 
     def start(self) -> None:
         if self._status is ExperimentStatus.CREATED:
@@ -272,6 +322,24 @@ class RunViewModel(QObject):
             overview = WorkspaceOverview.model_validate(payload)
             if overview.workspace_id == self._selected_workspace_id:
                 self.workspace_overview_changed.emit(overview)
+        elif operation.startswith("agent-assets.list:"):
+            workspace_id = UUID(operation.removeprefix("agent-assets.list:"))
+            if workspace_id == self._active_workspace_id:
+                self._agent_apis = tuple(
+                    AgentApiSummary.model_validate(item) for item in _items(payload)
+                )
+                self.agent_catalog_changed.emit(self._agent_apis)
+        elif operation.startswith("agent-assets.create:"):
+            workspace_id = UUID(operation.removeprefix("agent-assets.create:"))
+            self.notification.emit("success", "智能体 API 已添加。")
+            if workspace_id == self._active_workspace_id:
+                self._rest.list_agent_assets(workspace_id)
+        elif operation.startswith("agent-assets.delete:"):
+            _, workspace_id_text, _ = operation.split(":", maxsplit=2)
+            workspace_id = UUID(workspace_id_text)
+            self.notification.emit("success", "智能体 API 已删除。")
+            if workspace_id == self._active_workspace_id:
+                self._rest.list_agent_assets(workspace_id)
         elif operation == "ready":
             readiness = ReadinessResponse.model_validate(payload)
             if not readiness.ready:
@@ -303,12 +371,20 @@ class RunViewModel(QObject):
             self.network_changed.emit(payload)
         elif operation == "map.import.submit" or operation.startswith("map.import:"):
             self._handle_import_job(MapImportJob.model_validate(payload))
-        elif operation == "experiment.create" or operation.startswith("experiment.get:"):
+        elif operation == "experiment.create":
+            self._set_experiment(ExperimentView.model_validate(payload))
+            if self._launch_after_create:
+                self._launch_after_create = False
+                self.monitor_requested.emit()
+                self.start()
+        elif operation.startswith("experiment.get:"):
             self._set_experiment(ExperimentView.model_validate(payload))
 
     def handle_rest_failure(self, operation: str, message: str) -> None:
         if operation.startswith("map.import"):
             self._import_timer.stop()
+        if operation == "experiment.create":
+            self._launch_after_create = False
         self.notification.emit("error", f"操作失败：{message}")
 
     def handle_envelope(self, payload: object) -> None:
@@ -395,6 +471,7 @@ class RunViewModel(QObject):
         self._experiment_workspace_id = None
         self._status = None
         self._world = None
+        self._launch_after_create = False
         self._start_after_prepare = False
         self.experiment_status_changed.emit("NOT_CREATED")
         self.simulation_time_changed.emit(0)

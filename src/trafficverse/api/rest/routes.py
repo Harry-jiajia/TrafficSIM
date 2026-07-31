@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse
 from trafficverse.api.command_bus import ExperimentCommandBus
 from trafficverse.api.dependencies import ApiDependencies
 from trafficverse.api.models import (
+    AgentApiCreateRequest,
+    AgentApiView,
     CommandOutcome,
     ExperimentCreateRequest,
     ExperimentView,
@@ -26,7 +28,13 @@ from trafficverse.api.models import (
 )
 from trafficverse.domain.enums import ErrorCode
 from trafficverse.domain.errors import TrafficVerseError
-from trafficverse.domain.models import WorkspaceOverview, WorkspaceRecord, WorkspaceWrite
+from trafficverse.domain.models import (
+    AgentApiRecord,
+    AgentApiWrite,
+    WorkspaceOverview,
+    WorkspaceRecord,
+    WorkspaceWrite,
+)
 
 
 def _require_accepted(outcome: CommandOutcome) -> None:
@@ -37,6 +45,10 @@ def _require_accepted(outcome: CommandOutcome) -> None:
 
 def _workspace_view(record: WorkspaceRecord) -> WorkspaceView:
     return WorkspaceView.model_validate(record.model_dump())
+
+
+def _agent_api_view(record: AgentApiRecord) -> AgentApiView:
+    return AgentApiView.model_validate(record.model_dump())
 
 
 async def _execute(
@@ -116,6 +128,44 @@ def build_router(dependencies: ApiDependencies) -> APIRouter:
     )
     async def workspace_overview(workspace_id: UUID) -> WorkspaceOverview:
         return await dependencies.workspaces.overview(workspace_id)
+
+    @router.get(
+        "/workspaces/{workspace_id}/agent-assets",
+        response_model=tuple[AgentApiView, ...],
+    )
+    async def list_agent_assets(workspace_id: UUID) -> tuple[AgentApiView, ...]:
+        records = await dependencies.workspaces.list_agent_apis(workspace_id)
+        return tuple(_agent_api_view(record) for record in records)
+
+    @router.post(
+        "/workspaces/{workspace_id}/agent-assets",
+        response_model=AgentApiView,
+        status_code=status.HTTP_201_CREATED,
+    )
+    async def create_agent_asset(
+        workspace_id: UUID,
+        request: AgentApiCreateRequest,
+    ) -> AgentApiView:
+        record = await dependencies.workspaces.create_agent_api(
+            workspace_id,
+            AgentApiWrite(
+                name=request.name,
+                api_base_url=request.api_base_url,
+                model_id=request.model_id,
+                credential_env_var=request.credential_env_var,
+                description=request.description,
+            ),
+        )
+        return _agent_api_view(record)
+
+    @router.delete(
+        "/workspaces/{workspace_id}/agent-assets/{agent_api_id}",
+        status_code=status.HTTP_204_NO_CONTENT,
+        response_class=Response,
+    )
+    async def delete_agent_asset(workspace_id: UUID, agent_api_id: UUID) -> Response:
+        await dependencies.workspaces.delete_agent_api(workspace_id, agent_api_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get("/maps/{map_id}/manifest")
     async def map_manifest(map_id: str) -> object:

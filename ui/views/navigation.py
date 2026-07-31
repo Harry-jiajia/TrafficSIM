@@ -22,16 +22,56 @@ from ui.models import WorkspaceSummary
 from ui.views.element_plus_icons import ICON_SIZE, render_element_plus_icon, render_svg_pixmap
 from ui.views.theme import ThemeMode, load_icon_colors
 
-_NAVIGATION = (
-    ("live", "monitor.svg", "实时监控"),
-    ("scene", "set-up.svg", "仿真配置"),
-    ("experiments", "data-board.svg", "历史仿真"),
-    ("analysis", "trend-charts.svg", "数据分析"),
-    ("assets", "box.svg", "资产中心"),
-    ("settings", "setting.svg", "系统设置"),
+_NAVIGATION_GROUPS = (
+    (
+        "交通仿真",
+        (
+            ("scene", "set-up.svg", "仿真配置", None),
+            ("experiments", "data-board.svg", "历史仿真", "仿真记录"),
+            ("traffic_scenes", "monitor.svg", "交通场景", "场景列表"),
+        ),
+    ),
+    (
+        "资产中心",
+        (
+            ("maps", "box.svg", "地图", "地图资产"),
+            ("agents", "trend-charts.svg", "智能体", "API 配置"),
+        ),
+    ),
 )
+_SETTINGS_NAVIGATION = ("settings", "setting.svg", "系统设置")
 _ICON_ROOT = Path(__file__).resolve().parents[1] / "assets/icons/element-plus"
 _BRAND_LOGO = Path(__file__).resolve().parents[1] / "assets/icons/logo.svg"
+
+
+class _ExpandableNavigationRow(QWidget):
+    """One visual navigation row containing a page action and expand action."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setProperty("role", "navigationRow")
+        self.setProperty("active", False)
+        self.setProperty("hovered", False)
+
+    def set_active(self, active: bool) -> None:
+        self.setProperty("active", active)
+        self._refresh_style()
+
+    def enterEvent(self, event: QEnterEvent) -> None:
+        self.setProperty("hovered", True)
+        self._refresh_style()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event: QEvent) -> None:
+        self.setProperty("hovered", False)
+        self._refresh_style()
+        super().leaveEvent(event)
+
+    def _refresh_style(self) -> None:
+        for widget in (self, *self.findChildren(QPushButton)):
+            widget.style().unpolish(widget)
+            widget.style().polish(widget)
+            widget.update()
 
 
 class NavigationRail(QWidget):
@@ -43,6 +83,10 @@ class NavigationRail(QWidget):
         self.setObjectName("navigationRail")
         self.setFixedWidth(236)
         self._buttons: dict[str, QPushButton] = {}
+        self._sub_buttons: dict[str, QPushButton] = {}
+        self._expand_buttons: dict[str, QPushButton] = {}
+        self._child_containers: dict[str, QWidget] = {}
+        self._expandable_rows: dict[str, _ExpandableNavigationRow] = {}
         self._icon_paths: dict[str, Path] = {}
         self._theme = ThemeMode.DARK
 
@@ -66,15 +110,20 @@ class NavigationRail(QWidget):
         section = QLabel("控制中心")
         section.setObjectName("sectionLabel")
         layout.addWidget(section)
-        layout.addSpacing(5)
-        for key, icon, label in _NAVIGATION[:5]:
-            layout.addWidget(self._nav_button(key, icon, label))
+        layout.addSpacing(8)
+        for group_name, items in _NAVIGATION_GROUPS:
+            group = QLabel(group_name)
+            group.setObjectName("navigationGroupLabel")
+            layout.addWidget(group)
+            for key, icon, label, child_label in items:
+                if child_label is None:
+                    layout.addWidget(self._nav_button(key, icon, label))
+                    continue
+                layout.addWidget(self._expandable_nav(key, icon, label, child_label))
+            layout.addSpacing(8)
 
         layout.addStretch(1)
-        section = QLabel("系统")
-        section.setObjectName("sectionLabel")
-        layout.addWidget(section)
-        layout.addWidget(self._nav_button(*_NAVIGATION[5]))
+        layout.addWidget(self._nav_button(*_SETTINGS_NAVIGATION))
 
         divider = QFrame()
         divider.setObjectName("navigationDivider")
@@ -94,6 +143,12 @@ class NavigationRail(QWidget):
             button.setProperty("active", button_key == key)
             button.style().unpolish(button)
             button.style().polish(button)
+        for button_key, button in self._sub_buttons.items():
+            button.setProperty("active", button_key == key)
+            button.style().unpolish(button)
+            button.style().polish(button)
+        for row_key, row in self._expandable_rows.items():
+            row.set_active(row_key == key)
         self.refresh_icons()
 
     def refresh_icons(self, theme: ThemeMode | None = None) -> None:
@@ -143,6 +198,66 @@ class NavigationRail(QWidget):
         button.setObjectName(f"nav_{key}")
         button.setProperty("role", "navigation")
         return button
+
+    def _expandable_nav(
+        self,
+        key: str,
+        icon_file: str,
+        label: str,
+        child_label: str,
+    ) -> QWidget:
+        container = QWidget()
+        container.setObjectName(f"navContainer_{key}")
+        column = QVBoxLayout(container)
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(0)
+
+        row = _ExpandableNavigationRow()
+        row.setObjectName(f"navRow_{key}")
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(0)
+        main_button = self._nav_button(key, icon_file, label)
+        main_button.setProperty("role", "navigationRowMain")
+        row_layout.addWidget(main_button, 1)
+        expand_button = QPushButton("›")
+        expand_button.setObjectName(f"nav_expand_{key}")
+        expand_button.setProperty("role", "navigationExpand")
+        expand_button.setAccessibleName(f"展开{label}")
+        expand_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        expand_button.setFixedWidth(32)
+        expand_button.clicked.connect(lambda checked=False, page=key: self._toggle_children(page))
+        row_layout.addWidget(expand_button)
+        column.addWidget(row)
+
+        children = QWidget()
+        children.setObjectName(f"nav_children_{key}")
+        children_layout = QVBoxLayout(children)
+        children_layout.setContentsMargins(0, 0, 0, 0)
+        children_layout.setSpacing(0)
+        child_button = QPushButton(child_label)
+        child_button.setObjectName(f"nav_child_{key}")
+        child_button.setProperty("role", "subnavigation")
+        child_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        child_button.clicked.connect(lambda checked=False, page=key: self.page_selected.emit(page))
+        children_layout.addWidget(child_button)
+        children.hide()
+        column.addWidget(children)
+
+        self._expand_buttons[key] = expand_button
+        self._child_containers[key] = children
+        self._sub_buttons[key] = child_button
+        self._expandable_rows[key] = row
+        return container
+
+    def _toggle_children(self, key: str) -> None:
+        children = self._child_containers[key]
+        expanded = children.isHidden()
+        children.setVisible(expanded)
+        button = self._expand_buttons[key]
+        button.setText("⌄" if expanded else "›")
+        label = self._buttons[key].text()
+        button.setAccessibleName(f"{'折叠' if expanded else '展开'}{label}")
 
 
 class _WorkspaceListRow(QWidget):

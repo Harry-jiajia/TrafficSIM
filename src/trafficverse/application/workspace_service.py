@@ -6,6 +6,8 @@ from datetime import date, datetime, timezone
 from uuid import UUID
 
 from trafficverse.domain.models import (
+    AgentApiRecord,
+    AgentApiWrite,
     WorkspaceActivitySample,
     WorkspaceAutomationCount,
     WorkspaceOverview,
@@ -92,6 +94,19 @@ class WorkspaceService:
             ),
             preview_region=f"{workspace.name}核心区",
         )
+
+    async def create_agent_api(
+        self,
+        workspace_id: UUID,
+        write: AgentApiWrite,
+    ) -> AgentApiRecord:
+        return await self._repository.create_agent_api(workspace_id, write)
+
+    async def list_agent_apis(self, workspace_id: UUID) -> tuple[AgentApiRecord, ...]:
+        return await self._repository.list_agent_apis(workspace_id)
+
+    async def delete_agent_api(self, workspace_id: UUID, agent_api_id: UUID) -> None:
+        await self._repository.delete_agent_api(workspace_id, agent_api_id)
 
     @staticmethod
     def _normalized(write: WorkspaceWrite) -> WorkspaceWrite:

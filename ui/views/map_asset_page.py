@@ -1,4 +1,4 @@
-"""Directory-based map asset catalog with MapLibre preview."""
+"""Workspace map asset catalog with MapLibre preview."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from ui.views.components import PAGE_CONTENT_MARGIN, page_header
 from ui.widgets import AssetDirectoryWidget, MapLibreDeckMapWidget
 
 
-class AssetCenterPage(QWidget):
+class MapAssetPage(QWidget):
     """Manage reusable map packages and preview their standardized network."""
 
     import_requested = Signal()
@@ -27,7 +27,7 @@ class AssetCenterPage(QWidget):
 
     def __init__(self, *, load_web_map: bool, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setObjectName("assetCenterPage")
+        self.setObjectName("mapAssetPage")
         self._maps: dict[str, MapSummary] = {}
         self._manifests: dict[str, MapManifest] = {}
         self._selected_asset_id: str | None = None
@@ -42,7 +42,7 @@ class AssetCenterPage(QWidget):
         root.setSpacing(0)
         root.addWidget(
             page_header(
-                "资产中心",
+                "地图",
                 "以地图包目录统一管理 SUMO、CARLA 与 Web 可视化资源",
                 self._header_actions(),
             )

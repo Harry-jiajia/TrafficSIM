@@ -1,4 +1,5 @@
 from ui.models.protocol import (
+    AgentApiSummary,
     ComponentHealth,
     ControlAvailability,
     Envelope,
@@ -17,6 +18,7 @@ from ui.models.protocol import (
 )
 
 __all__ = [
+    "AgentApiSummary",
     "ComponentHealth",
     "ControlAvailability",
     "Envelope",

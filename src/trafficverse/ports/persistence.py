@@ -6,6 +6,8 @@ from uuid import UUID
 
 from trafficverse.domain.enums import ExperimentStatus
 from trafficverse.domain.models import (
+    AgentApiRecord,
+    AgentApiWrite,
     ArtifactCreate,
     ArtifactRecord,
     DomainEvent,
@@ -120,3 +122,13 @@ class WorkspaceRepositoryPort(Protocol):
     ) -> WorkspaceRecord: ...
 
     async def delete_workspace(self, workspace_id: UUID) -> None: ...
+
+    async def create_agent_api(
+        self,
+        workspace_id: UUID,
+        write: AgentApiWrite,
+    ) -> AgentApiRecord: ...
+
+    async def list_agent_apis(self, workspace_id: UUID) -> tuple[AgentApiRecord, ...]: ...
+
+    async def delete_agent_api(self, workspace_id: UUID, agent_api_id: UUID) -> None: ...

@@ -25,7 +25,7 @@ from ui.views.components import PAGE_CONTENT_MARGIN, empty_state, page_header, p
 
 class SceneConfigurationPage(QWidget):
     map_selected = Signal(str)
-    create_requested = Signal()
+    launch_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -33,7 +33,13 @@ class SceneConfigurationPage(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-        root.addWidget(page_header("场景配置", "选择可直接运行的 SUMO 场景包", self._actions()))
+        root.addWidget(
+            page_header(
+                "仿真配置",
+                "配置运行参数并启动工作区仿真",
+                self._actions(),
+            )
+        )
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -56,9 +62,9 @@ class SceneConfigurationPage(QWidget):
         widget = QWidget()
         row = QHBoxLayout(widget)
         row.setContentsMargins(0, 0, 0, 0)
-        self.create_button = QPushButton("创建实验")
+        self.create_button = QPushButton("开始仿真")
         self.create_button.setObjectName("primaryButton")
-        self.create_button.clicked.connect(self.create_requested)
+        self.create_button.clicked.connect(self.launch_requested)
         row.addWidget(self.create_button)
         return widget
 
@@ -67,7 +73,7 @@ class SceneConfigurationPage(QWidget):
         frame.setObjectName("panel")
         layout = QHBoxLayout(frame)
         layout.setContentsMargins(16, 12, 16, 12)
-        steps = ("01  基础信息", "02  地图与道路", "03  交通需求", "04  行为参数", "05  确认创建")
+        steps = ("01  基础信息", "02  地图与道路", "03  交通需求", "04  行为参数", "05  开始仿真")
         for index, text in enumerate(steps):
             label = QLabel(text)
             label.setObjectName("panelKicker" if index == 0 else "caption")

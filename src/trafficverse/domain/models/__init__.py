@@ -33,6 +33,8 @@ from trafficverse.domain.models.vehicle import (
     VehicleState,
 )
 from trafficverse.domain.models.workspace import (
+    AgentApiRecord,
+    AgentApiWrite,
     WorkspaceActivitySample,
     WorkspaceAutomationCount,
     WorkspaceOverview,
@@ -43,6 +45,8 @@ from trafficverse.domain.models.workspace import (
 
 __all__ = [
     "ActorSpawnResult",
+    "AgentApiRecord",
+    "AgentApiWrite",
     "ArtifactCreate",
     "ArtifactRecord",
     "CarlaTrafficLight",

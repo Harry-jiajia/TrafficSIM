@@ -147,6 +147,18 @@ class WorkspaceSummary(ProtocolModel):
     updated_at: datetime
 
 
+class AgentApiSummary(ProtocolModel):
+    agent_api_id: UUID
+    workspace_id: UUID
+    name: str = Field(min_length=1, max_length=200)
+    api_base_url: str = Field(min_length=1)
+    model_id: str = Field(min_length=1, max_length=200)
+    credential_env_var: str = Field(min_length=1, max_length=128)
+    description: str = Field(default="", max_length=1000)
+    created_at: datetime
+    updated_at: datetime
+
+
 class WorkspaceAutomationCount(ProtocolModel):
     level: str = Field(min_length=1)
     count: int = Field(ge=0)

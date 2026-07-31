@@ -23,14 +23,15 @@ from ui.models import (
     WorkspaceSummary,
 )
 from ui.viewmodels import RunViewModel
-from ui.views.asset_center_page import AssetCenterPage
-from ui.views.data_analysis_page import DataAnalysisPage
+from ui.views.agent_asset_page import AgentAssetPage
 from ui.views.experiment_management_page import ExperimentManagementPage
 from ui.views.live_monitor_page import LiveMonitorPage
+from ui.views.map_asset_page import MapAssetPage
 from ui.views.navigation import NavigationRail, WorkspaceNavigationRail
 from ui.views.scene_configuration_page import SceneConfigurationPage
 from ui.views.system_settings_page import SystemSettingsPage
 from ui.views.theme import ThemeMode, configure_application_font, load_stylesheet
+from ui.views.traffic_scene_page import TrafficScenePage
 from ui.views.workspace_page import (
     WorkspaceDeleteDialog,
     WorkspaceEditDialog,
@@ -69,8 +70,9 @@ class MainWindow(QMainWindow):
         self.live_page = LiveMonitorPage(load_web_map=load_web_map)
         self.scene_page = SceneConfigurationPage()
         self.experiments_page = ExperimentManagementPage()
-        self.analysis_page = DataAnalysisPage()
-        self.assets_page = AssetCenterPage(load_web_map=load_web_map)
+        self.traffic_scenes_page = TrafficScenePage()
+        self.maps_page = MapAssetPage(load_web_map=load_web_map)
+        self.agents_page = AgentAssetPage()
         self.settings_page = SystemSettingsPage()
         self.workspace_page = WorkspaceOverviewPage()
         self._pages = {
@@ -78,8 +80,9 @@ class MainWindow(QMainWindow):
             "live": self.live_page,
             "scene": self.scene_page,
             "experiments": self.experiments_page,
-            "analysis": self.analysis_page,
-            "assets": self.assets_page,
+            "traffic_scenes": self.traffic_scenes_page,
+            "maps": self.maps_page,
+            "agents": self.agents_page,
             "settings": self.settings_page,
         }
         for page in self._pages.values():
@@ -120,7 +123,6 @@ class MainWindow(QMainWindow):
         self.workspace_page.enter_requested.connect(vm.enter_selected_workspace)
         self.workspace_page.rename_requested.connect(self._rename_workspace)
         self.workspace_page.delete_requested.connect(self._delete_workspace)
-        self.live_page.create_requested.connect(vm.create_experiment)
         self.live_page.start_requested.connect(vm.start)
         self.live_page.pause_requested.connect(vm.pause)
         self.live_page.resume_requested.connect(vm.resume)
@@ -130,9 +132,12 @@ class MainWindow(QMainWindow):
         self.live_page.lane_change_requested.connect(self._control_lane)
         self.live_page.vehicle_stop_requested.connect(self._control_stop)
         self.scene_page.map_selected.connect(vm.select_map)
-        self.scene_page.create_requested.connect(vm.create_experiment)
-        self.assets_page.import_requested.connect(self._choose_map)
-        self.assets_page.preview_requested.connect(vm.preview_map_asset)
+        self.scene_page.launch_requested.connect(vm.launch_experiment)
+        self.traffic_scenes_page.scene_selected.connect(vm.select_map)
+        self.maps_page.import_requested.connect(self._choose_map)
+        self.maps_page.preview_requested.connect(vm.preview_map_asset)
+        self.agents_page.configure_requested.connect(vm.configure_agent_api)
+        self.agents_page.delete_requested.connect(vm.delete_agent_api)
         self.settings_page.theme_changed.connect(self._apply_theme)
 
     def _connect_viewmodel(self) -> None:
@@ -141,9 +146,10 @@ class MainWindow(QMainWindow):
         vm.workspace_selected_changed.connect(self._set_selected_workspace)
         vm.workspace_overview_changed.connect(self._set_workspace_overview)
         vm.workspace_context_changed.connect(self._set_workspace_context)
+        vm.agent_catalog_changed.connect(self.agents_page.set_agents)
         vm.map_catalog_changed.connect(self._set_maps)
-        vm.map_manifest_changed.connect(self.assets_page.set_manifest)
-        vm.asset_network_changed.connect(self.assets_page.set_preview_network)
+        vm.map_manifest_changed.connect(self.maps_page.set_manifest)
+        vm.asset_network_changed.connect(self.maps_page.set_preview_network)
         vm.network_changed.connect(self.live_page.map_widget.set_network)
         vm.vehicles_changed.connect(self._set_vehicles)
         vm.traffic_lights_changed.connect(self.live_page.map_widget.set_traffic_lights)
@@ -152,6 +158,7 @@ class MainWindow(QMainWindow):
         vm.simulation_time_changed.connect(self._set_time)
         vm.control_availability_changed.connect(self._set_controls)
         vm.connection_changed.connect(self.live_page.set_connection)
+        vm.monitor_requested.connect(lambda: self._show_page("live"))
         vm.notification.connect(self._show_notice)
 
     @Slot(str)
@@ -210,7 +217,8 @@ class MainWindow(QMainWindow):
             else ()
         )
         self.scene_page.set_maps(tuple(item for item in values if item.kind == "sumo"))
-        self.assets_page.set_maps(values)
+        self.traffic_scenes_page.set_maps(values)
+        self.maps_page.set_maps(values)
 
     @Slot(object)
     def _set_vehicles(self, vehicles: object) -> None:
@@ -339,4 +347,4 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(load_stylesheet(theme))
         self.navigation.refresh_icons(theme)
         self.live_page.map_widget.set_theme(theme.value)
-        self.assets_page.map_widget.set_theme(theme.value)
+        self.maps_page.map_widget.set_theme(theme.value)

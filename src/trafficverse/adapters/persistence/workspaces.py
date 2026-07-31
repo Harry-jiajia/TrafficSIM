@@ -9,7 +9,12 @@ from uuid import UUID, uuid4
 
 from trafficverse.domain.enums import ErrorCode
 from trafficverse.domain.errors import TrafficVerseError
-from trafficverse.domain.models import WorkspaceRecord, WorkspaceWrite
+from trafficverse.domain.models import (
+    AgentApiRecord,
+    AgentApiWrite,
+    WorkspaceRecord,
+    WorkspaceWrite,
+)
 
 _DEFAULT_WORKSPACES = (
     (
@@ -55,6 +60,7 @@ class InMemoryWorkspaceRepository:
             )
             for workspace_id, write in values
         }
+        self._agent_apis: dict[UUID, AgentApiRecord] = {}
         self._lock = asyncio.Lock()
 
     async def create_workspace(self, write: WorkspaceWrite) -> WorkspaceRecord:
@@ -110,6 +116,63 @@ class InMemoryWorkspaceRepository:
         async with self._lock:
             self._require(workspace_id)
             del self._records[workspace_id]
+            self._agent_apis = {
+                agent_api_id: record
+                for agent_api_id, record in self._agent_apis.items()
+                if record.workspace_id != workspace_id
+            }
+
+    async def create_agent_api(
+        self,
+        workspace_id: UUID,
+        write: AgentApiWrite,
+    ) -> AgentApiRecord:
+        async with self._lock:
+            self._require(workspace_id)
+            normalized_name = write.name.casefold()
+            if any(
+                record.workspace_id == workspace_id and record.name.casefold() == normalized_name
+                for record in self._agent_apis.values()
+            ):
+                raise TrafficVerseError(
+                    ErrorCode.RESOURCE_CONFLICT,
+                    f"agent API name already exists in workspace: {write.name}",
+                )
+            now = datetime.now(timezone.utc)
+            record = AgentApiRecord(
+                agent_api_id=uuid4(),
+                workspace_id=workspace_id,
+                name=write.name,
+                api_base_url=write.api_base_url,
+                model_id=write.model_id,
+                credential_env_var=write.credential_env_var,
+                description=write.description,
+                created_at=now,
+                updated_at=now,
+            )
+            self._agent_apis[record.agent_api_id] = record
+            return record
+
+    async def list_agent_apis(self, workspace_id: UUID) -> tuple[AgentApiRecord, ...]:
+        async with self._lock:
+            self._require(workspace_id)
+            records = (
+                record
+                for record in self._agent_apis.values()
+                if record.workspace_id == workspace_id
+            )
+            return tuple(sorted(records, key=lambda record: (record.created_at, record.name)))
+
+    async def delete_agent_api(self, workspace_id: UUID, agent_api_id: UUID) -> None:
+        async with self._lock:
+            self._require(workspace_id)
+            record = self._agent_apis.get(agent_api_id)
+            if record is None or record.workspace_id != workspace_id:
+                raise TrafficVerseError(
+                    ErrorCode.RESOURCE_NOT_FOUND,
+                    f"agent API does not exist: {agent_api_id}",
+                )
+            del self._agent_apis[agent_api_id]
 
     def _require(self, workspace_id: UUID) -> WorkspaceRecord:
         try:

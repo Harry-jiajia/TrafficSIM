@@ -1,5 +1,96 @@
 components:
   schemas:
+    AgentApiCreateRequest:
+      additionalProperties: false
+      properties:
+        api_base_url:
+          format: uri
+          minLength: 1
+          title: Api Base Url
+          type: string
+        credential_env_var:
+          maxLength: 128
+          minLength: 1
+          pattern: ^[A-Z][A-Z0-9_]*$
+          title: Credential Env Var
+          type: string
+        description:
+          default: ''
+          maxLength: 1000
+          title: Description
+          type: string
+        model_id:
+          maxLength: 200
+          minLength: 1
+          title: Model Id
+          type: string
+        name:
+          maxLength: 200
+          minLength: 1
+          title: Name
+          type: string
+      required:
+      - name
+      - api_base_url
+      - model_id
+      - credential_env_var
+      title: AgentApiCreateRequest
+      type: object
+    AgentApiView:
+      additionalProperties: false
+      properties:
+        agent_api_id:
+          format: uuid
+          title: Agent Api Id
+          type: string
+        api_base_url:
+          format: uri
+          minLength: 1
+          title: Api Base Url
+          type: string
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        credential_env_var:
+          maxLength: 128
+          minLength: 1
+          title: Credential Env Var
+          type: string
+        description:
+          default: ''
+          maxLength: 1000
+          title: Description
+          type: string
+        model_id:
+          maxLength: 200
+          minLength: 1
+          title: Model Id
+          type: string
+        name:
+          maxLength: 200
+          minLength: 1
+          title: Name
+          type: string
+        updated_at:
+          format: date-time
+          title: Updated At
+          type: string
+        workspace_id:
+          format: uuid
+          title: Workspace Id
+          type: string
+      required:
+      - agent_api_id
+      - workspace_id
+      - name
+      - api_base_url
+      - model_id
+      - credential_env_var
+      - created_at
+      - updated_at
+      title: AgentApiView
+      type: object
     Body_import_map_api_v1_maps_import_post:
       properties:
         file:
@@ -964,6 +1055,93 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
           description: Validation Error
       summary: Update Workspace
+  /api/v1/workspaces/{workspace_id}/agent-assets:
+    get:
+      operationId: list_agent_assets_api_v1_workspaces__workspace_id__agent_assets_get
+      parameters:
+      - in: path
+        name: workspace_id
+        required: true
+        schema:
+          format: uuid
+          title: Workspace Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AgentApiView'
+                title: Response List Agent Assets Api V1 Workspaces  Workspace Id  Agent
+                  Assets Get
+                type: array
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: List Agent Assets
+    post:
+      operationId: create_agent_asset_api_v1_workspaces__workspace_id__agent_assets_post
+      parameters:
+      - in: path
+        name: workspace_id
+        required: true
+        schema:
+          format: uuid
+          title: Workspace Id
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentApiCreateRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentApiView'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Create Agent Asset
+  /api/v1/workspaces/{workspace_id}/agent-assets/{agent_api_id}:
+    delete:
+      operationId: delete_agent_asset_api_v1_workspaces__workspace_id__agent_assets__agent_api_id__delete
+      parameters:
+      - in: path
+        name: workspace_id
+        required: true
+        schema:
+          format: uuid
+          title: Workspace Id
+          type: string
+      - in: path
+        name: agent_api_id
+        required: true
+        schema:
+          format: uuid
+          title: Agent Api Id
+          type: string
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Delete Agent Asset
   /api/v1/workspaces/{workspace_id}/overview:
     get:
       operationId: workspace_overview_api_v1_workspaces__workspace_id__overview_get

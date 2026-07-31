@@ -66,7 +66,7 @@ class SystemSettingsPage(QWidget):
         self.theme_combo.addItem("浅色模式", "light")
         self.theme_combo.currentIndexChanged.connect(self._emit_theme)
         start_page = QComboBox()
-        start_page.addItems(("实时监控", "实验管理"))
+        start_page.addItems(("仿真配置", "历史仿真"))
         form.addRow("语言", language)
         form.addRow("界面主题", self.theme_combo)
         form.addRow("启动页面", start_page)

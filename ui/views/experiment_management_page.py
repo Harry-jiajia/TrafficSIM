@@ -1,4 +1,4 @@
-"""Experiment management and result overview page."""
+"""Workspace simulation history page."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ui.views.components import PAGE_CONTENT_MARGIN, empty_state, metric_card, page_header, panel
+from ui.views.components import PAGE_CONTENT_MARGIN, metric_card, page_header, panel
 
 
 class ExperimentManagementPage(QWidget):
@@ -22,7 +22,7 @@ class ExperimentManagementPage(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-        root.addWidget(page_header("实验管理", "实验生命周期、运行状态与结果概览"))
+        root.addWidget(page_header("历史仿真", "查看工作区内的仿真记录与运行状态"))
 
         body = QWidget()
         layout = QVBoxLayout(body)
@@ -33,22 +33,9 @@ class ExperimentManagementPage(QWidget):
         self.time_card = metric_card("仿真时间", "0.00 秒", "权威仿真时钟")
         metrics.addWidget(self.status_card)
         metrics.addWidget(self.time_card)
-        metrics.addWidget(metric_card("已完成实验", "—", "结果接口待接入"))
-        metrics.addWidget(metric_card("成功率", "—", "结果接口待接入"))
+        metrics.addWidget(metric_card("历史记录", "—", "历史列表接口待接入"))
         layout.addLayout(metrics)
-
-        columns = QHBoxLayout()
-        columns.setSpacing(12)
-        columns.addWidget(self._experiment_table(), 3)
-        columns.addWidget(
-            panel(
-                "结果洞察",
-                empty_state("等待结果数据", "完成实验后，这里将呈现关键指标与跨实验对比。", "◫"),
-                kicker="分析概览",
-            ),
-            2,
-        )
-        layout.addLayout(columns, 1)
+        layout.addWidget(self._experiment_table(), 1)
         root.addWidget(body, 1)
 
     def _experiment_table(self) -> QFrame:
@@ -62,7 +49,7 @@ class ExperimentManagementPage(QWidget):
         for column, value in enumerate(values):
             table.setItem(0, column, QTableWidgetItem(value))
         self.table = table
-        return panel("最近实验", table, kicker="实验记录")
+        return panel("仿真记录", table, kicker="历史仿真")
 
     def set_status(self, status: str) -> None:
         self._metric_value(self.status_card).setText(status)
