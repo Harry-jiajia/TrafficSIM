@@ -11,7 +11,7 @@ from trafficverse.domain.models.common import StrictModel
 
 class ComponentRequirement(StrictModel):
     mode: RequirementMode
-    version: str = Field(min_length=1)
+    version: str | None = Field(default=None, min_length=1)
 
 
 class RuntimeProfile(StrictModel):
@@ -43,6 +43,7 @@ class ScenarioIdentityConfig(StrictModel):
 
 
 class SimulationConfig(StrictModel):
+    start_time_ms: int = Field(default=0, ge=0)
     step_ms: int = Field(gt=0)
     duration_ms: int = Field(gt=0)
     speed_multiplier: float = Field(gt=0.0)
@@ -62,17 +63,20 @@ class TrafficConfig(StrictModel):
 
 
 class SumoConfig(StrictModel):
-    """External SUMO/TraCI endpoint used as the production traffic truth source."""
+    """SUMO/TraCI endpoint or managed local process used as the traffic truth source."""
 
     provider: Literal["sumo"] = "sumo"
-    launch_mode: Literal["external"] = "external"
+    launch_mode: Literal["external", "managed"] = "external"
     host: str = Field(default="127.0.0.1", min_length=1)
     port: int = Field(default=8813, ge=1, le=65535)
     step_ms: int = Field(default=50, gt=0)
+    begin_time_ms: int = Field(default=0, ge=0)
     tls_manager: Literal["sumo"] = "sumo"
     config_file: str = Field(min_length=1)
-    expected_version: str = Field(default="1.27.1", min_length=1)
+    expected_version: str | None = Field(default=None, min_length=1)
     connect_retries: int = Field(default=3, ge=0, le=100)
+    binary: str = Field(default="sumo", min_length=1)
+    output_directory: str | None = Field(default=None, min_length=1)
 
 
 class CarlaViewConfig(StrictModel):
@@ -213,7 +217,12 @@ class ScenarioConfig(StrictModel):
         mismatches = []
         if self.simulation.step_ms != self.sumo.step_ms:
             mismatches.append("sumo.step_ms")
-        if self.simulation.step_ms != self.carla.step_ms:
+        if self.simulation.start_time_ms != self.sumo.begin_time_ms:
+            mismatches.append("sumo.begin_time_ms")
+        if (
+            self.carla.mode is not RequirementMode.DISABLED
+            and self.simulation.step_ms != self.carla.step_ms
+        ):
             mismatches.append("carla.step_ms")
         if mismatches:
             raise ValueError("simulation step values must match: " + ", ".join(mismatches))

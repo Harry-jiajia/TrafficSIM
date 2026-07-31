@@ -57,6 +57,7 @@
 | ADR-024 | 恢复 SUMO 为全局交通真值并由 TrafficVerse 统一联仿 | Accepted |
 | ADR-025 | PySide6 托管本机 CARLA 原生窗口，不传输 RGB 画面 | Accepted |
 | ADR-026 | 左侧地图迁移到 MapLibre + deck.gl | Accepted |
+| ADR-027 | 原生 SUMO 二维场景包自动发现并使用主机 SUMO 托管运行 | Accepted |
 
 ---
 
@@ -1135,6 +1136,76 @@ Web 构建基线固定为服务器现有 Node.js 16.20.2 和 npm 8.19.4。MapLib
 - 必须证明至少 50 辆三维实例在目标机器按当前 20 Hz snapshot 稳定显示；
 - 同步 PRD、System Design、Agent Guide、UI 测试、依赖 lockfile 和离线构建流程；
 - 二维等价 Gate 完成前不删除 Leaflet 文件；完成后不得长期保留双生产地图栈。
+
+---
+
+## ADR-027 — 原生 SUMO 二维场景包自动发现并使用主机 SUMO 托管运行
+
+- 状态：Accepted
+- 日期：2026-07-30
+- 扩展：ADR-024 的 SUMO 真值和唯一推进者约束
+- 保留：Town04 Core Run 的 SUMO 1.27.1、50 ms、同源资产和严格 CARLA 信号映射
+
+### 背景
+
+TrafficVerse 已有的 Core Run 装配只注册 Town04 一个 manifest，忽略实验请求中的实际场景 ID，
+并把任何地图选择重写为 `map.sumocfg`。即使 `carla.mode=disabled`，运行工厂仍强制读取
+`network.json`、`routes.yaml`、`signals.yaml` 和 `registration.yaml`。这使已经能够由
+`sumo -c <scene>.sumocfg` 独立运行的原生 SUMO 场景无法直接接入二维页面。
+
+科研用户通常拥有大量以目录为单位的完整 SUMO 场景，每个目录包含 `.sumocfg`、`.net.xml`、
+route、additional、GUI settings 和其他被配置引用的输入。此类场景不需要 CARLA，也不应被要求
+补造 OpenDRIVE 或 Town04 专属 manifest。不同场景还可能由主机上不同的 SUMO 稳定版本产生，并
+使用各自的 begin、end 和 step-length。
+
+### 决策
+
+TrafficVerse 增加“原生 SUMO 二维包”运行模式，与严格 Town04 Core Run 并存：
+
+1. `configs/maps/<package>/` 下每个顶层 `.sumocfg` 都是一个可发现的运行条目；目录只有一个配置
+   时使用目录名作为 ID，多个配置时使用 `<directory>-<config-stem>`；
+2. 解析 `.sumocfg` 的 `net-file`、route/additional 和其他显式 input file，所有路径必须位于
+   `configs/maps` 允许根目录内；缺失或越界的配置作为不可运行条目报告，不阻断其他目录；
+3. 纯二维包不要求 `.xodr`、Town04 `manifest.yaml`、`network.json`、CARLA registration 或
+   OpenDRIVE signal binding；MapLibre/deck.gl 展示几何直接由同一 `.net.xml` 生成；
+4. 通用信号灯使用稳定 ID `sumo-tls:<tls-id>:<controlled-link-index>`，静态 Point 来自受控进口
+   车道停止端，实时颜色来自同一 TraCI link state；存在 `linkSignalID` 时继续保留 Town04 的
+   OpenDRIVE 严格 ID；
+5. TrafficVerse 使用 PATH 中的 `sumo` 可执行文件托管本地进程，并优先加载该可执行文件同发行版
+   的 TraCI tools。`expected_version` 为空时只记录实际版本，不按白名单拒绝；显式配置版本时仍
+   严格校验；
+6. begin、end 和 step-length 来自 `.sumocfg`。纯二维模式允许场景自己的整数毫秒步长；Town04
+   Core Run 仍固定 50 ms，只有 `SimulationManager` 调用 `simulationStep()`；
+7. 每次实验把场景输入复制到 `artifacts/sumo/<experiment-id>/package/` 的运行副本，保持原相对
+   路径，并把 SUMO 输出留在该 artifact 树；运行不得改写 `configs/maps` 中的源场景；
+8. 原生 SUMO 包自动设置 `carla.mode=disabled`，不构造 ROI、registration 或 CARLA signal planner；
+   以后若某个任意 SUMO 包需要 CARLA 镜像，必须另行提供经过验证的配准和严格信号 binding。
+
+### 选择理由
+
+- `.sumocfg` 已是 SUMO 对运行输入、时间和输出的权威配置，额外复制一份 TrafficVerse 场景 YAML
+  会引入漂移和批量维护成本；
+- 使用主机 `sumo` 与其同发行版 TraCI tools，能兼容用户现有场景环境，同时保留显式版本锁定能力；
+- 从同一 `.net.xml` 生成静态几何，保证道路与实时车辆坐标同源，不建立第二交通真值；
+- 运行副本隔离输出，既保持原配置的相对路径语义，也保护版本化源资产；
+- 纯二维分支使用 no-op ROI/signal planner，避免以虚假的 Town04/CARLA 文件满足构造参数。
+
+### 放弃的方案
+
+- **为每个 SUMO 目录手写完整 TrafficVerse YAML/manifest**：可显式控制，但大量重复字段容易漂移；
+- **继续要求所有场景从 `.xodr` 生成**：适合 SUMO/CARLA 同源联仿，不适合已经完成的纯 SUMO 场景；
+- **UI 直接启动或推进 TraCI**：会破坏 API 边界和 `SimulationManager` 唯一时钟；
+- **直接在源目录运行并写 outputs**：会污染配置资产并使实验结果互相覆盖；
+- **宣称兼容任意历史 SUMO 协议**：不现实；实际二进制或 TraCI 协议不兼容时仍以稳定错误失败。
+
+### 后果与约束
+
+- 默认同一进程仍只允许一个运行实验，并使用一个 TraCI client；托管端口冲突会在 prepare 阶段失败；
+- 自动发现只扫描允许根目录，不接受 API 传入任意本机路径或任意 shell 命令；
+- `.sumocfg` 中输出路径必须是包内安全相对路径；绝对路径或 `..` 输出被拒绝；
+- 纯二维场景的 CARLA 状态为 disabled，不应把它显示成三维故障；
+- 新增真实集成测试必须至少覆盖一个非 Town04、无 `linkSignalID`、且主机 SUMO 版本不同于 Core
+  Run 锁定版本的场景。
 
 ---
 

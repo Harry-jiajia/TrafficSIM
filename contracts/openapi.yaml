@@ -135,13 +135,40 @@ components:
       additionalProperties: false
       properties:
         carla_map:
-          minLength: 1
+          anyOf:
+          - minLength: 1
+            type: string
+          - type: 'null'
           title: Carla Map
-          type: string
         carla_version:
-          minLength: 1
+          anyOf:
+          - minLength: 1
+            type: string
+          - type: 'null'
           title: Carla Version
+        display_name:
+          anyOf:
+          - minLength: 1
+            type: string
+          - type: 'null'
+          title: Display Name
+        files:
+          default: []
+          items:
+            type: string
+          title: Files
+          type: array
+        kind:
+          default: core_run
+          enum:
+          - core_run
+          - sumo
+          title: Kind
           type: string
+        manifest_available:
+          default: true
+          title: Manifest Available
+          type: boolean
         map_id:
           minLength: 1
           title: Map Id
@@ -150,13 +177,40 @@ components:
           minLength: 1
           title: Network Schema Version
           type: string
+        sumo_begin_time_ms:
+          default: 0
+          minimum: 0.0
+          title: Sumo Begin Time Ms
+          type: integer
+        sumo_config_file:
+          anyOf:
+          - minLength: 1
+            type: string
+          - type: 'null'
+          title: Sumo Config File
+        sumo_end_time_ms:
+          anyOf:
+          - minimum: 0.0
+            type: integer
+          - type: 'null'
+          title: Sumo End Time Ms
+        sumo_step_ms:
+          anyOf:
+          - exclusiveMinimum: 0.0
+            type: integer
+          - type: 'null'
+          title: Sumo Step Ms
         validated:
           title: Validated
           type: boolean
+        validation_errors:
+          default: []
+          items:
+            type: string
+          title: Validation Errors
+          type: array
       required:
       - map_id
-      - carla_map
-      - carla_version
       - validated
       - network_schema_version
       title: MapSummary

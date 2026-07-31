@@ -317,6 +317,8 @@ class Harness:
         *,
         carla_mode: RequirementMode = RequirementMode.REQUIRED,
         registry: ExperimentRegistry | None = None,
+        start_time_ms: int = 0,
+        duration_ms: int = 1000,
     ) -> None:
         self.experiment_id = uuid4()
         self.trace: list[str] = []
@@ -331,7 +333,10 @@ class Harness:
         scenario = scenario.model_copy(
             update={
                 "carla": scenario.carla.model_copy(update={"mode": carla_mode}),
-                "simulation": scenario.simulation.model_copy(update={"duration_ms": 1000}),
+                "simulation": scenario.simulation.model_copy(
+                    update={"start_time_ms": start_time_ms, "duration_ms": duration_ms}
+                ),
+                "sumo": scenario.sumo.model_copy(update={"begin_time_ms": start_time_ms}),
             }
         )
         self.manager = SimulationManager(
@@ -346,7 +351,7 @@ class Harness:
             signal_planner=TraceSignalPlanner(self.trace, self.failures),
             frame_publisher=self.publisher,
             registry=registry,
-            clock=SimulationClock(50),
+            clock=SimulationClock(50, initial_time_ms=start_time_ms),
         )
 
     async def ready_and_started(self) -> None:
@@ -398,6 +403,25 @@ def test_complete_lifecycle_tick_order_pause_and_speed() -> None:
         ]
         assert harness.traffic.closed
         assert harness.carla.closed
+
+    asyncio.run(exercise())
+
+
+def test_nonzero_sumo_begin_time_keeps_duration_relative_to_start() -> None:
+    async def exercise() -> None:
+        harness = Harness(
+            carla_mode=RequirementMode.DISABLED,
+            start_time_ms=500,
+            duration_ms=100,
+        )
+        await harness.ready_and_started()
+
+        first = await harness.manager.run_tick()
+        second = await harness.manager.run_tick()
+
+        assert first.traffic.simulation_time_ms == 550
+        assert second.traffic.simulation_time_ms == 600
+        assert await harness.manager.get_status() is ExperimentStatus.COMPLETED
 
     asyncio.run(exercise())
 

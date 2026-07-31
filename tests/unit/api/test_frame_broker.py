@@ -11,6 +11,7 @@ from trafficverse.domain.enums import AutomationLevel, VehicleAction
 from trafficverse.domain.models import (
     CarlaFrame,
     SimulationFrame,
+    TrafficLightState,
     TrafficSnapshot,
     Vector3,
     VehicleState,
@@ -41,6 +42,13 @@ def _frame(sequence: int, x: float) -> SimulationFrame:
             simulation_time_ms=sequence * 50,
             sequence=sequence,
             vehicles=(vehicle,),
+            traffic_lights=(
+                TrafficLightState(
+                    signal_id="signal:1",
+                    simulation_time_ms=sequence * 50,
+                    phase="RED",
+                ),
+            ),
         ),
         carla=CarlaFrame(
             simulation_time_ms=sequence * 50,
@@ -104,5 +112,8 @@ def test_snapshot_request_returns_latest_complete_frame() -> None:
         snapshot_payload = cast("dict[str, JsonValue]", snapshot.payload)
         traffic = cast("dict[str, JsonValue]", snapshot_payload["traffic"])
         assert traffic["sequence"] == 7
+        lights = cast("list[JsonValue]", traffic["traffic_lights"])
+        first_light = cast("dict[str, JsonValue]", lights[0])
+        assert first_light["simulation_time_ms"] == 350
 
     asyncio.run(exercise())

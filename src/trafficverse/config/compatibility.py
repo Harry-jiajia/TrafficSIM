@@ -90,7 +90,7 @@ def _detect_sumo_version() -> str | None:
 
 def _requirement_issues(
     component: str,
-    expected: str,
+    expected: str | None,
     mode: RequirementMode,
     actual: str | None,
 ) -> list[CompatibilityIssue]:
@@ -100,14 +100,15 @@ def _requirement_issues(
         severity: Literal["warning", "error"] = (
             "error" if mode is RequirementMode.REQUIRED else "warning"
         )
+        requirement = f"{component} {expected}" if expected is not None else component
         return [
             CompatibilityIssue(
                 severity=severity,
                 component=component,
-                message=f"{component} {expected} is {mode.value} but was not detected",
+                message=f"{requirement} is {mode.value} but was not detected",
             )
         ]
-    if actual != expected:
+    if expected is not None and actual != expected:
         return [
             CompatibilityIssue(
                 severity="error",

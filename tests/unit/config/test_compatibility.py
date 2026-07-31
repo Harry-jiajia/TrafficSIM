@@ -19,6 +19,25 @@ def test_auto_selects_macos_profile_for_apple_silicon() -> None:
     )
     assert name == "macos-dev"
     assert profile.carla.mode.value == "disabled"
+    assert profile.sumo.version is None
+
+
+def test_macos_profile_accepts_detected_host_sumo_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    baseline = load_runtime_baseline(BASELINE_PATH)
+    monkeypatch.setattr("trafficverse.config.compatibility.platform.system", lambda: "Darwin")
+    monkeypatch.setattr("trafficverse.config.compatibility.platform.machine", lambda: "arm64")
+    monkeypatch.setattr(
+        "trafficverse.config.compatibility.sys.version_info",
+        type("VersionInfo", (), {"major": 3, "minor": 10})(),
+    )
+    monkeypatch.setattr("trafficverse.config.compatibility._detect_sumo_version", lambda: "1.26.0")
+
+    report = inspect_runtime(baseline, requested_profile="macos-dev")
+
+    assert report.ready
+    assert report.detected_versions["sumo"] == "1.26.0"
 
 
 def test_auto_selects_linux_core_run_profile() -> None:

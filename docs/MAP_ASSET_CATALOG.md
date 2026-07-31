@@ -5,9 +5,10 @@
 
 ## 1. 目标与边界
 
-资产中心把一张地图作为一个可复用目录管理。目录名称来自地图摘要，文件列表来自服务端已校验的
-`manifest.yaml`，UI 不扫描任意本机路径，也不复制后端地图文件。选择目录或目录中的任一文件时，
-右侧请求该地图包发布的标准 `network.geojson`，由 MapLibre 管理相机、deck.gl 绘制路网。
+资产中心把一张地图或一个原生 SUMO 场景作为可复用目录管理。Town04 文件列表来自已校验的
+`manifest.yaml`；原生 SUMO 包文件列表来自服务端对 `.sumocfg` 显式输入的安全解析。UI 不扫描
+任意本机路径。选择目录或文件时，右侧请求标准 GeoJSON；Town04 读取 `network.geojson`，原生
+SUMO 包从同一 `.net.xml` 即时生成 display-only GeoJSON。
 
 “支持格式”分为四个层级：
 
@@ -17,16 +18,17 @@
 4. **三维预览**：复用同一标准路网和 deck.gl 图层，仅改变相机倾角与三维图层，不等同于 CARLA
    原生窗口。
 
-目录收录不代表 TrafficVerse 会把任意格式自动转换成 SUMO/CARLA 地图。当前直接导入仍以
-OpenDRIVE 为权威入口，符合 SUMO 与 CARLA 同源地图约束。
+目录收录不代表 TrafficVerse 会把任意格式自动转换成 SUMO/CARLA 地图。HTTP 上传接口仍以
+OpenDRIVE 为权威入口；此外，仓库内 `configs/maps/<package>/*.sumocfg` 支持自动发现为纯二维
+SUMO 运行包，这不扩大 CARLA 同源地图范围。
 
 ## 2. 支持格式矩阵
 
 | 文件格式 | 主要消费者 | 目录收录 | 直接导入 | 2D/3D 预览 | 说明 |
 |---|---|---:|---:|---:|---|
 | `.xodr` | CARLA、SUMO 生成链 | 是 | 是 | 编译后 | 当前权威地图导入源；服务端编译并生成标准路网 |
-| `.net.xml` | SUMO | 是 | 否 | 通过同包 `network.geojson` | SUMO 路网，不由 UI 直接解析 |
-| `.sumocfg` | SUMO | 是 | 否 | 通过同包 `network.geojson` | SUMO 运行配置 |
+| `.net.xml` | SUMO | 是 | 否 | 是 | 原生 SUMO 包由后端生成 display-only GeoJSON |
+| `.sumocfg` | SUMO | 是 | 仓库目录发现 | 是 | 运行入口；解析 net/route/additional 和时间配置 |
 | `.rou.xml` | SUMO | 是 | 否 | 不直接预览 | 路线、车流或车型文件 |
 | `.add.xml` | SUMO | 是 | 否 | 不直接预览 | SUMO 附加定义 |
 | `.geojson` | deck.gl、MapLibre | 是 | 否 | 是 | 地图包中 `network.geojson` 是当前标准预览资源 |
@@ -58,6 +60,19 @@ Town04/
 
 `manifest.yaml` 是目录文件清单和 checksum 的权威来源。资产中心只展示 manifest 中受跟踪的文件；
 未进入 manifest 的临时文件不会作为公共资产暴露。
+
+原生 SUMO 包的最小结构为：
+
+```text
+image2road/
+├── image2road.sumocfg
+├── image2road.net.xml
+├── image2road.rou.xml
+└── image2road.add.xml        # 若 sumocfg 引用
+```
+
+不要求 `.xodr` 或 `manifest.yaml`。服务端只公开 `.sumocfg` 及其显式输入；历史 `outputs/` 不作为
+运行输入或公共文件清单。每次实验在 artifacts 中 stage 运行副本，源目录保持只读。
 
 ## 4. 搜索与选择规则
 

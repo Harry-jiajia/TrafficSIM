@@ -103,6 +103,8 @@ def test_map_view_mode_is_not_exposed_to_the_qt_host() -> None:
 
     assert 'data-view-mode="2d"' in html
     assert 'data-view-mode="3d"' in html
+    assert 'data-view-mode="2d" class="active"' in html
+    assert 'viewMode: "2d"' in source
     assert "function setViewMode(viewMode)" in source
     assert "setViewMode(viewMode) {\n    setViewMode(viewMode);\n  }" not in source
     assert "def set_view_mode(self, view_mode: str)" not in host

@@ -137,6 +137,28 @@ ROI/signal -> CARLA batch -> CARLA tick -> publish。pause 不 step，SUMO 失�
 CARLA 原生窗口稳定、无 `camera.frame`、所有资源清理。通过后才移除 Native 生产遗留和历史 RGB
 实现；历史 ADR 保留。
 
+## 10.1 M8 — 通用二维 SUMO 场景包
+
+允许修改：`maps/sumo_package.py`、`maps/sumo_display.py`、`adapters/sumo/**`、运行装配、地图目录
+API/UI、对应配置/契约/测试和 ADR-027 文档。
+
+- 自动发现 `configs/maps/<package>/*.sumocfg`，不要求每包新增 TrafficVerse YAML；
+- 安全解析 net/route/additional 等显式输入，越界或缺失只使对应包 invalid；
+- managed 模式调用 PATH 中的 `sumo`，优先使用同发行版 TraCI tools，不硬编码版本等值；
+- 场景 begin/end/step-length 进入内部 resolved snapshot，只有 manager 推进；
+- 无 OpenDRIVE binding 的 TLS 使用 `sumo-tls:<tls-id>:<link-index>`；
+- 运行副本和 outputs 只能写入 `artifacts/sumo/<experiment-id>`；
+- CARLA disabled 时不得构造 ROI、registration 或 CARLA signal planner。
+
+真实验收：
+
+```bash
+TRAFFICVERSE_SUMO_PACKAGE_INTEGRATION=1 uv run pytest -m "integration and traffic" \
+  tests/integration/traffic/test_managed_sumo_package.py
+```
+
+该测试必须报告实际 SUMO 版本；若本机无 SUMO，则标记 live validation pending，不能用 Fake 代替。
+
 ## 11. 合并门禁
 
 - Ruff format/check、mypy、相关 unit/contract 通过；

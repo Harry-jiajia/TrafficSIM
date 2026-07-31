@@ -81,6 +81,19 @@ CARLA 原生渲染窗口。
   `--num-clients` 和 client order 并新增验收；
 - SUMO 连接丢失、时间回退或 step 失败属于真值丢失，当前实验进入 FAILED。
 
+#### 通用二维 SUMO 场景包
+
+- 除 Town04 Core Run 外，系统支持自动发现 `configs/maps/<package>/*.sumocfg` 原生 SUMO 包；
+- 能由主机 `sumo -c <scene>.sumocfg` 独立运行且依赖完整的场景，不要求额外提供 `.xodr`、
+  CARLA 配准或 Town04 manifest；
+- 项目托管启动 PATH 中的主机 SUMO，自动使用实际版本；仅在场景显式配置 `expected_version` 时
+  执行严格版本拒绝；
+- 纯二维场景使用 `.sumocfg` 自带 begin、end 和 step-length，步长必须可表示为整数毫秒；
+- 从配置引用的同一 `.net.xml` 生成道路、路口和通用 TLS Point，车辆与灯色仍只来自 TraCI；
+- 每次运行在 `artifacts/sumo/<experiment-id>/` 创建隔离运行副本，不修改场景源文件或复用历史
+  outputs；
+- 单个损坏场景不得阻止其他场景被发现，但损坏场景必须给出缺失文件、非法路径或 XML 错误。
+
 #### 车辆控制
 
 - `ControlCommand` 至少支持期望速度、期望加速度、左/右换道、停车和恢复；
@@ -252,7 +265,7 @@ class TrafficEnginePort(Protocol):
 - 左侧 MapLibre/deck.gl 消费 SUMO 派生状态，右侧 `CarlaNativeWindowHost` 承载原生窗口；
 - UI 仍是 API 客户端，不直接调用 TraCI 或 CARLA RPC。
 
-## 6. 固化的本地运行基线
+## 6. 固化的 Town04 Core Run 本地基线
 
 ### 6.1 固定端点
 
@@ -284,7 +297,8 @@ ui:
     native_window_id_env: TRAFFICVERSE_CARLA_WINDOW_ID
 ```
 
-场景文件可覆盖地图和需求，但不得覆盖真值提供者、step 顺序或 `tls_manager: sumo`。
+本节只约束 Town04 + CARLA Core Run。原生二维 SUMO 包按 ADR-027 使用主机 SUMO 和场景自带
+时间配置，但不得覆盖真值提供者、step 顺序或 `tls_manager: sumo`。
 
 ### 6.2 SUMO 启动
 

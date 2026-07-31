@@ -169,8 +169,13 @@ class AssetCenterPage(QWidget):
         summary = self._maps[map_id]
         manifest = self._manifests.get(map_id)
         entry: AssetDirectoryEntry = map_asset_entry(summary, manifest)
-        self.asset_name.setText(summary.carla_map)
-        self.asset_id.setText(f"地图 ID：{map_id}  ·  CARLA {summary.carla_version}")
+        self.asset_name.setText(summary.display_name or summary.carla_map or map_id)
+        runtime = (
+            f"CARLA {summary.carla_version}"
+            if summary.carla_version is not None
+            else "纯 SUMO 二维场景"
+        )
+        self.asset_id.setText(f"场景 ID：{map_id}  ·  {runtime}")
         self.status.setText("已验证" if summary.validated else "待验证")
         self.compatibility.setText(" · ".join(entry.compatibility) or "正在加载清单")
         self.file_count.setText(f"{len(entry.files)} 个文件")

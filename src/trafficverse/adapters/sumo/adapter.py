@@ -40,7 +40,7 @@ class SumoDiagnostics:
 
 
 class SumoTrafficEngineAdapter:
-    """Connect to one external SUMO instance and produce authoritative snapshots."""
+    """Connect to one SUMO instance and produce authoritative snapshots."""
 
     def __init__(self, experiment_id: UUID, runtime: SumoRuntime | None = None) -> None:
         self._experiment_id = experiment_id
@@ -65,15 +65,27 @@ class SumoTrafficEngineAdapter:
                 ErrorCode.SUMO_CONNECTION_FAILED,
                 f"unable to connect to SUMO at {config.host}:{config.port}: {error}",
             ) from error
-        if version != config.expected_version:
+        if config.expected_version is not None and version != config.expected_version:
             self._runtime.close()
             raise TrafficVerseError(
                 ErrorCode.SUMO_VERSION_MISMATCH,
                 "SUMO version does not match the configured version",
                 details={"expected": config.expected_version, "actual": version},
             )
+        initial_time_ms = round(self._runtime.simulation_time_s() * 1000.0)
+        if initial_time_ms != config.begin_time_ms:
+            self._runtime.close()
+            raise TrafficVerseError(
+                ErrorCode.SUMO_TIME_MISMATCH,
+                "SUMO initial time does not match the configured begin time",
+                details={
+                    "expected": str(config.begin_time_ms),
+                    "actual": str(initial_time_ms),
+                },
+            )
         self._config = config
         self._version = version
+        self._simulation_time_ms = initial_time_ms
         self._connected = True
 
     def apply_controls(self, commands: Mapping[str, ControlCommand]) -> None:

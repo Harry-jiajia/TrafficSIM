@@ -133,6 +133,7 @@ class SimulationManager:
         self._registry = registry
         self._clock = clock or SimulationClock(
             scenario.simulation.step_ms,
+            initial_time_ms=scenario.simulation.start_time_ms,
             speed_multiplier=scenario.simulation.speed_multiplier,
         )
         if self._clock.step_ms != scenario.simulation.step_ms:
@@ -382,7 +383,10 @@ class SimulationManager:
                 await self._data_logger.record_frame(frame)
                 await self._frame_publisher.publish_frame(frame)
                 self._last_frame = frame
-                if target_time_ms >= self._scenario.simulation.duration_ms:
+                end_time_ms = (
+                    self._scenario.simulation.start_time_ms + self._scenario.simulation.duration_ms
+                )
+                if target_time_ms >= end_time_ms:
                     await self._stop_from_tick("DURATION_REACHED")
                 return frame
             except Exception as error:

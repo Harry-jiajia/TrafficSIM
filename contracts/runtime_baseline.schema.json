@@ -7,14 +7,21 @@
           "$ref": "#/$defs/RequirementMode"
         },
         "version": {
-          "minLength": 1,
-          "title": "Version",
-          "type": "string"
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version"
         }
       },
       "required": [
-        "mode",
-        "version"
+        "mode"
       ],
       "title": "ComponentRequirement",
       "type": "object"

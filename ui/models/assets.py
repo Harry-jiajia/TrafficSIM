@@ -62,7 +62,14 @@ def map_asset_entry(summary: MapSummary, manifest: MapManifest | None) -> AssetD
             for name, checksum in sorted(manifest.files.items())
         )
         if manifest is not None
-        else ()
+        else tuple(
+            AssetFileEntry(
+                name=name,
+                format_suffix=asset_file_suffix(name),
+                compatibility=asset_file_compatibility(name),
+            )
+            for name in summary.files
+        )
     )
     compatibility = tuple(
         platform
@@ -71,7 +78,7 @@ def map_asset_entry(summary: MapSummary, manifest: MapManifest | None) -> AssetD
     )
     return AssetDirectoryEntry(
         asset_id=summary.map_id,
-        name=summary.carla_map,
+        name=summary.display_name or summary.carla_map or summary.map_id,
         validated=summary.validated,
         compatibility=compatibility,
         files=files,

@@ -49,7 +49,7 @@ const state = {
   trafficLights: new Map(),
   vehicles: [],
   networkBounds: null,
-  viewMode: "3d",
+  viewMode: "2d",
   selectedVehicleId: null,
   theme: "dark",
   lightingEffect: createLightingEffect(MAP_THEMES.dark)

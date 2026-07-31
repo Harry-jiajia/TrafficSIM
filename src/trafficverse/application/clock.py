@@ -9,11 +9,19 @@ _SUPPORTED_SPEEDS = (0.5, 1.0, 2.0)
 
 
 class SimulationClock:
-    def __init__(self, step_ms: int, *, speed_multiplier: float = 1.0) -> None:
+    def __init__(
+        self,
+        step_ms: int,
+        *,
+        initial_time_ms: int = 0,
+        speed_multiplier: float = 1.0,
+    ) -> None:
         if step_ms <= 0:
             raise ValueError("step_ms must be greater than zero")
+        if initial_time_ms < 0:
+            raise ValueError("initial_time_ms must not be negative")
         self._step_ms = step_ms
-        self._current_time_ms = 0
+        self._current_time_ms = initial_time_ms
         self._speed_multiplier = 1.0
         self.set_speed(speed_multiplier)
 

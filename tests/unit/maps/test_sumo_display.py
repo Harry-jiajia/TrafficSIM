@@ -8,6 +8,7 @@ from trafficverse.maps.sumo_display import (
     SUMO_INTERNAL_LANE_ROLE,
     SUMO_JUNCTION_ROLE,
     SUMO_LANE_ROLE,
+    SUMO_SIGNAL_ROLE,
     augment_geojson_with_sumo_display,
     sumo_display_features,
 )
@@ -24,7 +25,8 @@ def _sumo_network() -> str:
   </edge>
   <edge id="road-b"><lane id="road-b_0" speed="13.9" width="3.5" shape="13,3 20,3"/></edge>
   <junction id="junction" type="priority" shape="9,-2 13,-2 13,3 9,3"/>
-  <connection from="road-a" to="road-b" fromLane="0" toLane="0" via=":junction_0_0"/>
+  <connection from="road-a" to="road-b" fromLane="0" toLane="0" via=":junction_0_0"
+              tl="junction" linkIndex="0"/>
 </net>
 """
 
@@ -44,8 +46,15 @@ def test_sumo_display_features_include_driving_lanes_internal_links_and_junction
     assert roles.count(SUMO_LANE_ROLE) == 2
     assert roles.count(SUMO_INTERNAL_LANE_ROLE) == 3
     assert roles.count(SUMO_JUNCTION_ROLE) == 1
+    assert roles.count(SUMO_SIGNAL_ROLE) == 1
     first_properties = cast("dict[str, object]", features[0]["properties"])
-    junction_geometry = cast("dict[str, object]", features[-1]["geometry"])
+    junction_feature = next(
+        feature
+        for feature in features
+        if cast("dict[str, object]", feature["properties"])["trafficverse_role"]
+        == SUMO_JUNCTION_ROLE
+    )
+    junction_geometry = cast("dict[str, object]", junction_feature["geometry"])
     polygon_coordinates = cast("list[list[list[float]]]", junction_geometry["coordinates"])
     assert first_properties["width_m"] == 3.5
     polygon = polygon_coordinates[0]
@@ -83,7 +92,7 @@ def test_augment_geojson_preserves_canonical_features_and_is_idempotent(tmp_path
     payload = json.loads(geojson_path.read_text(encoding="utf-8"))
     assert geojson_path.read_text(encoding="utf-8") == first
     assert payload["features"][0]["id"] == "lane:1"
-    assert len(payload["features"]) == 7
+    assert len(payload["features"]) == 8
 
 
 def test_tracked_town04_geojson_contains_complete_sumo_display_geometry() -> None:

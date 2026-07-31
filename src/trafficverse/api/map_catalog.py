@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -15,7 +16,20 @@ from trafficverse.config.models import MapManifest
 from trafficverse.domain.enums import ErrorCode
 from trafficverse.domain.errors import TrafficVerseError
 from trafficverse.maps.compiler import OpenDriveMapCompiler
-from trafficverse.maps.errors import MapCompileError
+from trafficverse.maps.errors import MapCompileError, SumoPackageError
+from trafficverse.maps.sumo_display import sumo_display_geojson
+from trafficverse.maps.sumo_package import SumoScenarioPackage, load_sumo_package
+
+_SUMO_DISPLAY_SCHEMA = "sumo-net/display-1.0"
+
+
+@dataclass(frozen=True, slots=True)
+class _MapEntry:
+    directory: Path
+    manifest: MapManifest | None = None
+    package: SumoScenarioPackage | None = None
+    errors: tuple[str, ...] = ()
+    config_path: Path | None = None
 
 
 def _validate_manifest(path: Path) -> MapManifest:
@@ -33,18 +47,18 @@ class MapCatalog:
         built_in_directories: tuple[Path, ...],
         *,
         artifact_root: Path,
+        package_root: Path | None = None,
         maximum_upload_bytes: int = 20 * 1024 * 1024,
     ) -> None:
         if maximum_upload_bytes <= 0:
             raise ValueError("maximum map upload size must be positive")
         self._artifact_root = artifact_root
         self._maximum_upload_bytes = maximum_upload_bytes
-        self._directories: dict[str, Path] = {}
+        self._entries: dict[str, _MapEntry] = {}
         self._jobs: dict[UUID, MapImportJob] = {}
         self._tasks: set[asyncio.Task[None]] = set()
         for directory in built_in_directories:
-            manifest = _validate_manifest(directory / "manifest.yaml")
-            self._directories[manifest.map_id] = directory
+            self._register_directory(directory, package_root=package_root or directory)
 
     @property
     def maximum_upload_bytes(self) -> int:
@@ -52,29 +66,78 @@ class MapCatalog:
 
     def list_maps(self) -> tuple[MapSummary, ...]:
         summaries = []
-        for map_id, directory in sorted(self._directories.items()):
-            manifest = _validate_manifest(directory / "manifest.yaml")
+        for map_id, entry in sorted(self._entries.items()):
+            if entry.manifest is not None:
+                manifest = _validate_manifest(entry.directory / "manifest.yaml")
+                summaries.append(
+                    MapSummary(
+                        map_id=map_id,
+                        kind="core_run",
+                        display_name=manifest.carla_map,
+                        carla_map=manifest.carla_map,
+                        carla_version=manifest.carla_version,
+                        validated=manifest.validated,
+                        network_schema_version=manifest.network_schema_version,
+                        files=tuple(sorted(manifest.files)),
+                    )
+                )
+                continue
+            package = entry.package
             summaries.append(
                 MapSummary(
                     map_id=map_id,
-                    carla_map=manifest.carla_map,
-                    carla_version=manifest.carla_version,
-                    validated=manifest.validated,
-                    network_schema_version=manifest.network_schema_version,
+                    kind="sumo",
+                    display_name=package.display_name if package is not None else map_id,
+                    validated=package is not None and not entry.errors,
+                    network_schema_version=_SUMO_DISPLAY_SCHEMA,
+                    manifest_available=False,
+                    sumo_config_file=(package.config_path.name if package is not None else None),
+                    sumo_step_ms=package.step_ms if package is not None else None,
+                    sumo_begin_time_ms=package.begin_time_ms if package is not None else 0,
+                    sumo_end_time_ms=package.end_time_ms if package is not None else None,
+                    files=(
+                        package.files
+                        if package is not None
+                        else ((entry.config_path.name,) if entry.config_path is not None else ())
+                    ),
+                    validation_errors=entry.errors,
                 )
             )
         return tuple(summaries)
 
     def manifest(self, map_id: str) -> MapManifest:
-        directory = self._require_directory(map_id)
-        return _validate_manifest(directory / "manifest.yaml")
+        entry = self._require_entry(map_id)
+        if entry.manifest is None:
+            raise TrafficVerseError(
+                ErrorCode.MAP_ASSET_INVALID,
+                "native SUMO packages do not use a Town04 map manifest",
+            )
+        return _validate_manifest(entry.directory / "manifest.yaml")
 
     def directory(self, map_id: str) -> Path:
-        return self._require_directory(map_id)
+        return self._require_entry(map_id).directory
+
+    def sumo_package(self, map_id: str) -> SumoScenarioPackage | None:
+        entry = self._require_entry(map_id)
+        if entry.errors:
+            raise TrafficVerseError(
+                ErrorCode.MAP_ASSET_INVALID,
+                "SUMO scenario package is not runnable",
+                details={"configuration": "; ".join(entry.errors)},
+            )
+        return entry.package
 
     def network_geojson(self, map_id: str) -> dict[str, object]:
-        directory = self._require_directory(map_id)
-        payload = json.loads((directory / "network.geojson").read_text(encoding="utf-8"))
+        entry = self._require_entry(map_id)
+        if entry.errors:
+            raise TrafficVerseError(
+                ErrorCode.MAP_ASSET_INVALID,
+                "SUMO scenario package is not renderable",
+                details={"configuration": "; ".join(entry.errors)},
+            )
+        if entry.package is not None:
+            return sumo_display_geojson(entry.package.network_path)
+        payload = json.loads((entry.directory / "network.geojson").read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
             raise TrafficVerseError(ErrorCode.MAP_ASSET_INVALID, "network GeoJSON is invalid")
         return payload
@@ -130,7 +193,8 @@ class MapCatalog:
                 map_id=map_id,
             )
             _validate_manifest(output / "manifest.yaml")
-            self._directories[map_id] = output
+            manifest = _validate_manifest(output / "manifest.yaml")
+            self._entries[map_id] = _MapEntry(directory=output, manifest=manifest)
             self._jobs[job_id] = self._jobs[job_id].model_copy(
                 update={"status": "SUCCEEDED", "map_id": map_id}
             )
@@ -143,11 +207,45 @@ class MapCatalog:
                 }
             )
 
-    def _require_directory(self, map_id: str) -> Path:
-        directory = self._directories.get(map_id)
-        if directory is None:
+    def _register_directory(self, directory: Path, *, package_root: Path) -> None:
+        manifest_path = directory / "manifest.yaml"
+        if manifest_path.is_file():
+            manifest = _validate_manifest(manifest_path)
+            self._register_entry(manifest.map_id, _MapEntry(directory=directory, manifest=manifest))
+            return
+        config_paths = tuple(sorted(directory.glob("*.sumocfg")))
+        multiple = len(config_paths) > 1
+        for config_path in config_paths:
+            map_id = (
+                f"{directory.name}-{config_path.name.removesuffix('.sumocfg')}"
+                if multiple
+                else directory.name
+            )
+            try:
+                package = load_sumo_package(
+                    config_path,
+                    allowed_root=package_root,
+                    package_id=map_id,
+                )
+                entry = _MapEntry(directory=directory, package=package, config_path=config_path)
+            except SumoPackageError as error:
+                entry = _MapEntry(
+                    directory=directory,
+                    errors=(str(error),),
+                    config_path=config_path,
+                )
+            self._register_entry(map_id, entry)
+
+    def _register_entry(self, map_id: str, entry: _MapEntry) -> None:
+        if map_id in self._entries:
+            raise ValueError(f"duplicate map or SUMO package id: {map_id}")
+        self._entries[map_id] = entry
+
+    def _require_entry(self, map_id: str) -> _MapEntry:
+        entry = self._entries.get(map_id)
+        if entry is None:
             raise TrafficVerseError(
                 ErrorCode.RESOURCE_NOT_FOUND,
                 f"map does not exist: {map_id}",
             )
-        return directory
+        return entry

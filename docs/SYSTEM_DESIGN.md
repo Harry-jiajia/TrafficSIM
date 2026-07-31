@@ -1,9 +1,9 @@
 # TrafficVerse System Design
 
-> 版本：v1.5
+> 版本：v1.6
 > 状态：Target Baseline（SUMO/CARLA 迁移中）
 > 产品基线：[PRD](./PRD.md)
-> 决策基线：[ADR-024、ADR-025](./ADR.md)
+> 决策基线：[ADR-024、ADR-025、ADR-027](./ADR.md)
 
 ## 1. 系统边界与不可变原则
 
@@ -16,7 +16,7 @@ TrafficVerse 使用 SUMO 产生全局二维交通真值，使用自有 PySide6/M
 - 产品链路不创建 UI 专用 RGB sensor，不发布 `camera.frame`，不编码或解码 JPEG/base64；
 - `SimulationManager` 是唯一 `traci.simulationStep()` 和 `CARLA world.tick()` 调用者；
 - SUMO 是车辆、路线、车道、运动与交通信号灯的唯一真值源，CARLA 不反写交通状态；
-- 固定步长为 50 ms，播放倍率只改变墙上时间调度；
+- Town04 Core Run 固定步长为 50 ms；纯二维 SUMO 包使用 `.sumocfg` 的整数毫秒步长；
 - ROI 使用核心区加 Buffer 的滞回策略。
 
 改变真值权属、唯一 tick、固定步长、窗口呈现或信号主控必须先新增 ADR。
@@ -27,7 +27,7 @@ TrafficVerse 使用 SUMO 产生全局二维交通真值，使用自有 PySide6/M
 flowchart LR
     UI["PySide6 UI"] <-->|"REST / WebSocket"| API["FastAPI"]
     API --> SM["SimulationManager"]
-    SM <-->|"TraCI 127.0.0.1:8813"| SUMO["SUMO headless / external"]
+    SM <-->|"TraCI / 唯一步进"| SUMO["SUMO headless / external or managed"]
     SUMO --> SNAP["TrafficSnapshot"]
     SNAP --> MAP["MapLibre + deck.gl"]
     SNAP --> ROI["ROI + CoordinateTransformer"]
@@ -51,7 +51,9 @@ bootstrap/cli -> application + concrete adapters
 TraCI 和 CARLA SDK 对象不得越过 adapter 边界。UI 不导入后端包，也不直接连接 TraCI 或
 CARLA RPC；CARLA 原生窗口嵌入只提供视觉容器，不提供业务控制旁路。
 
-## 3. 固定运行基线
+## 3. 双运行基线
+
+### 3.1 Town04 Core Run
 
 | 组件 | 版本/端点 | 约束 |
 |---|---|---|
@@ -73,6 +75,23 @@ sumo -c configs/maps/town04/map.sumocfg --remote-port 8813
 
 需要独立调试时可换成 `sumo-gui`；TrafficVerse 不依赖、嵌入或控制该 GUI。CARLA 必须使用
 可见窗口模式，不得使用 `-RenderOffScreen` 或 no-rendering mode。
+
+### 3.2 原生 SUMO 二维包
+
+| 项目 | 规则 |
+|---|---|
+| 发现根目录 | `configs/maps/<package>/*.sumocfg` |
+| SUMO 版本 | PATH 中主机 `sumo` 的实际版本；默认不做等值锁定 |
+| TraCI tools | 优先使用主机 `sumo` 同发行版 tools，Python 包为 fallback |
+| 时间 | 从 `.sumocfg` 读取 begin、end、step-length |
+| CARLA | disabled，不加载 ROI、registration、signals.yaml |
+| 静态地图 | 从同一 `.net.xml` 生成 display-only GeoJSON |
+| TLS ID | `sumo-tls:<tls-id>:<link-index>` |
+| 运行目录 | `artifacts/sumo/<experiment-id>/package/` |
+
+一个目录只有一个 `.sumocfg` 时，目录名就是运行 ID；有多个配置时，ID 为
+`<directory>-<config-stem>`。显式 input file 必须位于 `configs/maps` 根内。配置无效时目录仍可
+出现在资产列表并携带 validation errors，但 create/preview 会拒绝它。
 
 ## 4. 配置与资产
 
@@ -122,6 +141,10 @@ Town04 manifest 必须追踪：
 
 `network.json` 和 GeoJSON 只服务查找、严格信号绑定及二维展示，不参与车辆推进。
 
+原生 SUMO 包不要求上述 Town04 资产。运行工厂从 `.sumocfg` 生成内部不可变 `ScenarioConfig`
+快照，将 `launch_mode` 设为 `managed`、`expected_version` 设为空、CARLA 设为 disabled，并使用
+stage 后的 `.sumocfg` 绝对路径。该内部快照仍满足类型校验并交给同一个 `SimulationManager`。
+
 ## 5. 领域模型
 
 公共时间使用整数 `simulation_time_ms`，每帧包含单调 `sequence`。`VehicleState` 使用稳定
@@ -143,12 +166,12 @@ SUMO 车辆 angle 转换为数学 heading 后，再由 `CoordinateTransformer` �
 
 `SumoTrafficEngineAdapter` 是生产 `TrafficEnginePort` 实现，职责为：
 
-1. 连接外部 TraCI server 并严格校验 SUMO 版本；
+1. 连接外部 TraCI server，或启动 TrafficVerse 管理的主机 SUMO；只有配置了期望版本时才严格校验；
 2. 在 step 前逐车应用速度、加速度、停车和相对换道意图；
 3. 每次 `step(target_time_ms)` 恰好调用一次 `simulationStep`；
 4. 校验 SUMO 返回时间与 target 完全一致；
 5. 采集 vehicle、departed、arrived 和 traffic-light 状态；
-6. 将 `linkSignalID:<index>` 映射为 OpenDRIVE signal ID；
+6. Town04 将 `linkSignalID:<index>` 映射为 OpenDRIVE signal ID；其他网络使用稳定通用 TLS ID；
 7. 将 SDK 异常转换为稳定 `SUMO_*` 错误；
 8. 幂等关闭 TraCI connection。
 
@@ -234,6 +257,7 @@ Core Run 不定义 `camera.frame` topic 或 payload。CARLA 画面不经过 API/
 | Unit | Fake TraCI 下单 step、转换、命令部分失败、时间错误和 close |
 | Contract | 技术中性 Port、schema、无 SDK 越界、无 `camera.frame` |
 | SUMO integration | 真实 1.27.1、Town04、500 tick、50 vehicle ID、时间单调 |
+| SUMO package integration | 非 Town04 包、主机版本、managed start/step/close、通用 TLS、artifact 输出隔离 |
 | CARLA integration | 0.9.16、至少 10 actor、信号同 tick、误差 <= 0.5 m、清理 |
 | Native-window Gate | 同桌面会话连续 10 分钟、resize/focus/detach、无 RGB |
 | Core E2E | create/start/pause/resume/stop，自有 2D + CARLA 原生 3D |

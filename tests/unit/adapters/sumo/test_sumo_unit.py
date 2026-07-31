@@ -145,6 +145,28 @@ def test_version_mismatch_closes_connection() -> None:
     assert runtime.closed
 
 
+def test_unpinned_version_accepts_the_connected_host_sumo() -> None:
+    runtime = FakeSumoRuntime()
+    runtime.version = "1.26.0"
+    adapter = SumoTrafficEngineAdapter(UUID(int=7), runtime)
+
+    adapter.load(_config(expected_version=None))
+
+    assert adapter.health().version == "1.26.0"
+
+
+def test_nonzero_begin_time_is_used_as_the_first_step_origin() -> None:
+    runtime = FakeSumoRuntime()
+    runtime.time_s = 5.0
+    adapter = SumoTrafficEngineAdapter(UUID(int=8), runtime)
+    adapter.load(_config(begin_time_ms=5000, step_ms=200))
+
+    snapshot = adapter.step(5200)
+
+    assert runtime.step_calls == [5.2]
+    assert snapshot.simulation_time_ms == 5200
+
+
 def test_connection_failure_closes_partial_runtime() -> None:
     runtime = FakeSumoRuntime()
     runtime.connect_error = RuntimeError("connection refused")

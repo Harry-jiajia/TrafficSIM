@@ -12,6 +12,7 @@ from trafficverse.api import ApiDependencies, RuntimeDirectory, create_app
 from trafficverse.api.command_bus import ExperimentCommandBus
 from trafficverse.api.map_catalog import MapCatalog
 from trafficverse.api.models import ReadinessComponent
+from trafficverse.bootstrap import build_core_api
 from trafficverse.domain.enums import (
     ComponentStatus,
     ErrorCode,
@@ -22,6 +23,7 @@ from trafficverse.domain.models import ControlCommand, SimulationFrame
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 MAP_DIRECTORY = REPOSITORY_ROOT / "configs/maps/town04"
+SCENARIO_PATH = REPOSITORY_ROOT / "configs/scenarios/core-run-town04.yaml"
 
 
 class FakeManager:
@@ -159,6 +161,34 @@ def test_not_ready_returns_503(tmp_path: Path) -> None:
         response = client.get("/api/v1/ready")
         assert response.status_code == 503
         assert response.json()["ready"] is False
+
+
+def test_core_api_discovers_image2road_as_directly_runnable_sumo_package(
+    tmp_path: Path,
+) -> None:
+    app = build_core_api(
+        SCENARIO_PATH,
+        repository_root=REPOSITORY_ROOT,
+        artifact_root=tmp_path / "maps",
+        sumo_artifact_root=tmp_path / "sumo",
+    )
+
+    with TestClient(app) as client:
+        summaries = {item["map_id"]: item for item in client.get("/api/v1/maps").json()}
+        image2road = summaries["image2road"]
+        assert image2road["kind"] == "sumo"
+        assert image2road["sumo_step_ms"] == 1000
+        assert image2road["manifest_available"] is False
+        network = client.get("/api/v1/maps/image2road/network")
+        assert network.status_code == 200
+        assert network.json()["features"]
+
+        created = client.post(
+            "/api/v1/experiments",
+            json={"scenario_id": str(UUID(int=42)), "map_id": "image2road"},
+        )
+        assert created.status_code == 202
+        assert created.json()["simulation_time_ms"] == 0
 
 
 def test_map_import_endpoint_publishes_compiled_geojson(tmp_path: Path) -> None:

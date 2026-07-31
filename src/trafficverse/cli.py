@@ -202,6 +202,8 @@ def _run_map_validate(args: argparse.Namespace) -> int:
         baseline,
         requested_profile=args.profile,
     )
+    if profile.carla.version is None:
+        raise ValueError("map validation requires a runtime profile with a CARLA version")
     manifest = validate_map_manifest(
         args.path,
         expected_carla_version=profile.carla.version,

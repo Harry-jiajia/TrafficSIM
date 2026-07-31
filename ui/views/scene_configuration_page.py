@@ -34,7 +34,7 @@ class SceneConfigurationPage(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-        root.addWidget(page_header("场景配置", "配置核心运行实验并选择已验证地图", self._actions()))
+        root.addWidget(page_header("场景配置", "选择可直接运行的 SUMO 场景包", self._actions()))
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -113,7 +113,7 @@ class SceneConfigurationPage(QWidget):
         self.map_combo = QComboBox()
         self.map_combo.setMinimumContentsLength(24)
         self.map_combo.currentIndexChanged.connect(self._select_map)
-        layout.addWidget(QLabel("已验证地图"))
+        layout.addWidget(QLabel("SUMO 场景 / Core Run 地图"))
         layout.addWidget(self.map_combo)
         preview = empty_state("等待地图", "从列表选择已编译、已校验的 OpenDRIVE 地图。", "⌁")
         preview.setMinimumHeight(180)
@@ -135,7 +135,13 @@ class SceneConfigurationPage(QWidget):
         self.map_combo.blockSignals(True)
         self.map_combo.clear()
         for item in maps:
-            self.map_combo.addItem(f"{item.carla_map}  ·  {item.map_id}", item.map_id)
+            name = item.display_name or item.carla_map or item.map_id
+            runtime = (
+                f"SUMO · {item.sumo_step_ms} ms"
+                if item.kind == "sumo" and item.sumo_step_ms is not None
+                else "Core Run"
+            )
+            self.map_combo.addItem(f"{name}  ·  {runtime}", item.map_id)
         self.map_combo.blockSignals(False)
         if self.map_combo.count():
             self.map_combo.setCurrentIndex(0)

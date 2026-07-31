@@ -81,8 +81,13 @@ class RunViewModel(QObject):
         self._emit_controls()
 
     def select_map(self, map_id: str) -> None:
-        if map_id not in {item.map_id for item in self._maps}:
+        selected = next((item for item in self._maps if item.map_id == map_id), None)
+        if selected is None:
             self.notification.emit("error", "所选地图不在已验证地图列表中。")
+            return
+        if not selected.validated:
+            detail = "; ".join(selected.validation_errors) or "SUMO 场景配置无效"
+            self.notification.emit("error", detail)
             return
         self._selected_map_id = map_id
         self.selected_map_changed.emit(map_id)
@@ -158,9 +163,12 @@ class RunViewModel(QObject):
             self._maps = tuple(MapSummary.model_validate(item) for item in _items(payload))
             self.map_catalog_changed.emit(self._maps)
             for item in self._maps:
-                self._rest.get_map_manifest(item.map_id)
-            if self._maps and self._selected_map_id is None:
-                self.select_map(self._maps[0].map_id)
+                if item.manifest_available:
+                    self._rest.get_map_manifest(item.map_id)
+            if self._selected_map_id is None:
+                first_valid = next((item for item in self._maps if item.validated), None)
+                if first_valid is not None:
+                    self.select_map(first_valid.map_id)
         elif operation.startswith("map.manifest:"):
             map_id = operation.removeprefix("map.manifest:")
             manifest = MapManifest.model_validate(payload)

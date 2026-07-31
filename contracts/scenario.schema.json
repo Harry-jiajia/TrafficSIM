@@ -316,6 +316,12 @@
           "title": "Speed Multiplier",
           "type": "number"
         },
+        "start_time_ms": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Start Time Ms",
+          "type": "integer"
+        },
         "step_ms": {
           "exclusiveMinimum": 0,
           "title": "Step Ms",
@@ -332,8 +338,20 @@
     },
     "SumoConfig": {
       "additionalProperties": false,
-      "description": "External SUMO/TraCI endpoint used as the production traffic truth source.",
+      "description": "SUMO/TraCI endpoint or managed local process used as the traffic truth source.",
       "properties": {
+        "begin_time_ms": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Begin Time Ms",
+          "type": "integer"
+        },
+        "binary": {
+          "default": "sumo",
+          "minLength": 1,
+          "title": "Binary",
+          "type": "string"
+        },
         "config_file": {
           "minLength": 1,
           "title": "Config File",
@@ -347,10 +365,17 @@
           "type": "integer"
         },
         "expected_version": {
-          "default": "1.27.1",
-          "minLength": 1,
-          "title": "Expected Version",
-          "type": "string"
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Version"
         },
         "host": {
           "default": "127.0.0.1",
@@ -359,10 +384,26 @@
           "type": "string"
         },
         "launch_mode": {
-          "const": "external",
           "default": "external",
+          "enum": [
+            "external",
+            "managed"
+          ],
           "title": "Launch Mode",
           "type": "string"
+        },
+        "output_directory": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Directory"
         },
         "port": {
           "default": 8813,

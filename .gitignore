@@ -100,3 +100,6 @@ Thumbs.db
 # Local agent workspace metadata
 /.agents/
 /.codex/
+
+# local map
+/configs/maps

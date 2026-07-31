@@ -13,7 +13,10 @@ from trafficverse.maps.errors import MapCompileError
 SUMO_LANE_ROLE = "sumo_lane"
 SUMO_INTERNAL_LANE_ROLE = "sumo_internal_lane"
 SUMO_JUNCTION_ROLE = "sumo_junction"
-SUMO_DISPLAY_ROLES = frozenset({SUMO_LANE_ROLE, SUMO_INTERNAL_LANE_ROLE, SUMO_JUNCTION_ROLE})
+SUMO_SIGNAL_ROLE = "sumo_signal"
+SUMO_DISPLAY_ROLES = frozenset(
+    {SUMO_LANE_ROLE, SUMO_INTERNAL_LANE_ROLE, SUMO_JUNCTION_ROLE, SUMO_SIGNAL_ROLE}
+)
 
 
 def augment_geojson_with_sumo_display(geojson_path: Path, sumo_network_path: Path) -> None:
@@ -123,7 +126,37 @@ def sumo_display_features(sumo_network_path: Path) -> list[dict[str, object]]:
                 "geometry": {"type": "Polygon", "coordinates": [coordinates]},
             }
         )
+    signal_points: dict[str, list[float]] = {}
+    for connection in root.findall("connection"):
+        traffic_light_id = connection.attrib.get("tl")
+        link_index = connection.attrib.get("linkIndex")
+        if traffic_light_id is None or link_index is None:
+            continue
+        incoming_lane_id = _connection_lane_id(connection, "from", "fromLane")
+        incoming_lane = lane_shapes.get(incoming_lane_id)
+        if incoming_lane is None:
+            continue
+        signal_id = f"sumo-tls:{traffic_light_id}:{link_index}"
+        signal_points.setdefault(signal_id, incoming_lane[0][-1])
+    for signal_id, signal_coordinates in sorted(signal_points.items()):
+        features.append(
+            {
+                "type": "Feature",
+                "id": f"display:{signal_id}",
+                "properties": {
+                    "trafficverse_role": SUMO_SIGNAL_ROLE,
+                    "signal_id": signal_id,
+                },
+                "geometry": {"type": "Point", "coordinates": signal_coordinates},
+            }
+        )
     return features
+
+
+def sumo_display_geojson(sumo_network_path: Path) -> dict[str, object]:
+    """Return a complete display-only GeoJSON document for a native SUMO network."""
+
+    return {"type": "FeatureCollection", "features": sumo_display_features(sumo_network_path)}
 
 
 def _feature_role(feature: object) -> str | None:

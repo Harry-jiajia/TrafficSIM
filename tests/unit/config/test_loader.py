@@ -43,6 +43,33 @@ def test_scenario_rejects_divergent_sumo_step(tmp_path: Path) -> None:
     assert "simulation step values must match" in captured.value.details["reason"]
 
 
+def test_scenario_rejects_divergent_sumo_begin_time(tmp_path: Path) -> None:
+    payload = yaml.safe_load(SCENARIO_PATH.read_text(encoding="utf-8"))
+    payload["sumo"]["begin_time_ms"] = 5000
+    invalid_path = tmp_path / "invalid.yaml"
+    invalid_path.write_text(yaml.safe_dump(payload), encoding="utf-8")
+
+    with pytest.raises(ConfigurationError) as captured:
+        load_scenario(invalid_path, apply_environment=False)
+
+    assert "sumo.begin_time_ms" in captured.value.details["reason"]
+
+
+def test_disabled_carla_does_not_restrict_native_sumo_step(tmp_path: Path) -> None:
+    payload = yaml.safe_load(SCENARIO_PATH.read_text(encoding="utf-8"))
+    payload["carla"]["mode"] = "disabled"
+    payload["simulation"]["step_ms"] = 1000
+    payload["simulation"]["duration_ms"] = 10_000
+    payload["sumo"]["step_ms"] = 1000
+    scenario_path = tmp_path / "sumo-only.yaml"
+    scenario_path.write_text(yaml.safe_dump(payload), encoding="utf-8")
+
+    scenario = load_scenario(scenario_path, apply_environment=False)
+
+    assert scenario.simulation.step_ms == 1000
+    assert scenario.carla.step_ms == 50
+
+
 def test_invalid_automation_proportions_report_field(tmp_path: Path) -> None:
     payload = yaml.safe_load(SCENARIO_PATH.read_text(encoding="utf-8"))
     payload["automation"]["proportions"]["HUMAN"] = 0.5

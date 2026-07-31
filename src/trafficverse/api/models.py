@@ -50,10 +50,19 @@ class ReadinessResponse(StrictModel):
 
 class MapSummary(StrictModel):
     map_id: str = Field(min_length=1)
-    carla_map: str = Field(min_length=1)
-    carla_version: str = Field(min_length=1)
+    kind: Literal["core_run", "sumo"] = "core_run"
+    display_name: str | None = Field(default=None, min_length=1)
+    carla_map: str | None = Field(default=None, min_length=1)
+    carla_version: str | None = Field(default=None, min_length=1)
     validated: bool
     network_schema_version: str = Field(min_length=1)
+    manifest_available: bool = True
+    sumo_config_file: str | None = Field(default=None, min_length=1)
+    sumo_step_ms: int | None = Field(default=None, gt=0)
+    sumo_begin_time_ms: int = Field(default=0, ge=0)
+    sumo_end_time_ms: int | None = Field(default=None, ge=0)
+    files: tuple[str, ...] = ()
+    validation_errors: tuple[str, ...] = ()
 
 
 class MapImportJob(StrictModel):

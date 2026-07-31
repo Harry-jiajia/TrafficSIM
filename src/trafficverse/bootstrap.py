@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from uuid import UUID
@@ -22,6 +23,7 @@ from trafficverse.application.simulation_runner import SimulationRunner
 from trafficverse.config.loader import load_scenario, validate_map_manifest
 from trafficverse.config.models import MapManifest, ScenarioConfig
 from trafficverse.domain.enums import ComponentStatus, ExperimentStatus, RequirementMode
+from trafficverse.maps.sumo_package import SumoScenarioPackage, stage_sumo_package
 from trafficverse.ports import (
     CarlaPort,
     DataLoggerPort,
@@ -53,14 +55,17 @@ class CoreRuntimeFactory:
         repository_root: Path,
         broker: FrameBroker,
         maps: MapCatalog,
+        sumo_artifact_root: Path,
     ) -> None:
         self._scenario = _resolve_scenario_paths(scenario, repository_root)
         self._repository = InMemoryExperimentRepository()
         self._broker = broker
         self._maps = maps
+        self._sumo_artifact_root = sumo_artifact_root
         self._registry = ExperimentRegistry(maximum_running=1)
         self._managers: dict[UUID, SimulationManager] = {}
         self._runners: dict[UUID, SimulationRunner] = {}
+        self._carla_modes: dict[UUID, RequirementMode] = {}
 
     async def create(
         self,
@@ -69,45 +74,110 @@ class CoreRuntimeFactory:
         map_id: str | None,
     ) -> SimulationManager:
         del scenario_id
-        await self._repository.create(experiment_id)
-        scenario, manifest, map_directory = self._scenario_for_map(map_id)
-        focus = scenario.roi.focus
-        definition = RoiDefinition(
-            radius_m=scenario.roi.radius_m,
-            buffer_m=scenario.roi.buffer_m,
-            max_actors=scenario.roi.max_actors,
-            focus_x=focus.x if focus.mode == "fixed" else None,
-            focus_y=focus.y if focus.mode == "fixed" else None,
-            focus_vehicle_id=focus.vehicle_id if focus.mode == "follow_vehicle" else None,
-        )
-        manager = SimulationManager(
-            scenario=scenario,
-            carla_map_name=manifest.carla_map,
-            traffic=SumoTrafficEngineAdapter(experiment_id),
-            carla=CarlaAdapter(),
-            experiments=self._repository,
-            data_logger=DiscardDataLogger(),
-            roi_planner=RoiSynchronizer(
-                definition,
-                CoordinateTransformer.from_yaml(
-                    map_directory / "registration.yaml",
-                    max_error_m=manifest.max_registration_error_m,
+        selected_map_id = map_id or self._scenario.scenario.map_id
+        package = self._maps.sumo_package(selected_map_id)
+        if package is not None:
+            scenario = self._scenario_for_sumo_package(package, experiment_id)
+            manager = SimulationManager(
+                scenario=scenario,
+                carla_map_name="SUMO_2D",
+                traffic=SumoTrafficEngineAdapter(experiment_id),
+                carla=CarlaAdapter(),
+                experiments=self._repository,
+                data_logger=DiscardDataLogger(),
+                frame_publisher=self._broker,
+                registry=self._registry,
+            )
+        else:
+            scenario, manifest, map_directory = self._scenario_for_map(selected_map_id)
+            focus = scenario.roi.focus
+            definition = RoiDefinition(
+                radius_m=scenario.roi.radius_m,
+                buffer_m=scenario.roi.buffer_m,
+                max_actors=scenario.roi.max_actors,
+                focus_x=focus.x if focus.mode == "fixed" else None,
+                focus_y=focus.y if focus.mode == "fixed" else None,
+                focus_vehicle_id=focus.vehicle_id if focus.mode == "follow_vehicle" else None,
+            )
+            manager = SimulationManager(
+                scenario=scenario,
+                carla_map_name=manifest.carla_map,
+                traffic=SumoTrafficEngineAdapter(experiment_id),
+                carla=CarlaAdapter(),
+                experiments=self._repository,
+                data_logger=DiscardDataLogger(),
+                roi_planner=RoiSynchronizer(
+                    definition,
+                    CoordinateTransformer.from_yaml(
+                        map_directory / "registration.yaml",
+                        max_error_m=manifest.max_registration_error_m,
+                    ),
+                    blueprint_id=scenario.carla.fallback_blueprints[0],
                 ),
-                blueprint_id=scenario.carla.fallback_blueprints[0],
-            ),
-            signal_planner=SignalSynchronizer.from_assets(
-                Path(scenario.traffic.network),
-                Path(scenario.traffic.signals),
-                strict=manifest.strict_signal_mapping,
-            ),
-            frame_publisher=self._broker,
-            registry=self._registry,
-        )
+                signal_planner=SignalSynchronizer.from_assets(
+                    Path(scenario.traffic.network),
+                    Path(scenario.traffic.signals),
+                    strict=manifest.strict_signal_mapping,
+                ),
+                frame_publisher=self._broker,
+                registry=self._registry,
+            )
+        await self._repository.create(experiment_id)
         runner = SimulationRunner(manager)
         self._managers[experiment_id] = manager
         self._runners[experiment_id] = runner
+        self._carla_modes[experiment_id] = scenario.carla.mode
         runner.start()
         return manager
+
+    def _scenario_for_sumo_package(
+        self,
+        package: SumoScenarioPackage,
+        experiment_id: UUID,
+    ) -> ScenarioConfig:
+        duration_ms = self._scenario.simulation.duration_ms
+        if package.end_time_ms is not None:
+            configured_duration_ms = package.end_time_ms - package.begin_time_ms
+            steps = max(1, math.ceil(configured_duration_ms / package.step_ms))
+            duration_ms = steps * package.step_ms
+        output_directory = self._sumo_artifact_root / str(experiment_id)
+        staged_config = stage_sumo_package(package, output_directory / "package")
+        routes_path = package.route_paths[0] if package.route_paths else package.config_path
+        signals_path = (
+            package.additional_paths[0] if package.additional_paths else package.network_path
+        )
+        return self._scenario.model_copy(
+            update={
+                "scenario": self._scenario.scenario.model_copy(
+                    update={"name": package.display_name, "map_id": package.package_id}
+                ),
+                "simulation": self._scenario.simulation.model_copy(
+                    update={
+                        "start_time_ms": package.begin_time_ms,
+                        "step_ms": package.step_ms,
+                        "duration_ms": duration_ms,
+                    }
+                ),
+                "traffic": self._scenario.traffic.model_copy(
+                    update={
+                        "network": str(package.network_path),
+                        "routes": str(routes_path),
+                        "signals": str(signals_path),
+                    }
+                ),
+                "sumo": self._scenario.sumo.model_copy(
+                    update={
+                        "launch_mode": "managed",
+                        "step_ms": package.step_ms,
+                        "begin_time_ms": package.begin_time_ms,
+                        "config_file": str(staged_config),
+                        "expected_version": None,
+                        "output_directory": str(output_directory),
+                    }
+                ),
+                "carla": self._scenario.carla.model_copy(update={"mode": RequirementMode.DISABLED}),
+            }
+        )
 
     def _scenario_for_map(self, map_id: str | None) -> tuple[ScenarioConfig, MapManifest, Path]:
         selected_map_id = map_id or self._scenario.scenario.map_id
@@ -136,7 +206,12 @@ class CoreRuntimeFactory:
         return scenario, manifest, map_directory
 
     async def readiness(self) -> tuple[ReadinessComponent, ...]:
-        carla_mode = self._scenario.carla.mode
+        selected_modes = tuple(self._carla_modes.values())
+        carla_mode = (
+            RequirementMode.DISABLED
+            if selected_modes and all(mode is RequirementMode.DISABLED for mode in selected_modes)
+            else self._scenario.carla.mode
+        )
         carla_message: str | None
         if carla_mode is RequirementMode.DISABLED:
             carla_status = ComponentStatus.DISABLED
@@ -184,6 +259,7 @@ class CoreRuntimeFactory:
                 await manager.stop("SERVER_SHUTDOWN")
         self._runners.clear()
         self._managers.clear()
+        self._carla_modes.clear()
 
 
 def build_core_api(
@@ -192,6 +268,7 @@ def build_core_api(
     repository_root: Path,
     carla_mode: RequirementMode | None = None,
     artifact_root: Path | None = None,
+    sumo_artifact_root: Path | None = None,
 ) -> FastAPI:
     scenario = load_scenario(scenario_path)
     if carla_mode is not None:
@@ -200,12 +277,32 @@ def build_core_api(
         )
     resolved = _resolve_scenario_paths(scenario, repository_root)
     map_directory = Path(resolved.map_registration.manifest).parent
+    maps_root = repository_root / "configs/maps"
+    built_in_directories = tuple(
+        sorted(
+            (
+                directory
+                for directory in maps_root.iterdir()
+                if directory.is_dir() and not directory.name.startswith(".")
+            ),
+            key=lambda path: path.name,
+        )
+    )
+    if map_directory not in built_in_directories:
+        built_in_directories = (*built_in_directories, map_directory)
     broker = FrameBroker()
     maps = MapCatalog(
-        (map_directory,),
+        built_in_directories,
         artifact_root=artifact_root or repository_root / "artifacts/maps",
+        package_root=maps_root,
     )
-    factory = CoreRuntimeFactory(resolved, repository_root, broker, maps)
+    factory = CoreRuntimeFactory(
+        resolved,
+        repository_root,
+        broker,
+        maps,
+        sumo_artifact_root=sumo_artifact_root or repository_root / "artifacts/sumo",
+    )
     runtimes = RuntimeDirectory(factory.create)
     dependencies = ApiDependencies(
         runtimes=runtimes,

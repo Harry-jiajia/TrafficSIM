@@ -2,7 +2,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
-from PySide6.QtCore import QCoreApplication, QObject, Signal
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtWidgets import QApplication
 from ui.models import ExperimentStatus
 from ui.viewmodels import RunViewModel
 
@@ -69,8 +70,9 @@ class FakeRealtime(QObject):
         return "snapshot-1"
 
 
-def _app() -> QCoreApplication:
-    return QCoreApplication.instance() or QCoreApplication([])
+def _app() -> QApplication:
+    existing = QApplication.instance()
+    return existing if isinstance(existing, QApplication) else QApplication([])
 
 
 def _viewmodel() -> tuple[RunViewModel, FakeRest, FakeRealtime]:
@@ -150,6 +152,32 @@ def test_map_catalog_auto_selects_verified_map_and_loads_network() -> None:
     assert ("network", "town04") in rest.calls
     assert ("manifest", "town04") in rest.calls
     assert ("create", (SCENARIO_ID, "town04")) in rest.calls
+
+
+def test_native_sumo_package_loads_network_without_town04_manifest() -> None:
+    viewmodel, rest, _ = _viewmodel()
+    viewmodel.handle_rest_success(
+        "maps.list",
+        [
+            {
+                "map_id": "image2road",
+                "kind": "sumo",
+                "display_name": "图像识别路网",
+                "carla_map": None,
+                "carla_version": None,
+                "validated": True,
+                "network_schema_version": "sumo-net/display-1.0",
+                "manifest_available": False,
+                "sumo_config_file": "image2road.sumocfg",
+                "sumo_step_ms": 1000,
+            }
+        ],
+    )
+    viewmodel.create_experiment()
+
+    assert ("network", "image2road") in rest.calls
+    assert ("manifest", "image2road") not in rest.calls
+    assert ("create", (SCENARIO_ID, "image2road")) in rest.calls
 
 
 def test_asset_manifest_and_preview_network_are_forwarded_separately() -> None:

@@ -109,9 +109,7 @@ class AssetDirectoryWidget(QFrame):
             directory = self.tree.topLevelItem(index)
             if directory is None:
                 continue
-            asset_text = " ".join(
-                (asset.name, asset.asset_id, *asset.compatibility)
-            ).casefold()
+            asset_text = " ".join((asset.name, asset.asset_id, *asset.compatibility)).casefold()
             asset_matches = not query or query in asset_text
             child_matches = False
             for child_index, file in enumerate(asset.files):

@@ -8,14 +8,14 @@ TrafficVerse 的目标架构是“SUMO 全局交通真值 + TrafficVerse 自有�
 装配已切换为 `SumoTrafficEngineAdapter`，Town04 SUMO 资产和 Qt 原生窗口 host 已加入；真实 CARLA
 联仿和 native-window 现场 Gate 仍必须在同一图形桌面会话完成。
 
-## 固定版本与端点
+## 运行模式与版本
 
 - Python 3.10
 - Node.js 16.20.2、npm 8.19.4（仅构建左侧 Web 地图）
-- SUMO 1.27.1：`127.0.0.1:8813`
+- Town04 + CARLA Core Run：SUMO 1.27.1、50 ms、`127.0.0.1:8813`
+- 原生二维 SUMO 包：直接使用 PATH 中主机 SUMO 的实际版本和 `.sumocfg` 自带步长
 - CARLA 0.9.16：`127.0.0.1:2000`
 - TrafficVerse API：`127.0.0.1:8000`
-- 固定仿真步长：50 ms
 
 ## 安装
 
@@ -31,6 +31,40 @@ sumo -c configs/maps/town04/map.sumocfg --end 5
 ```
 
 ## 启动
+
+### 直接运行已有 SUMO 场景（二维）
+
+把每个完整场景目录放到 `configs/maps` 下即可，不需要补 `.xodr` 或 TrafficVerse 场景 YAML：
+
+```text
+configs/maps/my-scene/
+├── my-scene.sumocfg
+├── my-scene.net.xml
+├── my-scene.rou.xml
+└── my-scene.add.xml          # 仅在 sumocfg 引用时需要
+```
+
+然后直接启动 API 和 UI：
+
+```bash
+uv run trafficverse serve --host 127.0.0.1 --port 8000
+uv run trafficverse ui --api-url http://127.0.0.1:8000
+```
+
+在“场景配置”中选择该 SUMO 包并创建/开始实验。TrafficVerse 会自动：
+
+- 解析 `.sumocfg` 引用的网络、路线、additional、begin/end/step-length；
+- 从 `.net.xml` 生成 MapLibre/deck.gl 道路、路口和通用信号点；
+- 启动 PATH 中的本机 `sumo` 并通过 TraCI 推进；
+- 使用实际 SUMO 版本，不要求等于 1.27.1；
+- 禁用 CARLA/ROI，只运行二维仿真；
+- 把运行副本和输出写入 `artifacts/sumo/<experiment-id>/`，不修改源场景。
+
+目录中只有一个 `.sumocfg` 时，场景 ID 是目录名；有多个时，每个配置分别显示为
+`<目录名>-<配置文件名>`。所有输入必须存在并位于 `configs/maps` 内。损坏场景会显示校验错误，
+但不会阻止其他场景加载。
+
+### Town04 + CARLA Core Run
 
 1. 启动 SUMO TraCI 后端。推荐 headless；它没有需要接入 TrafficVerse 的页面：
 
@@ -93,6 +127,13 @@ uv run pytest
 ```bash
 TRAFFICVERSE_SUMO_INTEGRATION=1 uv run pytest -m traffic \
   tests/integration/traffic/test_sumo_adapter.py
+```
+
+真实原生 SUMO 包 integration（使用主机当前 SUMO）：
+
+```bash
+TRAFFICVERSE_SUMO_PACKAGE_INTEGRATION=1 uv run pytest -m "integration and traffic" \
+  tests/integration/traffic/test_managed_sumo_package.py
 ```
 
 CARLA 与 Qt foreign-window 验收需要 PySide6、CARLA 和目标窗口处于同一主机、同一用户、同一
