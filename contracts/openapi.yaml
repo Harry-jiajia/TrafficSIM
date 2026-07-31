@@ -31,7 +31,12 @@ components:
           format: uuid
           title: Scenario Id
           type: string
+        workspace_id:
+          format: uuid
+          title: Workspace Id
+          type: string
       required:
+      - workspace_id
       - scenario_id
       title: ExperimentCreateRequest
       type: object
@@ -64,8 +69,13 @@ components:
           type: number
         status:
           $ref: '#/components/schemas/ExperimentStatus'
+        workspace_id:
+          format: uuid
+          title: Workspace Id
+          type: string
       required:
       - experiment_id
+      - workspace_id
       - status
       - simulation_time_ms
       - speed_multiplier
@@ -297,6 +307,213 @@ components:
       - msg
       - type
       title: ValidationError
+      type: object
+    WorkspaceActivitySample:
+      additionalProperties: false
+      properties:
+        day:
+          format: date
+          title: Day
+          type: string
+        simulations:
+          minimum: 0.0
+          title: Simulations
+          type: integer
+      required:
+      - day
+      - simulations
+      title: WorkspaceActivitySample
+      type: object
+    WorkspaceAutomationCount:
+      additionalProperties: false
+      properties:
+        count:
+          minimum: 0.0
+          title: Count
+          type: integer
+        level:
+          maxLength: 40
+          minLength: 1
+          title: Level
+          type: string
+      required:
+      - level
+      - count
+      title: WorkspaceAutomationCount
+      type: object
+    WorkspaceCreateRequest:
+      additionalProperties: false
+      properties:
+        description:
+          default: ''
+          maxLength: 1000
+          title: Description
+          type: string
+        name:
+          maxLength: 200
+          minLength: 1
+          title: Name
+          type: string
+      required:
+      - name
+      title: WorkspaceCreateRequest
+      type: object
+    WorkspaceOverview:
+      additionalProperties: false
+      description: Mock-backed workspace overview kept stable for a future real data
+        source.
+      properties:
+        activity:
+          items:
+            $ref: '#/components/schemas/WorkspaceActivitySample'
+          title: Activity
+          type: array
+        agent_count:
+          minimum: 0.0
+          title: Agent Count
+          type: integer
+        automation_counts:
+          items:
+            $ref: '#/components/schemas/WorkspaceAutomationCount'
+          title: Automation Counts
+          type: array
+        failed_simulations:
+          minimum: 0.0
+          title: Failed Simulations
+          type: integer
+        map_count:
+          minimum: 0.0
+          title: Map Count
+          type: integer
+        preview_region:
+          maxLength: 200
+          minLength: 1
+          title: Preview Region
+          type: string
+        recent_simulations:
+          items:
+            $ref: '#/components/schemas/WorkspaceRecentSimulation'
+          title: Recent Simulations
+          type: array
+        runtime_hours:
+          minimum: 0.0
+          title: Runtime Hours
+          type: number
+        scenario_count:
+          minimum: 0.0
+          title: Scenario Count
+          type: integer
+        simulation_count:
+          minimum: 0.0
+          title: Simulation Count
+          type: integer
+        succeeded_simulations:
+          minimum: 0.0
+          title: Succeeded Simulations
+          type: integer
+        workspace_id:
+          format: uuid
+          title: Workspace Id
+          type: string
+      required:
+      - workspace_id
+      - map_count
+      - agent_count
+      - scenario_count
+      - simulation_count
+      - automation_counts
+      - succeeded_simulations
+      - failed_simulations
+      - runtime_hours
+      - activity
+      - recent_simulations
+      - preview_region
+      title: WorkspaceOverview
+      type: object
+    WorkspaceRecentSimulation:
+      additionalProperties: false
+      properties:
+        automation_summary:
+          maxLength: 100
+          minLength: 1
+          title: Automation Summary
+          type: string
+        duration_ms:
+          minimum: 0.0
+          title: Duration Ms
+          type: integer
+        name:
+          maxLength: 200
+          minLength: 1
+          title: Name
+          type: string
+        occurred_at:
+          format: date-time
+          title: Occurred At
+          type: string
+        status:
+          enum:
+          - SUCCEEDED
+          - WARNING
+          - FAILED
+          title: Status
+          type: string
+      required:
+      - name
+      - status
+      - occurred_at
+      - duration_ms
+      - automation_summary
+      title: WorkspaceRecentSimulation
+      type: object
+    WorkspaceUpdateRequest:
+      additionalProperties: false
+      properties:
+        description:
+          default: ''
+          maxLength: 1000
+          title: Description
+          type: string
+        name:
+          maxLength: 200
+          minLength: 1
+          title: Name
+          type: string
+      required:
+      - name
+      title: WorkspaceUpdateRequest
+      type: object
+    WorkspaceView:
+      additionalProperties: false
+      properties:
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        description:
+          default: ''
+          maxLength: 1000
+          title: Description
+          type: string
+        name:
+          maxLength: 200
+          minLength: 1
+          title: Name
+          type: string
+        updated_at:
+          format: date-time
+          title: Updated At
+          type: string
+        workspace_id:
+          format: uuid
+          title: Workspace Id
+          type: string
+      required:
+      - workspace_id
+      - name
+      - created_at
+      - updated_at
+      title: WorkspaceView
       type: object
 info:
   title: TrafficVerse API
@@ -644,3 +861,131 @@ paths:
                 $ref: '#/components/schemas/ReadinessResponse'
           description: Successful Response
       summary: Ready
+  /api/v1/workspaces:
+    get:
+      operationId: list_workspaces_api_v1_workspaces_get
+      parameters:
+      - in: query
+        name: query
+        required: false
+        schema:
+          anyOf:
+          - maxLength: 200
+            type: string
+          - type: 'null'
+          title: Query
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/WorkspaceView'
+                title: Response List Workspaces Api V1 Workspaces Get
+                type: array
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: List Workspaces
+    post:
+      operationId: create_workspace_api_v1_workspaces_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceCreateRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceView'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Create Workspace
+  /api/v1/workspaces/{workspace_id}:
+    delete:
+      operationId: delete_workspace_api_v1_workspaces__workspace_id__delete
+      parameters:
+      - in: path
+        name: workspace_id
+        required: true
+        schema:
+          format: uuid
+          title: Workspace Id
+          type: string
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Delete Workspace
+    patch:
+      operationId: update_workspace_api_v1_workspaces__workspace_id__patch
+      parameters:
+      - in: path
+        name: workspace_id
+        required: true
+        schema:
+          format: uuid
+          title: Workspace Id
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceUpdateRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceView'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Update Workspace
+  /api/v1/workspaces/{workspace_id}/overview:
+    get:
+      operationId: workspace_overview_api_v1_workspaces__workspace_id__overview_get
+      parameters:
+      - in: path
+        name: workspace_id
+        required: true
+        schema:
+          format: uuid
+          title: Workspace Id
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceOverview'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Workspace Overview

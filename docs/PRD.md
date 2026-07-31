@@ -40,16 +40,18 @@ CARLA 原生渲染窗口。
 
 ### 2.2 核心用户路径
 
-1. 用户选择 Town04 场景；
-2. 系统校验同源 OpenDRIVE、SUMO `.net.xml`、`.sumocfg`、route、信号灯映射和 GeoJSON；
-3. 用户在本机启动 SUMO TraCI server、可见窗口模式的 CARLA 和 TrafficVerse；SUMO 可使用
+1. 用户搜索、创建或选择工作区，在工作区总览确认地图、场景、智能体和近期仿真摘要；
+2. 用户进入工作区后，系统才展示该工作区内的仿真配置、运行和历史入口；
+3. 用户选择 Town04 场景；
+4. 系统校验同源 OpenDRIVE、SUMO `.net.xml`、`.sumocfg`、route、信号灯映射和 GeoJSON；
+5. 用户在本机启动 SUMO TraCI server、可见窗口模式的 CARLA 和 TrafficVerse；SUMO 可使用
    headless `sumo`，其 GUI 只允许作为独立调试工具，不属于 TrafficVerse 产品界面；
-4. TrafficVerse 连接 SUMO TraCI `8813` 和 CARLA RPC `2000`，完成版本、地图和步长校验；
-5. 用户启动实验，SUMO 按 50 ms 固定步长产生权威交通状态；
-6. PySide6 左侧二维页面显示全部 SUMO 车辆、路网和信号灯；
-7. ROI 内车辆和信号灯被同步到 CARLA，右侧嵌入的 CARLA 原生窗口显示三维场景；
-8. 用户下发控制命令，命令在下一次 SUMO step 前通过 TraCI 应用；
-9. 用户可暂停、恢复和停止实验，并查看车辆数、平均速度、排队长度和组件健康。
+6. TrafficVerse 连接 SUMO TraCI `8813` 和 CARLA RPC `2000`，完成版本、地图和步长校验；
+7. 用户启动实验，SUMO 按 50 ms 固定步长产生权威交通状态；
+8. PySide6 左侧二维页面显示全部 SUMO 车辆、路网和信号灯；
+9. ROI 内车辆和信号灯被同步到 CARLA，右侧嵌入的 CARLA 原生窗口显示三维场景；
+10. 用户下发控制命令，命令在下一次 SUMO step 前通过 TraCI 应用；
+11. 用户可暂停、恢复和停止实验，并查看车辆数、平均速度、排队长度和组件健康。
 
 ## 3. 产品范围
 
@@ -153,6 +155,9 @@ CARLA 原生渲染窗口。
 
 #### 生命周期与展示
 
+- 支持工作区搜索、创建、重命名和删除；仿真实验必须归属于有效工作区；
+- 未进入工作区时不展示仿真配置、运行、历史仿真和工作区资产入口；
+- 工作区总览第一阶段使用版本化 mock 接口占位，接口稳定后替换为真实聚合查询；
 - 支持 prepare、start、pause、resume、stop；
 - 支持固定 0.5×、1×、2×播放倍率，但倍率不改变 50 ms 仿真步长；
 - 展示车辆数、平均速度、排队车辆数、仿真时间、tick 耗时、SUMO/CARLA/窗口健康；
@@ -261,7 +266,7 @@ class TrafficEnginePort(Protocol):
 
 ### 5.5 Visualization and API
 
-- REST 提供地图、manifest、场景、实验生命周期和命令；
+- REST 提供工作区 CRUD/搜索/总览、地图、manifest、场景、实验生命周期和命令；
 - WebSocket 提供 `world.snapshot`、`vehicle.delta`、`traffic_light.delta`、指标和健康事件；
 - 不提供 `camera.frame` 作为 MVP 三维视图协议；
 - 左侧 MapLibre/deck.gl 消费 SUMO 派生状态，右侧 `CarlaNativeWindowHost` 承载原生窗口；

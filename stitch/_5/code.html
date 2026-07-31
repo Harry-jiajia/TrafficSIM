@@ -1,0 +1,275 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed": "#ffdbd0",
+                      "surface-dim": "#10131c",
+                      "surface-bright": "#363943",
+                      "surface-container-low": "#191b24",
+                      "on-primary-container": "#f8f7ff",
+                      "surface-container-highest": "#32343e",
+                      "surface-variant": "#32343e",
+                      "on-error": "#690005",
+                      "primary": "#0066ff",
+                      "on-tertiary-fixed-variant": "#832600",
+                      "primary-container": "#0066ff",
+                      "tertiary-fixed-dim": "#ffb59d",
+                      "error": "#ffb4ab",
+                      "surface-container": "#1d1f28",
+                      "secondary": "#bdf4ff",
+                      "on-error-container": "#ffdad6",
+                      "outline-variant": "#424656",
+                      "on-secondary": "#00363d",
+                      "on-surface": "#e1e2ee",
+                      "primary-fixed-dim": "#b3c5ff",
+                      "surface-container-high": "#272a33",
+                      "secondary-fixed-dim": "#00daf3",
+                      "on-secondary-fixed": "#001f24",
+                      "on-surface-variant": "#c2c6d8",
+                      "background": "#10131c",
+                      "on-secondary-fixed-variant": "#004f58",
+                      "on-tertiary-fixed": "#390c00",
+                      "on-primary-fixed-variant": "#003fa4",
+                      "inverse-surface": "#e1e2ee",
+                      "on-tertiary-container": "#fff6f4",
+                      "error-container": "#93000a",
+                      "secondary-container": "#00e3fd",
+                      "outline": "#8c90a1",
+                      "tertiary": "#ffb59d",
+                      "surface-tint": "#b3c5ff",
+                      "inverse-primary": "#0054d6",
+                      "on-tertiary": "#5d1900",
+                      "surface-container-lowest": "#0b0e16",
+                      "primary-fixed": "#dae1ff",
+                      "on-primary-fixed": "#001849",
+                      "on-secondary-container": "#00616d",
+                      "on-primary": "#002b75",
+                      "inverse-on-surface": "#2e303a",
+                      "tertiary-container": "#cc4204",
+                      "surface": "#10131c",
+                      "secondary-fixed": "#9cf0ff",
+                      "on-background": "#e1e2ee"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "sidebar-width": "260px",
+                      "unit": "4px",
+                      "card-gap": "12px",
+                      "container-padding": "24px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "headline-md": ["Inter"],
+                      "body-md": ["Inter"],
+                      "data-mono": ["JetBrains Mono"],
+                      "title-sm": ["Inter"],
+                      "label-xs": ["Inter"],
+                      "display-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "data-mono": ["13px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "title-sm": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "label-xs": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
+                      "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    }catch(_e){}</script></head><body class="bg-background text-on-background h-screen w-screen overflow-hidden flex font-body-md selection:bg-primary-container selection:text-white">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full flex flex-col z-50 w-[260px] border-r border-outline-variant bg-surface-container-lowest dark:bg-surface-container-lowest bg-opacity-95 backdrop-blur-xl">
+<!-- Brand Header -->
+<div class="p-6 flex items-center gap-3 border-b border-outline-variant/30">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-xl">traffic</span>
+</div>
+<div>
+<h1 class="font-display-lg text-[20px] leading-tight font-bold text-primary">TrafficVerse</h1>
+<p class="font-label-xs text-label-xs text-on-surface-variant">自动驾驶仿真</p>
+</div>
+</div>
+<!-- Navigation Sections -->
+<div class="flex-1 overflow-y-auto py-4 flex flex-col gap-6 scrollbar-hide"><div class="px-3">
+<div class="px-3 mb-2 flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<h2 class="font-title-sm text-body-md font-medium uppercase tracking-wider">工作台</h2>
+</div>
+<ul class="flex flex-col gap-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2.5 pl-4 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 group" href="#">
+
+<span class="font-title-sm text-body-md font-medium">北京亦庄</span>
+</a>
+</li>
+</ul>
+</div>
+<!-- Group 1 -->
+<div class="px-3">
+<div class="px-3 mb-2 flex items-center gap-2 text-outline"><span class="material-symbols-outlined text-[20px]">traffic</span><h2 class="font-title-sm text-body-md font-medium uppercase tracking-wider">交通仿真</h2></div>
+<ul class="flex flex-col gap-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-r-lg border-l-4 border-primary bg-gradient-to-r from-primary/10 to-transparent text-primary transition-transform scale-95 group" href="#"><span class="material-symbols-outlined text-[20px]">settings_input_component</span>
+<span class="font-title-sm text-body-md font-medium">仿真配置</span>
+</a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2.5 pl-4 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 group" href="#"><span class="material-symbols-outlined text-[20px]">history</span>
+<span class="font-title-sm text-body-md font-medium">历史仿真</span>
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-on-surface transition-colors ml-auto">expand_more</span></a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2.5 pl-4 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 group" href="#"><span class="material-symbols-outlined text-[20px]">traffic</span>
+<span class="font-title-sm text-body-md font-medium">交通场景</span>
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-on-surface transition-colors ml-auto">expand_more</span></a>
+</li>
+</ul>
+</div>
+<!-- Group 2 -->
+<div class="px-3">
+<div class="px-3 mb-2 flex items-center gap-2 text-outline"><span class="material-symbols-outlined text-[20px]">folder_open</span><h2 class="font-title-sm text-body-md font-medium uppercase tracking-wider">资产中心</h2></div>
+<ul class="flex flex-col gap-1">
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2.5 pl-4 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 group" href="#"><span class="material-symbols-outlined text-[20px]">map</span>
+<span class="font-title-sm text-body-md font-medium">地图</span>
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-on-surface transition-colors ml-auto">expand_more</span></a>
+</li>
+<li class="">
+<a class="flex items-center gap-3 px-3 py-2.5 pl-4 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 group" href="#"><span class="material-symbols-outlined text-[20px]">smart_toy</span>
+<span class="font-title-sm text-body-md font-medium">智能体</span>
+<span class="material-symbols-outlined text-[18px] text-outline group-hover:text-on-surface transition-colors ml-auto">expand_more</span></a>
+</li>
+</ul>
+</div>
+</div>
+<div class="mt-auto p-4 border-t border-outline-variant/30">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 group border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-on-surface" data-icon="settings">settings</span>
+<span class="font-title-sm text-body-md font-medium">系统设置</span>
+</a>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="ml-sidebar-width flex-1 h-full flex flex-col bg-surface overflow-hidden relative">
+<!-- TopAppBar -->
+<header class="h-16 w-full border-b border-outline-variant backdrop-blur-md bg-surface-container/80 flex items-center justify-between px-gutter z-40 shrink-0">
+<div class="flex items-center space-x-4">
+<span class="font-headline-md text-[18px] font-black text-on-surface">仿真配置</span>
+</div>
+<div class="flex items-center space-x-4">
+<button class="bg-primary-container text-on-primary-container hover:brightness-110 px-4 py-2 rounded-lg font-title-sm text-[14px] flex items-center transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] hover:shadow-[0_4px_12px_rgba(0,102,255,0.3)]">
+<span class="material-symbols-outlined mr-2 text-[18px]" data-icon="play_arrow" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">play_arrow</span>
+                    开始仿真
+                </button>
+</div>
+</header>
+<!-- Configuration Canvas -->
+<section class="glass-panel rounded-xl flex flex-col shrink-0 mx-container-padding py-3 px-5 mt-2">
+  <h2 class="font-label-xs text-label-xs text-outline uppercase tracking-widest mb-2">场景信息</h2>
+  <div class="space-y-3">
+    <div>
+      <label class="block font-label-xs text-label-xs text-on-surface-variant mb-1">场景名称 <span class="text-error">*</span></label>
+      <input type="text" required="" class="w-full bg-[#090B0F] border border-outline-variant text-on-surface rounded-lg px-4 py-2 font-body-md focus:border-primary-container focus:ring-0 focus:outline-none hover:border-outline transition-colors" placeholder="请输入场景名称">
+    </div>
+    <div>
+      <label class="block font-label-xs text-label-xs text-on-surface-variant mb-1">场景描述</label>
+      <textarea class="w-full bg-[#090B0F] border border-outline-variant text-on-surface rounded-lg px-4 py-2 font-body-md focus:border-primary-container focus:ring-0 focus:outline-none hover:border-outline transition-colors min-h-[80px]" placeholder="请输入场景描述"></textarea>
+    </div>
+  </div>
+</section><div class="flex-1 overflow-y-auto flex flex-col lg:flex-row gap-card-gap relative z-10 px-container-padding py-2"><!-- Left Column: Map & Overview -->
+<div class="flex-1 flex flex-col gap-card-gap min-w-[300px]">
+  <!-- Map Selection -->
+  <section class="glass-panel rounded-xl p-5 flex flex-col shrink-0">
+    <h2 class="font-label-xs text-label-xs text-outline uppercase tracking-widest mb-4">地图选择</h2>
+    <div class="relative">
+      <select class="w-full bg-[#090B0F] border border-outline-variant text-on-surface rounded-lg px-4 py-2.5 font-body-md focus:border-primary-container focus:ring-0 focus:outline-none appearance-none cursor-pointer hover:border-outline transition-colors">
+        <option value="town04">Town04 (城市十字路口)</option>
+        <option value="highway10">Highway_10km (高速环线)</option>
+        <option value="citymix">City_8km_Mix (混合交通)</option>
+      </select>
+      <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+    </div>
+  </section>
+  <!-- Map Preview -->
+  <section class="glass-panel rounded-xl p-1 flex flex-col flex-1 min-h-[400px] relative overflow-hidden group">
+    <div class="absolute inset-4 z-10 pointer-events-none">
+      <h2 class="font-label-xs text-label-xs text-outline uppercase tracking-widest bg-surface-container-lowest/80 backdrop-blur-sm px-2 py-1 rounded inline-block">地图预览</h2>
+    </div>
+    <div class="absolute bottom-4 right-4 z-10 flex bg-surface-container-highest/80 backdrop-blur border border-outline-variant rounded overflow-hidden">
+      <button class="px-3 py-1.5 flex items-center justify-center hover:bg-surface-variant transition-colors text-on-surface border-r border-outline-variant/50 text-xs">2D</button>
+      <button class="px-3 py-1.5 flex items-center justify-center bg-primary/20 text-primary transition-colors border-r border-outline-variant/50 text-xs">3D</button>
+      <button class="px-3 py-1.5 flex items-center justify-center hover:bg-surface-variant transition-colors text-on-surface text-xs">复位</button>
+    </div>
+    <div class="w-full h-full bg-[#0a111a] rounded-lg relative overflow-hidden" style="background-image: radial-gradient(#1a2639 1px, transparent 1px); background-size: 20px 20px;">
+      <img class="w-full h-full object-cover opacity-80 mix-blend-screen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbfSGD_-99y9sT9T9H9vtNP5Pg1g0Gu-ajpmmyuVQTuE2Ptqprd5iCEXUbmge0Rfhh3hYvfudEZF62hwBP1dYZlgqiMOHX91lfQRDcK873lb0VV_mNa7jMc5zHUi7ROopFeGNVMHyErdnQVGtJjTPGwTaMAX_r0MBsRR4AdIYPFUnxuAIq3lt_c-i8CEhvTCfASkXYoQL0G6BKmck2grGlIWNPpoEYESHq2t9ntHgRHcQS_kiMxjAluvzkfHKfnP0vf7I" alt="Map Preview">
+    </div>
+  </section>
+</div>
+
+<!-- Right Column: Config Forms -->
+<div class="flex-1 flex flex-col gap-card-gap min-w-[300px]">
+  <!-- Agent Configuration -->
+  <section class="glass-panel rounded-xl p-5 flex flex-col flex-1">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-label-xs text-label-xs text-outline uppercase tracking-widest">智驾数量配置</h2>
+      <span class="font-data-mono text-data-mono text-secondary-fixed-dim bg-secondary-fixed-dim/10 px-2 py-0.5 rounded border border-secondary-fixed-dim/20">总计: 250</span>
+    </div>
+    <div class="space-y-3 overflow-y-auto pr-2">
+      <div class="flex items-center gap-3 bg-surface-container-low p-2 rounded-lg border border-outline-variant hover:border-outline transition-colors">
+        <div class="relative flex-1">
+          <select class="w-full bg-[#090B0F] border border-outline-variant text-on-surface rounded px-3 py-1.5 font-data-mono text-[13px] focus:border-primary-container focus:ring-0 focus:outline-none appearance-none cursor-pointer">
+            <option value="L4">L4智驾</option>
+            <option value="L3">L3智驾</option>
+            <option value="L2">L2智驾</option>
+            <option value="L1">L1智驾</option>
+            <option value="L0">L0智驾</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none">arrow_drop_down</span>
+        </div>
+        <div class="w-24">
+          <input class="w-full bg-[#090B0F] border border-outline-variant text-on-surface rounded px-3 py-1.5 font-data-mono text-[13px] text-right focus:border-primary-container focus:ring-0 focus:outline-none glow-active transition-shadow" type="number" value="50">
+        </div>
+        <div class="flex gap-1">
+          <button class="w-7 h-7 rounded bg-surface-variant hover:bg-surface-bright flex items-center justify-center text-outline hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">add</span></button>
+          <button class="w-7 h-7 rounded bg-surface-variant hover:bg-error-container flex items-center justify-center text-outline hover:text-on-error-container transition-colors"><span class="material-symbols-outlined text-[16px]">delete</span></button>
+        </div>
+      </div>
+    </div>
+    <button class="mt-4 w-full py-2 border border-outline-variant border-dashed rounded-lg text-outline hover:text-on-surface hover:border-outline hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2 font-data-mono text-[13px]">
+      <span class="material-symbols-outlined text-[18px]">add_circle</span>添加智驾分类
+    </button>
+  </section>
+  <!-- Environmental Configuration -->
+  <section class="glass-panel rounded-xl p-5 flex flex-col shrink-0">
+    <h2 class="font-label-xs text-label-xs text-outline uppercase tracking-widest mb-4">环境配置</h2>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block font-label-xs text-label-xs text-on-surface-variant mb-1">天气</label>
+        <select class="w-full bg-[#090B0F] border border-outline-variant text-on-surface rounded px-3 py-1.5 font-data-mono text-[13px] focus:border-primary-container focus:ring-0 focus:outline-none appearance-none">
+          <option>晴朗 中午</option>
+          <option>雨天 日落</option>
+          <option>雾天 早晨</option>
+        </select>
+      </div>
+      <div>
+        <label class="block font-label-xs text-label-xs text-on-surface-variant mb-1">时长</label>
+        <input class="w-full bg-[#090B0F] border border-outline-variant text-on-surface rounded px-3 py-1.5 font-data-mono text-[13px] focus:border-primary-container focus:ring-0 focus:outline-none" type="text" value="01:00:00">
+      </div>
+    </div>
+  </section>
+  <!-- Action Buttons -->
+  <div class="flex gap-3 mt-4">
+    <button class="flex-1 py-2.5 rounded-lg border border-[#2A2F3A] bg-transparent text-on-surface hover:bg-surface-container-low transition-colors font-title-sm text-[14px]">保存草稿</button>
+    <button class="flex-1 py-2.5 rounded-lg bg-primary-container text-on-primary-container hover:brightness-110 transition-all font-title-sm text-[14px] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">保存配置</button>
+  </div>
+</div></div></main>
+
+</body></html>

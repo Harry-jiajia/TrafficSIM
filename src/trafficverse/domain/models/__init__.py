@@ -32,6 +32,14 @@ from trafficverse.domain.models.vehicle import (
     TrafficLightUpdate,
     VehicleState,
 )
+from trafficverse.domain.models.workspace import (
+    WorkspaceActivitySample,
+    WorkspaceAutomationCount,
+    WorkspaceOverview,
+    WorkspaceRecentSimulation,
+    WorkspaceRecord,
+    WorkspaceWrite,
+)
 
 __all__ = [
     "ActorSpawnResult",
@@ -61,4 +69,10 @@ __all__ = [
     "Vector3",
     "VehicleState",
     "WebSocketEnvelope",
+    "WorkspaceActivitySample",
+    "WorkspaceAutomationCount",
+    "WorkspaceOverview",
+    "WorkspaceRecentSimulation",
+    "WorkspaceRecord",
+    "WorkspaceWrite",
 ]

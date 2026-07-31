@@ -253,6 +253,18 @@ REST 保持 `/api/v1` 资源与生命周期接口。WebSocket 只传 TrafficVers
 
 Core Run 不定义 `camera.frame` topic 或 payload。CARLA 画面不经过 API/WebSocket。
 
+工作区是仿真资源的入口上下文：
+
+- `GET/POST /api/v1/workspaces` 提供搜索与创建；
+- `PATCH/DELETE /api/v1/workspaces/{workspace_id}` 提供重命名和删除；
+- `GET /api/v1/workspaces/{workspace_id}/overview` 当前返回类型化 mock 总览，后续保持响应模型并
+  替换为真实聚合数据；
+- 创建实验必须携带已存在的 `workspace_id`，返回的 `ExperimentView` 同时携带该 ID；
+- 桌面端启动只加载工作区。用户进入工作区后才加载地图并显示仿真配置、运行和历史导航。
+
+当前 Core Run 使用进程内工作区 repository，服务重启后恢复内置示例；接入 PostgreSQL 产品
+持久化时复用 `WorkspaceRepositoryPort`，不改变 REST 或 UI 协议。
+
 ## 11. 测试与 Gate
 
 | 层级 | 必须证明 |

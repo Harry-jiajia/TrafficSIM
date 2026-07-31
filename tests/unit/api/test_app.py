@@ -8,10 +8,12 @@ from uuid import UUID, uuid4
 from fastapi.testclient import TestClient
 
 from trafficverse.adapters.messaging import FrameBroker
+from trafficverse.adapters.persistence import InMemoryWorkspaceRepository
 from trafficverse.api import ApiDependencies, RuntimeDirectory, create_app
 from trafficverse.api.command_bus import ExperimentCommandBus
 from trafficverse.api.map_catalog import MapCatalog
 from trafficverse.api.models import ReadinessComponent
+from trafficverse.application.workspace_service import WorkspaceService
 from trafficverse.bootstrap import build_core_api
 from trafficverse.domain.enums import (
     ComponentStatus,
@@ -110,7 +112,14 @@ def _dependencies(
             ),
         )
 
-    return ApiDependencies(runtimes, maps, commands, broker, readiness)
+    return ApiDependencies(
+        runtimes,
+        maps,
+        commands,
+        broker,
+        readiness,
+        WorkspaceService(InMemoryWorkspaceRepository(initial=())),
+    )
 
 
 def _client_message(
@@ -163,6 +172,45 @@ def test_not_ready_returns_503(tmp_path: Path) -> None:
         assert response.json()["ready"] is False
 
 
+def test_workspace_search_create_rename_overview_and_delete(tmp_path: Path) -> None:
+    dependencies = _dependencies(tmp_path, FakeManager(uuid4()))
+
+    with TestClient(create_app(dependencies)) as client:
+        created = client.post(
+            "/api/v1/workspaces",
+            json={"name": "北京测试区", "description": "用于 API 验证"},
+        )
+        assert created.status_code == 201
+        workspace_id = created.json()["workspace_id"]
+
+        searched = client.get("/api/v1/workspaces", params={"query": "北京"}).json()
+        assert [item["workspace_id"] for item in searched] == [workspace_id]
+
+        renamed = client.patch(
+            f"/api/v1/workspaces/{workspace_id}",
+            json={"name": "北京核心区", "description": "更新后"},
+        )
+        assert renamed.json()["name"] == "北京核心区"
+
+        overview = client.get(f"/api/v1/workspaces/{workspace_id}/overview")
+        assert overview.status_code == 200
+        assert overview.json()["workspace_id"] == workspace_id
+        assert overview.json()["recent_simulations"]
+
+        deleted = client.delete(f"/api/v1/workspaces/{workspace_id}")
+        assert deleted.status_code == 204
+        assert client.get(f"/api/v1/workspaces/{workspace_id}/overview").status_code == 404
+        invalid_experiment = client.post(
+            "/api/v1/experiments",
+            json={
+                "workspace_id": workspace_id,
+                "scenario_id": str(UUID(int=42)),
+                "map_id": "image2road",
+            },
+        )
+        assert invalid_experiment.status_code == 404
+
+
 def test_core_api_discovers_image2road_as_directly_runnable_sumo_package(
     tmp_path: Path,
 ) -> None:
@@ -185,7 +233,11 @@ def test_core_api_discovers_image2road_as_directly_runnable_sumo_package(
 
         created = client.post(
             "/api/v1/experiments",
-            json={"scenario_id": str(UUID(int=42)), "map_id": "image2road"},
+            json={
+                "workspace_id": client.get("/api/v1/workspaces").json()[0]["workspace_id"],
+                "scenario_id": str(UUID(int=42)),
+                "map_id": "image2road",
+            },
         )
         assert created.status_code == 202
         assert created.json()["simulation_time_ms"] == 0

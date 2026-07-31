@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
 from uuid import UUID
 
-from PySide6.QtCore import QFile, QIODeviceBase, QObject, QUrl, Signal
+from PySide6.QtCore import QFile, QIODeviceBase, QObject, QUrl, QUrlQuery, Signal
 from PySide6.QtNetwork import (
     QHttpMultiPart,
     QHttpPart,
@@ -37,6 +38,39 @@ class RestApiClient(QObject):
 
     def list_maps(self) -> None:
         self._get("maps.list", "/api/v1/maps")
+
+    def list_workspaces(self, query: str | None = None) -> None:
+        parameters = {"query": query} if query else None
+        self._get("workspaces.list", "/api/v1/workspaces", parameters)
+
+    def get_workspace_overview(self, workspace_id: UUID) -> None:
+        self._get(
+            f"workspace.overview:{workspace_id}",
+            f"/api/v1/workspaces/{workspace_id}/overview",
+        )
+
+    def create_workspace(self, name: str, description: str) -> None:
+        self._post_json(
+            "workspace.create",
+            "/api/v1/workspaces",
+            {"name": name, "description": description},
+        )
+
+    def update_workspace(self, workspace_id: UUID, name: str, description: str) -> None:
+        self._patch_json(
+            f"workspace.update:{workspace_id}",
+            f"/api/v1/workspaces/{workspace_id}",
+            {"name": name, "description": description},
+        )
+
+    def delete_workspace(self, workspace_id: UUID) -> None:
+        operation = f"workspace.delete:{workspace_id}"
+        self._watch(
+            operation,
+            self._network.deleteResource(
+                QNetworkRequest(self._url(f"/api/v1/workspaces/{workspace_id}"))
+            ),
+        )
 
     def get_map_network(self, map_id: str) -> None:
         self._get(f"map.network:{map_id}", f"/api/v1/maps/{map_id}/network")
@@ -72,11 +106,15 @@ class RestApiClient(QObject):
         multipart.setParent(reply)
         self._watch(operation, reply)
 
-    def create_experiment(self, scenario_id: UUID, map_id: str) -> None:
+    def create_experiment(self, workspace_id: UUID, scenario_id: UUID, map_id: str) -> None:
         self._post_json(
             "experiment.create",
             "/api/v1/experiments",
-            {"scenario_id": str(scenario_id), "map_id": map_id},
+            {
+                "workspace_id": str(workspace_id),
+                "scenario_id": str(scenario_id),
+                "map_id": map_id,
+            },
         )
 
     def get_experiment(self, experiment_id: UUID) -> None:
@@ -97,14 +135,29 @@ class RestApiClient(QObject):
             payload or {},
         )
 
-    def _get(self, operation: str, path: str) -> None:
-        self._watch(operation, self._network.get(QNetworkRequest(self._url(path))))
+    def _get(
+        self,
+        operation: str,
+        path: str,
+        parameters: Mapping[str, str] | None = None,
+    ) -> None:
+        self._watch(operation, self._network.get(QNetworkRequest(self._url(path, parameters))))
 
     def _post_json(self, operation: str, path: str, payload: dict[str, object]) -> None:
         request = QNetworkRequest(self._url(path))
         request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
         reply = self._network.post(
             request,
+            json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+        )
+        self._watch(operation, reply)
+
+    def _patch_json(self, operation: str, path: str, payload: dict[str, object]) -> None:
+        request = QNetworkRequest(self._url(path))
+        request.setHeader(QNetworkRequest.KnownHeaders.ContentTypeHeader, "application/json")
+        reply = self._network.sendCustomRequest(
+            request,
+            b"PATCH",
             json.dumps(payload, separators=(",", ":")).encode("utf-8"),
         )
         self._watch(operation, reply)
@@ -137,5 +190,15 @@ class RestApiClient(QObject):
             pass
         return reply.errorString()
 
-    def _url(self, path: str) -> QUrl:
-        return QUrl(f"{self._base_url}{path}")
+    def _url(
+        self,
+        path: str,
+        parameters: Mapping[str, str] | None = None,
+    ) -> QUrl:
+        url = QUrl(f"{self._base_url}{path}")
+        if parameters:
+            query = QUrlQuery()
+            for key, value in parameters.items():
+                query.addQueryItem(key, value)
+            url.setQuery(query)
+        return url

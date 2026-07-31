@@ -16,16 +16,27 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ui.models import ControlAvailability, MapSummary
+from ui.models import (
+    ControlAvailability,
+    MapSummary,
+    WorkspaceOverview,
+    WorkspaceSummary,
+)
 from ui.viewmodels import RunViewModel
 from ui.views.asset_center_page import AssetCenterPage
 from ui.views.data_analysis_page import DataAnalysisPage
 from ui.views.experiment_management_page import ExperimentManagementPage
 from ui.views.live_monitor_page import LiveMonitorPage
-from ui.views.navigation import NavigationRail
+from ui.views.navigation import NavigationRail, WorkspaceNavigationRail
 from ui.views.scene_configuration_page import SceneConfigurationPage
 from ui.views.system_settings_page import SystemSettingsPage
 from ui.views.theme import ThemeMode, configure_application_font, load_stylesheet
+from ui.views.workspace_page import (
+    WorkspaceDeleteDialog,
+    WorkspaceEditDialog,
+    WorkspaceOverviewPage,
+    run_workspace_dialog,
+)
 
 _WINDOW_ICON_PATH = Path(__file__).resolve().parents[1] / "assets/icons/logo.svg"
 
@@ -43,6 +54,11 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1180, 720)
 
         self.navigation = NavigationRail()
+        self.workspace_navigation = WorkspaceNavigationRail()
+        self.navigation_stack = QStackedWidget()
+        self.navigation_stack.setObjectName("navigationStack")
+        self.navigation_stack.addWidget(self.workspace_navigation)
+        self.navigation_stack.addWidget(self.navigation)
         self.page_stack = QStackedWidget()
         self.page_stack.setObjectName("pageStack")
         self.notice = QLabel()
@@ -56,7 +72,9 @@ class MainWindow(QMainWindow):
         self.analysis_page = DataAnalysisPage()
         self.assets_page = AssetCenterPage(load_web_map=load_web_map)
         self.settings_page = SystemSettingsPage()
+        self.workspace_page = WorkspaceOverviewPage()
         self._pages = {
+            "workspace": self.workspace_page,
             "live": self.live_page,
             "scene": self.scene_page,
             "experiments": self.experiments_page,
@@ -79,17 +97,29 @@ class MainWindow(QMainWindow):
         shell_layout = QHBoxLayout(shell)
         shell_layout.setContentsMargins(0, 0, 0, 0)
         shell_layout.setSpacing(0)
-        shell_layout.addWidget(self.navigation)
+        shell_layout.addWidget(self.navigation_stack)
         shell_layout.addWidget(content, 1)
         self.setCentralWidget(shell)
 
         self._connect_pages()
         self._connect_viewmodel()
         self._apply_theme(ThemeMode.DARK.value)
+        self.navigation_stack.setCurrentWidget(self.workspace_navigation)
+        self.page_stack.setCurrentWidget(self.workspace_page)
 
     def _connect_pages(self) -> None:
         vm = self._viewmodel
         self.navigation.page_selected.connect(self._show_page)
+        self.navigation.workspace_exit_requested.connect(vm.leave_workspace)
+        self.workspace_navigation.workspace_selected.connect(vm.select_workspace)
+        self.workspace_navigation.workspace_enter_requested.connect(vm.enter_selected_workspace)
+        self.workspace_navigation.search_changed.connect(vm.search_workspaces)
+        self.workspace_navigation.create_requested.connect(self._create_workspace)
+        self.workspace_navigation.delete_requested.connect(self._delete_workspace_entry)
+        self.workspace_navigation.settings_requested.connect(lambda: self._show_page("settings"))
+        self.workspace_page.enter_requested.connect(vm.enter_selected_workspace)
+        self.workspace_page.rename_requested.connect(self._rename_workspace)
+        self.workspace_page.delete_requested.connect(self._delete_workspace)
         self.live_page.create_requested.connect(vm.create_experiment)
         self.live_page.start_requested.connect(vm.start)
         self.live_page.pause_requested.connect(vm.pause)
@@ -107,6 +137,10 @@ class MainWindow(QMainWindow):
 
     def _connect_viewmodel(self) -> None:
         vm = self._viewmodel
+        vm.workspace_catalog_changed.connect(self._set_workspaces)
+        vm.workspace_selected_changed.connect(self._set_selected_workspace)
+        vm.workspace_overview_changed.connect(self._set_workspace_overview)
+        vm.workspace_context_changed.connect(self._set_workspace_context)
         vm.map_catalog_changed.connect(self._set_maps)
         vm.map_manifest_changed.connect(self.assets_page.set_manifest)
         vm.asset_network_changed.connect(self.assets_page.set_preview_network)
@@ -122,11 +156,51 @@ class MainWindow(QMainWindow):
 
     @Slot(str)
     def _show_page(self, key: str) -> None:
+        if key not in {"workspace", "settings"} and self._viewmodel.active_workspace is None:
+            self._show_notice("warning", "请先进入工作区，再使用仿真功能。")
+            return
         page = self._pages.get(key)
         if page is None:
             return
         self.page_stack.setCurrentWidget(page)
         self.navigation.set_active(key)
+
+    @Slot(object)
+    def _set_workspaces(self, workspaces: object) -> None:
+        values = (
+            tuple(item for item in workspaces if isinstance(item, WorkspaceSummary))
+            if isinstance(workspaces, tuple)
+            else ()
+        )
+        selected = self.workspace_page.workspace
+        selected_id = str(selected.workspace_id) if selected is not None else None
+        self.workspace_navigation.set_workspaces(values, selected_id)
+
+    @Slot(object)
+    def _set_selected_workspace(self, workspace: object) -> None:
+        selected = workspace if isinstance(workspace, WorkspaceSummary) else None
+        self.workspace_page.set_workspace(selected)
+        self.workspace_navigation.set_selected(
+            str(selected.workspace_id) if selected is not None else None
+        )
+        if self._viewmodel.active_workspace is None:
+            self.page_stack.setCurrentWidget(self.workspace_page)
+
+    @Slot(object)
+    def _set_workspace_overview(self, overview: object) -> None:
+        value = overview if isinstance(overview, WorkspaceOverview) else None
+        self.workspace_page.set_overview(value)
+
+    @Slot(object)
+    def _set_workspace_context(self, workspace: object) -> None:
+        selected = workspace if isinstance(workspace, WorkspaceSummary) else None
+        if selected is None:
+            self.navigation_stack.setCurrentWidget(self.workspace_navigation)
+            self.page_stack.setCurrentWidget(self.workspace_page)
+            return
+        self.navigation.set_workspace(selected.name)
+        self.navigation_stack.setCurrentWidget(self.navigation)
+        self._show_page("scene")
 
     @Slot(object)
     def _set_maps(self, maps: object) -> None:
@@ -164,6 +238,7 @@ class MainWindow(QMainWindow):
     @Slot(str)
     def _set_status(self, status: str) -> None:
         labels = {
+            "NOT_CREATED": "未创建",
             "CREATED": "已创建",
             "PREPARING": "准备中",
             "READY": "已就绪",
@@ -206,6 +281,41 @@ class MainWindow(QMainWindow):
         )
         if path:
             self._viewmodel.import_map(Path(path))
+
+    def _create_workspace(self) -> None:
+        run_workspace_dialog(
+            WorkspaceEditDialog(title="新增工作区", parent=self),
+            self._viewmodel.create_workspace,
+        )
+
+    def _rename_workspace(self) -> None:
+        workspace = self.workspace_page.workspace
+        if workspace is None:
+            return
+        run_workspace_dialog(
+            WorkspaceEditDialog(title="修改工作区", workspace=workspace, parent=self),
+            lambda name, description: self._viewmodel.update_workspace(
+                workspace.workspace_id,
+                name,
+                description,
+            ),
+        )
+
+    def _delete_workspace(self) -> None:
+        workspace = self.workspace_page.workspace
+        if workspace is None:
+            return
+        self._confirm_delete_workspace(workspace)
+
+    @Slot(object)
+    def _delete_workspace_entry(self, workspace: object) -> None:
+        if isinstance(workspace, WorkspaceSummary):
+            self._confirm_delete_workspace(workspace)
+
+    def _confirm_delete_workspace(self, workspace: WorkspaceSummary) -> None:
+        dialog = WorkspaceDeleteDialog(workspace, self)
+        if dialog.exec() == dialog.DialogCode.Accepted:
+            self._viewmodel.delete_workspace(workspace.workspace_id)
 
     @Slot(str, float)
     def _control_speed(self, vehicle_id: str, desired_speed_mps: float) -> None:

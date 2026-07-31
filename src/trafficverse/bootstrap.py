@@ -11,7 +11,10 @@ from fastapi import FastAPI
 
 from trafficverse.adapters.carla import CarlaAdapter
 from trafficverse.adapters.messaging import DiscardDataLogger, FrameBroker
-from trafficverse.adapters.persistence import InMemoryExperimentRepository
+from trafficverse.adapters.persistence import (
+    InMemoryExperimentRepository,
+    InMemoryWorkspaceRepository,
+)
 from trafficverse.adapters.sumo import SumoTrafficEngineAdapter
 from trafficverse.api import ApiDependencies, RuntimeDirectory, create_app
 from trafficverse.api.command_bus import ExperimentCommandBus
@@ -20,6 +23,7 @@ from trafficverse.api.models import ReadinessComponent
 from trafficverse.application.experiment_registry import ExperimentRegistry
 from trafficverse.application.simulation_manager import SimulationManager
 from trafficverse.application.simulation_runner import SimulationRunner
+from trafficverse.application.workspace_service import WorkspaceService
 from trafficverse.config.loader import load_scenario, validate_map_manifest
 from trafficverse.config.models import MapManifest, ScenarioConfig
 from trafficverse.domain.enums import ComponentStatus, ExperimentStatus, RequirementMode
@@ -310,6 +314,7 @@ def build_core_api(
         commands=ExperimentCommandBus(runtimes),
         broker=broker,
         readiness=factory.readiness,
+        workspaces=WorkspaceService(InMemoryWorkspaceRepository()),
         shutdown=factory.close,
     )
     return create_app(dependencies)

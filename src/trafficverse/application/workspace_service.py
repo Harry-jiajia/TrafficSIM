@@ -1,0 +1,101 @@
+"""Workspace management use cases and temporary overview data."""
+
+from __future__ import annotations
+
+from datetime import date, datetime, timezone
+from uuid import UUID
+
+from trafficverse.domain.models import (
+    WorkspaceActivitySample,
+    WorkspaceAutomationCount,
+    WorkspaceOverview,
+    WorkspaceRecentSimulation,
+    WorkspaceRecord,
+    WorkspaceWrite,
+)
+from trafficverse.ports.persistence import WorkspaceRepositoryPort
+
+
+class WorkspaceService:
+    def __init__(self, repository: WorkspaceRepositoryPort) -> None:
+        self._repository = repository
+
+    async def create(self, write: WorkspaceWrite) -> WorkspaceRecord:
+        return await self._repository.create_workspace(self._normalized(write))
+
+    async def get(self, workspace_id: UUID) -> WorkspaceRecord:
+        return await self._repository.get_workspace(workspace_id)
+
+    async def list(self, query: str | None = None) -> tuple[WorkspaceRecord, ...]:
+        return await self._repository.list_workspaces(query)
+
+    async def update(self, workspace_id: UUID, write: WorkspaceWrite) -> WorkspaceRecord:
+        return await self._repository.update_workspace(workspace_id, self._normalized(write))
+
+    async def delete(self, workspace_id: UUID) -> None:
+        await self._repository.delete_workspace(workspace_id)
+
+    async def overview(self, workspace_id: UUID) -> WorkspaceOverview:
+        """Return stable mock data behind the final overview interface."""
+        workspace = await self.get(workspace_id)
+        offset = workspace.workspace_id.int % 17
+        simulations = 1_284 + offset * 13
+        failed = 34 + offset
+        return WorkspaceOverview(
+            workspace_id=workspace.workspace_id,
+            map_count=12 + offset,
+            agent_count=250_000 + offset * 100,
+            scenario_count=158 + offset * 3,
+            simulation_count=simulations,
+            automation_counts=(
+                WorkspaceAutomationCount(level="L0", count=12_400),
+                WorkspaceAutomationCount(level="L1", count=8_200),
+                WorkspaceAutomationCount(level="L2", count=15_600),
+                WorkspaceAutomationCount(level="L3", count=4_100),
+                WorkspaceAutomationCount(level="L4", count=2_800),
+                WorkspaceAutomationCount(level="L5", count=450),
+                WorkspaceAutomationCount(level="其他交通参与方", count=85_200),
+            ),
+            succeeded_simulations=simulations - failed,
+            failed_simulations=failed,
+            runtime_hours=4_582.0 + offset * 7.5,
+            activity=tuple(
+                WorkspaceActivitySample(day=date(2026, 7, day), simulations=value + offset)
+                for day, value in zip(
+                    range(13, 20),
+                    (38, 27, 51, 43, 56, 34, 49),
+                    strict=True,
+                )
+            ),
+            recent_simulations=(
+                WorkspaceRecentSimulation(
+                    name="Peak_Hour_Mix_01",
+                    status="SUCCEEDED",
+                    occurred_at=datetime(2026, 7, 19, 8, 30, tzinfo=timezone.utc),
+                    duration_ms=7_200_000,
+                    automation_summary="L3 · 45%",
+                ),
+                WorkspaceRecentSimulation(
+                    name="Intersection_Test_Night",
+                    status="SUCCEEDED",
+                    occurred_at=datetime(2026, 7, 18, 22, 15, tzinfo=timezone.utc),
+                    duration_ms=2_700_000,
+                    automation_summary="L4 · 10%",
+                ),
+                WorkspaceRecentSimulation(
+                    name="Highway_Merge_Stress",
+                    status="WARNING",
+                    occurred_at=datetime(2026, 7, 17, 14, 0, tzinfo=timezone.utc),
+                    duration_ms=5_400_000,
+                    automation_summary="L2 · 60%",
+                ),
+            ),
+            preview_region=f"{workspace.name}核心区",
+        )
+
+    @staticmethod
+    def _normalized(write: WorkspaceWrite) -> WorkspaceWrite:
+        return WorkspaceWrite(
+            name=write.name.strip(),
+            description=write.description.strip(),
+        )

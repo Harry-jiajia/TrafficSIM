@@ -18,6 +18,8 @@ from trafficverse.domain.models import (
     ScenarioPage,
     ScenarioRecord,
     ScenarioWrite,
+    WorkspaceRecord,
+    WorkspaceWrite,
 )
 
 
@@ -102,3 +104,19 @@ class ArtifactWriterPort(Protocol):
         relative_path: Path,
         payload: bytes,
     ) -> str: ...
+
+
+class WorkspaceRepositoryPort(Protocol):
+    async def create_workspace(self, write: WorkspaceWrite) -> WorkspaceRecord: ...
+
+    async def get_workspace(self, workspace_id: UUID) -> WorkspaceRecord: ...
+
+    async def list_workspaces(self, query: str | None = None) -> tuple[WorkspaceRecord, ...]: ...
+
+    async def update_workspace(
+        self,
+        workspace_id: UUID,
+        write: WorkspaceWrite,
+    ) -> WorkspaceRecord: ...
+
+    async def delete_workspace(self, workspace_id: UUID) -> None: ...

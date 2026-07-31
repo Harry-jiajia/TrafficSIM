@@ -121,6 +121,7 @@ class MapImportJob(ProtocolModel):
 
 class ExperimentView(ProtocolModel):
     experiment_id: UUID
+    workspace_id: UUID
     status: ExperimentStatus
     simulation_time_ms: int = Field(ge=0)
     speed_multiplier: float = Field(gt=0.0)
@@ -136,6 +137,47 @@ class ReadinessComponent(ProtocolModel):
 class ReadinessResponse(ProtocolModel):
     ready: bool
     components: tuple[ReadinessComponent, ...]
+
+
+class WorkspaceSummary(ProtocolModel):
+    workspace_id: UUID
+    name: str = Field(min_length=1, max_length=200)
+    description: str = Field(default="", max_length=1000)
+    created_at: datetime
+    updated_at: datetime
+
+
+class WorkspaceAutomationCount(ProtocolModel):
+    level: str = Field(min_length=1)
+    count: int = Field(ge=0)
+
+
+class WorkspaceActivitySample(ProtocolModel):
+    day: str = Field(min_length=1)
+    simulations: int = Field(ge=0)
+
+
+class WorkspaceRecentSimulation(ProtocolModel):
+    name: str = Field(min_length=1)
+    status: Literal["SUCCEEDED", "WARNING", "FAILED"]
+    occurred_at: datetime
+    duration_ms: int = Field(ge=0)
+    automation_summary: str = Field(min_length=1)
+
+
+class WorkspaceOverview(ProtocolModel):
+    workspace_id: UUID
+    map_count: int = Field(ge=0)
+    agent_count: int = Field(ge=0)
+    scenario_count: int = Field(ge=0)
+    simulation_count: int = Field(ge=0)
+    automation_counts: tuple[WorkspaceAutomationCount, ...]
+    succeeded_simulations: int = Field(ge=0)
+    failed_simulations: int = Field(ge=0)
+    runtime_hours: float = Field(ge=0.0)
+    activity: tuple[WorkspaceActivitySample, ...]
+    recent_simulations: tuple[WorkspaceRecentSimulation, ...]
+    preview_region: str = Field(min_length=1)
 
 
 @dataclass(frozen=True, slots=True)

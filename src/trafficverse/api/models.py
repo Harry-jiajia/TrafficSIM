@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from datetime import datetime
+from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import Field, JsonValue, model_validator
+from pydantic import Field, JsonValue, StringConstraints, model_validator
 
 from trafficverse.domain.enums import (
     ComponentStatus,
@@ -13,6 +14,11 @@ from trafficverse.domain.enums import (
     LaneChangeDirection,
 )
 from trafficverse.domain.models import StrictModel, WebSocketEnvelope
+
+WorkspaceName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=200),
+]
 
 
 class ErrorDetail(StrictModel):
@@ -74,12 +80,14 @@ class MapImportJob(StrictModel):
 
 
 class ExperimentCreateRequest(StrictModel):
+    workspace_id: UUID
     scenario_id: UUID
     map_id: str | None = Field(default=None, min_length=1)
 
 
 class ExperimentView(StrictModel):
     experiment_id: UUID
+    workspace_id: UUID
     status: ExperimentStatus
     simulation_time_ms: int = Field(ge=0)
     speed_multiplier: float = Field(gt=0.0)
@@ -130,3 +138,21 @@ class CommandOutcome(StrictModel):
     status: ExperimentStatus
     error_code: str | None = None
     message: str | None = None
+
+
+class WorkspaceCreateRequest(StrictModel):
+    name: WorkspaceName
+    description: str = Field(default="", max_length=1000)
+
+
+class WorkspaceUpdateRequest(StrictModel):
+    name: WorkspaceName
+    description: str = Field(default="", max_length=1000)
+
+
+class WorkspaceView(StrictModel):
+    workspace_id: UUID
+    name: str = Field(min_length=1, max_length=200)
+    description: str = Field(default="", max_length=1000)
+    created_at: datetime
+    updated_at: datetime

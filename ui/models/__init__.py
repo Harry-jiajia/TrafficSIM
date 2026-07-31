@@ -10,6 +10,8 @@ from ui.models.protocol import (
     ReadinessResponse,
     TrafficLight,
     Vehicle,
+    WorkspaceOverview,
+    WorkspaceSummary,
     WorldState,
     WorldUpdate,
 )
@@ -28,4 +30,6 @@ __all__ = [
     "Vehicle",
     "WorldState",
     "WorldUpdate",
+    "WorkspaceOverview",
+    "WorkspaceSummary",
 ]

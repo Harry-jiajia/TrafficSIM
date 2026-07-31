@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from trafficverse.adapters.messaging.frame_broker import FrameBroker
     from trafficverse.api.command_bus import ExperimentCommandBus
     from trafficverse.api.map_catalog import MapCatalog
+    from trafficverse.application.workspace_service import WorkspaceService
 
 
 class SimulationControlPort(Protocol):
@@ -50,6 +51,7 @@ class SimulationControlPort(Protocol):
 RuntimeFactory = Callable[[UUID, UUID, str | None], Awaitable[SimulationControlPort]]
 ReadinessCheck = Callable[[], Awaitable[tuple[ReadinessComponent, ...]]]
 ShutdownHook = Callable[[], Awaitable[None]]
+_UNSCOPED_WORKSPACE_ID = UUID(int=0)
 
 
 class RuntimeDirectory:
@@ -58,10 +60,12 @@ class RuntimeDirectory:
     def __init__(self, factory: RuntimeFactory | None = None) -> None:
         self._factory = factory
         self._managers: dict[UUID, SimulationControlPort] = {}
+        self._workspace_ids: dict[UUID, UUID] = {}
 
     async def create(
         self,
         experiment_id: UUID,
+        workspace_id: UUID,
         scenario_id: UUID,
         map_id: str | None = None,
     ) -> ExperimentView:
@@ -75,15 +79,24 @@ class RuntimeDirectory:
             )
         manager = await self._factory(experiment_id, scenario_id, map_id)
         self._managers[experiment_id] = manager
+        self._workspace_ids[experiment_id] = workspace_id
         return ExperimentView(
             experiment_id=experiment_id,
+            workspace_id=workspace_id,
             status=ExperimentStatus.CREATED,
             simulation_time_ms=manager.simulation_time_ms,
             speed_multiplier=manager.speed_multiplier,
         )
 
-    def register(self, experiment_id: UUID, manager: SimulationControlPort) -> None:
+    def register(
+        self,
+        experiment_id: UUID,
+        manager: SimulationControlPort,
+        *,
+        workspace_id: UUID = _UNSCOPED_WORKSPACE_ID,
+    ) -> None:
         self._managers[experiment_id] = manager
+        self._workspace_ids[experiment_id] = workspace_id
 
     async def get(self, experiment_id: UUID) -> SimulationControlPort:
         manager = self._managers.get(experiment_id)
@@ -101,6 +114,7 @@ class RuntimeDirectory:
         manager = await self.get(experiment_id)
         return ExperimentView(
             experiment_id=experiment_id,
+            workspace_id=self._workspace_ids[experiment_id],
             status=await manager.get_status(),
             simulation_time_ms=manager.simulation_time_ms,
             speed_multiplier=manager.speed_multiplier,
@@ -114,4 +128,5 @@ class ApiDependencies:
     commands: ExperimentCommandBus
     broker: FrameBroker
     readiness: ReadinessCheck
+    workspaces: WorkspaceService
     shutdown: ShutdownHook | None = None

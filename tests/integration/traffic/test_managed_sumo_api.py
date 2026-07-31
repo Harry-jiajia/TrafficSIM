@@ -59,9 +59,14 @@ def test_image2road_runs_through_api_websocket_and_preserves_source_outputs(
     )
 
     with TestClient(app) as client:
+        workspace_id = client.get("/api/v1/workspaces").json()[0]["workspace_id"]
         created = client.post(
             "/api/v1/experiments",
-            json={"scenario_id": str(UUID(int=42)), "map_id": "image2road"},
+            json={
+                "workspace_id": workspace_id,
+                "scenario_id": str(UUID(int=42)),
+                "map_id": "image2road",
+            },
         )
         assert created.status_code == 202
         experiment_id = UUID(created.json()["experiment_id"])

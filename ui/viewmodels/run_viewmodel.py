@@ -17,11 +17,17 @@ from ui.models import (
     MapManifest,
     MapSummary,
     ReadinessResponse,
+    WorkspaceOverview,
+    WorkspaceSummary,
     WorldState,
 )
 
 
 class RunViewModel(QObject):
+    workspace_catalog_changed = Signal(object)
+    workspace_selected_changed = Signal(object)
+    workspace_overview_changed = Signal(object)
+    workspace_context_changed = Signal(object)
     map_catalog_changed = Signal(object)
     map_manifest_changed = Signal(str, object)
     asset_network_changed = Signal(str, object)
@@ -47,10 +53,15 @@ class RunViewModel(QObject):
         self._rest = rest
         self._realtime = realtime
         self._scenario_id = scenario_id
+        self._workspaces: tuple[WorkspaceSummary, ...] = ()
+        self._selected_workspace_id: UUID | None = None
+        self._active_workspace_id: UUID | None = None
+        self._enter_created_workspace_id: UUID | None = None
         self._maps: tuple[MapSummary, ...] = ()
         self._selected_map_id: str | None = None
         self._import_job_id: UUID | None = None
         self._experiment_id: UUID | None = None
+        self._experiment_workspace_id: UUID | None = None
         self._status: ExperimentStatus | None = None
         self._world: WorldState | None = None
         self._start_after_prepare = False
@@ -73,12 +84,67 @@ class RunViewModel(QObject):
     def status(self) -> ExperimentStatus | None:
         return self._status
 
+    @property
+    def active_workspace(self) -> WorkspaceSummary | None:
+        return self._workspace(self._active_workspace_id)
+
     def initialize(self) -> None:
         # Readiness describes a prepared experiment and is expected to fail before one exists.
         # At UI startup only probe whether the API control plane is reachable.
         self._rest.check_health()
-        self._rest.list_maps()
+        self._rest.list_workspaces()
         self._emit_controls()
+
+    def search_workspaces(self, query: str) -> None:
+        self._rest.list_workspaces(query.strip() or None)
+
+    def select_workspace(self, workspace_id: str) -> None:
+        try:
+            parsed_id = UUID(workspace_id)
+        except ValueError:
+            self.notification.emit("error", "工作区标识无效。")
+            return
+        workspace = self._workspace(parsed_id)
+        if workspace is None:
+            self.notification.emit("error", "所选工作区已不存在或不在当前搜索结果中。")
+            return
+        self._selected_workspace_id = parsed_id
+        self.workspace_selected_changed.emit(workspace)
+        self._rest.get_workspace_overview(parsed_id)
+
+    def create_workspace(self, name: str, description: str) -> None:
+        if not name.strip():
+            self.notification.emit("error", "工作区名称不能为空。")
+            return
+        self._rest.create_workspace(name.strip(), description.strip())
+
+    def update_workspace(self, workspace_id: UUID, name: str, description: str) -> None:
+        if not name.strip():
+            self.notification.emit("error", "工作区名称不能为空。")
+            return
+        self._rest.update_workspace(workspace_id, name.strip(), description.strip())
+
+    def delete_workspace(self, workspace_id: UUID) -> None:
+        self._rest.delete_workspace(workspace_id)
+
+    def enter_selected_workspace(self) -> None:
+        workspace = self._workspace(self._selected_workspace_id)
+        if workspace is None:
+            self.notification.emit("error", "请先选择一个工作区。")
+            return
+        if (
+            self._experiment_workspace_id is not None
+            and self._experiment_workspace_id != workspace.workspace_id
+        ):
+            self._reset_experiment_context()
+        self._active_workspace_id = workspace.workspace_id
+        self.workspace_context_changed.emit(workspace)
+        if not self._maps:
+            self._rest.list_maps()
+
+    def leave_workspace(self) -> None:
+        self._active_workspace_id = None
+        self.workspace_context_changed.emit(None)
 
     def select_map(self, map_id: str) -> None:
         selected = next((item for item in self._maps if item.map_id == map_id), None)
@@ -110,10 +176,17 @@ class RunViewModel(QObject):
         self._rest.import_map(path)
 
     def create_experiment(self) -> None:
+        if self._active_workspace_id is None:
+            self.notification.emit("error", "请先进入工作区，再创建仿真实验。")
+            return
         if self._selected_map_id is None:
             self.notification.emit("error", "请先选择一份已验证的 SUMO 场景包。")
             return
-        self._rest.create_experiment(self._scenario_id, self._selected_map_id)
+        self._rest.create_experiment(
+            self._active_workspace_id,
+            self._scenario_id,
+            self._selected_map_id,
+        )
 
     def start(self) -> None:
         if self._status is ExperimentStatus.CREATED:
@@ -157,6 +230,48 @@ class RunViewModel(QObject):
     def handle_rest_success(self, operation: str, payload: object) -> None:
         if operation == "health":
             self.connection_changed.emit("API_CONNECTED")
+        elif operation == "workspaces.list":
+            self._workspaces = tuple(
+                WorkspaceSummary.model_validate(item) for item in _items(payload)
+            )
+            self.workspace_catalog_changed.emit(self._workspaces)
+            selected = self._workspace(self._selected_workspace_id)
+            if selected is None:
+                selected = self._workspaces[0] if self._workspaces else None
+                self._selected_workspace_id = (
+                    selected.workspace_id if selected is not None else None
+                )
+            self.workspace_selected_changed.emit(selected)
+            if selected is not None:
+                self._rest.get_workspace_overview(selected.workspace_id)
+                if self._enter_created_workspace_id == selected.workspace_id:
+                    self._enter_created_workspace_id = None
+                    self.enter_selected_workspace()
+            else:
+                self.workspace_overview_changed.emit(None)
+        elif operation == "workspace.create":
+            workspace = WorkspaceSummary.model_validate(payload)
+            self._selected_workspace_id = workspace.workspace_id
+            self._enter_created_workspace_id = workspace.workspace_id
+            self._rest.list_workspaces()
+        elif operation.startswith("workspace.update:"):
+            workspace = WorkspaceSummary.model_validate(payload)
+            self._selected_workspace_id = workspace.workspace_id
+            self.notification.emit("success", "工作区信息已更新。")
+            self._rest.list_workspaces()
+        elif operation.startswith("workspace.delete:"):
+            deleted_id = UUID(operation.removeprefix("workspace.delete:"))
+            if self._selected_workspace_id == deleted_id:
+                self._selected_workspace_id = None
+            if self._active_workspace_id == deleted_id:
+                self._active_workspace_id = None
+                self.workspace_context_changed.emit(None)
+            self.notification.emit("success", "工作区已删除。")
+            self._rest.list_workspaces()
+        elif operation.startswith("workspace.overview:"):
+            overview = WorkspaceOverview.model_validate(payload)
+            if overview.workspace_id == self._selected_workspace_id:
+                self.workspace_overview_changed.emit(overview)
         elif operation == "ready":
             readiness = ReadinessResponse.model_validate(payload)
             if not readiness.ready:
@@ -228,7 +343,11 @@ class RunViewModel(QObject):
             self.notification.emit("error", f"无法处理实时消息：{error}")
 
     def _set_experiment(self, view: ExperimentView) -> None:
+        if self._active_workspace_id != view.workspace_id:
+            self.notification.emit("error", "实验不属于当前工作区，已拒绝加载。")
+            return
         self._experiment_id = view.experiment_id
+        self._experiment_workspace_id = view.workspace_id
         self._world = WorldState(view.experiment_id, simulation_time_ms=view.simulation_time_ms)
         self._set_status(view.status)
         self._realtime.connect_to_experiment(view.experiment_id)
@@ -269,6 +388,27 @@ class RunViewModel(QObject):
 
     def _emit_controls(self) -> None:
         self.control_availability_changed.emit(ControlAvailability.for_status(self._status))
+
+    def _reset_experiment_context(self) -> None:
+        self._realtime.close()
+        self._experiment_id = None
+        self._experiment_workspace_id = None
+        self._status = None
+        self._world = None
+        self._start_after_prepare = False
+        self.experiment_status_changed.emit("NOT_CREATED")
+        self.simulation_time_changed.emit(0)
+        self.vehicles_changed.emit(())
+        self.traffic_lights_changed.emit(())
+        self._emit_controls()
+
+    def _workspace(self, workspace_id: UUID | None) -> WorkspaceSummary | None:
+        if workspace_id is None:
+            return None
+        return next(
+            (item for item in self._workspaces if item.workspace_id == workspace_id),
+            None,
+        )
 
 
 def _items(payload: object) -> list[object]:

@@ -23,11 +23,20 @@ class _Rest(QObject):
     request_succeeded = Signal(str, object)
     request_failed = Signal(str, str)
 
+    def get_workspace_overview(self, workspace_id: UUID) -> None:
+        del workspace_id
+
+    def list_maps(self) -> None:
+        return
+
 
 class _Realtime(QObject):
     connection_changed = Signal(str)
     envelope_received = Signal(object)
     protocol_error = Signal(str)
+
+    def close(self) -> None:
+        return
 
 
 @pytest.mark.e2e
@@ -47,12 +56,29 @@ def test_core_run_window_constructs_and_closes_without_backend_or_carla() -> Non
 
     page_stack = window.findChild(QStackedWidget, "pageStack")
     assert page_stack is not None
-    assert page_stack.count() == 6
-    assert page_stack.currentWidget().objectName() == "liveMonitorPage"
+    assert page_stack.count() == 7
+    assert page_stack.currentWidget().objectName() == "workspaceOverviewPage"
     assert window.findChild(MapLibreDeckMapWidget) is not None
     map_splitter = window.findChild(QSplitter, "monitorMapSplitter")
     assert map_splitter is not None
     assert map_splitter.count() == 2
+    viewmodel.handle_rest_success(
+        "workspaces.list",
+        [
+            {
+                "workspace_id": "10000000-0000-0000-0000-000000000001",
+                "name": "北京亦庄",
+                "description": "核心路网",
+                "created_at": "2026-07-31T00:00:00Z",
+                "updated_at": "2026-07-31T00:00:00Z",
+            }
+        ],
+    )
+    enter = window.findChild(QPushButton, "workspaceEnterButton")
+    assert enter is not None
+    enter.click()
+    assert page_stack.currentWidget().objectName() == "sceneConfigurationPage"
+
     window.show()
     app.processEvents()
     page_title = window.live_page.findChild(QLabel, "pageTitle")

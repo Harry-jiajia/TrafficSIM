@@ -9,6 +9,7 @@ from ui.viewmodels import RunViewModel
 
 EXPERIMENT_ID = UUID("00000000-0000-0000-0000-000000000010")
 SCENARIO_ID = UUID("00000000-0000-0000-0000-000000000042")
+WORKSPACE_ID = UUID("10000000-0000-0000-0000-000000000001")
 
 
 class FakeRest(QObject):
@@ -28,6 +29,21 @@ class FakeRest(QObject):
     def list_maps(self) -> None:
         self.calls.append(("maps", None))
 
+    def list_workspaces(self, query: str | None = None) -> None:
+        self.calls.append(("workspaces", query))
+
+    def get_workspace_overview(self, workspace_id: UUID) -> None:
+        self.calls.append(("workspace-overview", workspace_id))
+
+    def create_workspace(self, name: str, description: str) -> None:
+        self.calls.append(("workspace-create", (name, description)))
+
+    def update_workspace(self, workspace_id: UUID, name: str, description: str) -> None:
+        self.calls.append(("workspace-update", (workspace_id, name, description)))
+
+    def delete_workspace(self, workspace_id: UUID) -> None:
+        self.calls.append(("workspace-delete", workspace_id))
+
     def get_map_network(self, map_id: str) -> None:
         self.calls.append(("network", map_id))
 
@@ -43,8 +59,8 @@ class FakeRest(QObject):
     def import_map(self, path: Path) -> None:
         self.calls.append(("import", path))
 
-    def create_experiment(self, scenario_id: UUID, map_id: str) -> None:
-        self.calls.append(("create", (scenario_id, map_id)))
+    def create_experiment(self, workspace_id: UUID, scenario_id: UUID, map_id: str) -> None:
+        self.calls.append(("create", (workspace_id, scenario_id, map_id)))
 
 
 class FakeRealtime(QObject):
@@ -57,6 +73,7 @@ class FakeRealtime(QObject):
         self.connected: UUID | None = None
         self.sent: list[tuple[str, dict[str, object]]] = []
         self.snapshot_requests = 0
+        self.closed = False
 
     def connect_to_experiment(self, experiment_id: UUID) -> None:
         self.connected = experiment_id
@@ -68,6 +85,9 @@ class FakeRealtime(QObject):
     def request_snapshot(self) -> str:
         self.snapshot_requests += 1
         return "snapshot-1"
+
+    def close(self) -> None:
+        self.closed = True
 
 
 def _app() -> QApplication:
@@ -81,6 +101,22 @@ def _viewmodel() -> tuple[RunViewModel, FakeRest, FakeRealtime]:
     realtime = FakeRealtime()
     viewmodel = RunViewModel(rest, realtime, SCENARIO_ID)  # type: ignore[arg-type]
     return viewmodel, rest, realtime
+
+
+def _enter_workspace(viewmodel: RunViewModel) -> None:
+    viewmodel.handle_rest_success(
+        "workspaces.list",
+        [
+            {
+                "workspace_id": str(WORKSPACE_ID),
+                "name": "测试工作区",
+                "description": "",
+                "created_at": "2026-07-31T00:00:00Z",
+                "updated_at": "2026-07-31T00:00:00Z",
+            }
+        ],
+    )
+    viewmodel.enter_selected_workspace()
 
 
 def _envelope(message_type: str, sequence: int, payload: object) -> dict[str, object]:
@@ -118,7 +154,7 @@ def _vehicle(sequence: int) -> dict[str, object]:
     }
 
 
-def test_initialize_checks_api_health_without_requesting_experiment_readiness() -> None:
+def test_initialize_loads_workspaces_without_exposing_simulation_resources() -> None:
     viewmodel, rest, _ = _viewmodel()
     connection_states: list[str] = []
     viewmodel.connection_changed.connect(connection_states.append)
@@ -129,14 +165,83 @@ def test_initialize_checks_api_health_without_requesting_experiment_readiness() 
         {"status": "ok", "service": "trafficverse-api"},
     )
 
-    assert rest.calls == [("health", None), ("maps", None)]
+    assert rest.calls == [("health", None), ("workspaces", None)]
     assert connection_states == ["API_CONNECTED"]
+
+
+def test_workspace_crud_search_selection_and_entry_drive_backend_calls() -> None:
+    viewmodel, rest, _ = _viewmodel()
+    workspace_id = UUID("10000000-0000-0000-0000-000000000001")
+    contexts: list[object] = []
+    viewmodel.workspace_context_changed.connect(contexts.append)
+    viewmodel.handle_rest_success(
+        "workspaces.list",
+        [
+            {
+                "workspace_id": str(workspace_id),
+                "name": "北京亦庄",
+                "description": "核心路网",
+                "created_at": "2026-07-31T00:00:00Z",
+                "updated_at": "2026-07-31T00:00:00Z",
+            }
+        ],
+    )
+
+    viewmodel.search_workspaces("  北京  ")
+    viewmodel.create_workspace(" 新工作区 ", " 描述 ")
+    viewmodel.update_workspace(workspace_id, "新名称", "新描述")
+    viewmodel.enter_selected_workspace()
+
+    assert ("workspace-overview", workspace_id) in rest.calls
+    assert ("workspaces", "北京") in rest.calls
+    assert ("workspace-create", ("新工作区", "描述")) in rest.calls
+    assert ("workspace-update", (workspace_id, "新名称", "新描述")) in rest.calls
+    assert ("maps", None) in rest.calls
+    assert contexts and getattr(contexts[-1], "workspace_id", None) == workspace_id
+
+
+def test_created_workspace_is_entered_without_success_notification() -> None:
+    viewmodel, rest, _ = _viewmodel()
+    workspace_id = UUID("10000000-0000-0000-0000-000000000099")
+    contexts: list[object] = []
+    notifications: list[tuple[str, str]] = []
+    viewmodel.workspace_context_changed.connect(contexts.append)
+    viewmodel.notification.connect(lambda level, message: notifications.append((level, message)))
+    payload = {
+        "workspace_id": str(workspace_id),
+        "name": "新建工作区",
+        "description": "自动进入",
+        "created_at": "2026-07-31T00:00:00Z",
+        "updated_at": "2026-07-31T00:00:00Z",
+    }
+
+    viewmodel.handle_rest_success("workspace.create", payload)
+    viewmodel.handle_rest_success("workspaces.list", [payload])
+
+    assert viewmodel.active_workspace is not None
+    assert viewmodel.active_workspace.workspace_id == workspace_id
+    assert contexts and getattr(contexts[-1], "workspace_id", None) == workspace_id
+    assert notifications == []
+    assert ("maps", None) in rest.calls
 
 
 def test_map_catalog_skips_core_run_asset_and_auto_selects_sumo_package() -> None:
     viewmodel, rest, _ = _viewmodel()
     notifications: list[tuple[str, str]] = []
     viewmodel.notification.connect(lambda level, message: notifications.append((level, message)))
+    viewmodel.handle_rest_success(
+        "workspaces.list",
+        [
+            {
+                "workspace_id": "10000000-0000-0000-0000-000000000001",
+                "name": "测试工作区",
+                "description": "",
+                "created_at": "2026-07-31T00:00:00Z",
+                "updated_at": "2026-07-31T00:00:00Z",
+            }
+        ],
+    )
+    viewmodel.enter_selected_workspace()
     viewmodel.handle_rest_success(
         "maps.list",
         [
@@ -167,12 +272,33 @@ def test_map_catalog_skips_core_run_asset_and_auto_selects_sumo_package() -> Non
     assert ("manifest", "town04") in rest.calls
     assert ("network", "town04") not in rest.calls
     assert ("network", "image2road") in rest.calls
-    assert ("create", (SCENARIO_ID, "image2road")) in rest.calls
+    assert (
+        "create",
+        (
+            UUID("10000000-0000-0000-0000-000000000001"),
+            SCENARIO_ID,
+            "image2road",
+        ),
+    ) in rest.calls
     assert notifications[-1] == ("error", "所选资产不是可直接运行的 SUMO 场景包。")
 
 
 def test_native_sumo_package_loads_network_without_town04_manifest() -> None:
     viewmodel, rest, _ = _viewmodel()
+    workspace_id = UUID("10000000-0000-0000-0000-000000000001")
+    viewmodel.handle_rest_success(
+        "workspaces.list",
+        [
+            {
+                "workspace_id": str(workspace_id),
+                "name": "测试工作区",
+                "description": "",
+                "created_at": "2026-07-31T00:00:00Z",
+                "updated_at": "2026-07-31T00:00:00Z",
+            }
+        ],
+    )
+    viewmodel.enter_selected_workspace()
     viewmodel.handle_rest_success(
         "maps.list",
         [
@@ -194,7 +320,7 @@ def test_native_sumo_package_loads_network_without_town04_manifest() -> None:
 
     assert ("network", "image2road") in rest.calls
     assert ("manifest", "image2road") not in rest.calls
-    assert ("create", (SCENARIO_ID, "image2road")) in rest.calls
+    assert ("create", (workspace_id, SCENARIO_ID, "image2road")) in rest.calls
 
 
 def test_asset_manifest_and_preview_network_are_forwarded_separately() -> None:
@@ -247,10 +373,12 @@ def test_asset_manifest_and_preview_network_are_forwarded_separately() -> None:
 
 def test_start_prepares_created_experiment_then_starts_when_ready() -> None:
     viewmodel, _, realtime = _viewmodel()
+    _enter_workspace(viewmodel)
     viewmodel.handle_rest_success(
         "experiment.create",
         {
             "experiment_id": str(EXPERIMENT_ID),
+            "workspace_id": str(WORKSPACE_ID),
             "status": "CREATED",
             "simulation_time_ms": 0,
             "speed_multiplier": 1.0,
@@ -269,10 +397,12 @@ def test_start_prepares_created_experiment_then_starts_when_ready() -> None:
 
 def test_vehicle_sequence_gap_requests_world_snapshot() -> None:
     viewmodel, _, realtime = _viewmodel()
+    _enter_workspace(viewmodel)
     viewmodel.handle_rest_success(
         "experiment.create",
         {
             "experiment_id": str(EXPERIMENT_ID),
+            "workspace_id": str(WORKSPACE_ID),
             "status": "RUNNING",
             "simulation_time_ms": 0,
             "speed_multiplier": 1.0,
@@ -297,10 +427,12 @@ def test_vehicle_sequence_gap_requests_world_snapshot() -> None:
 
 def test_running_world_deltas_forward_new_vehicle_positions_to_the_map() -> None:
     viewmodel, _, _ = _viewmodel()
+    _enter_workspace(viewmodel)
     viewmodel.handle_rest_success(
         "experiment.create",
         {
             "experiment_id": str(EXPERIMENT_ID),
+            "workspace_id": str(WORKSPACE_ID),
             "status": "RUNNING",
             "simulation_time_ms": 0,
             "speed_multiplier": 1.0,

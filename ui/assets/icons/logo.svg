@@ -1,51 +1,25 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="_图层_1" data-name="图层 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 350">
-  <defs>
-    <style>
-      .cls-1 {
-        fill: #f7fbfd;
-      }
+<svg width="176" height="202" viewBox="0 0 176 202" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="176" height="202" fill="#C9D1FF"></rect>
 
-      .cls-2 {
-        fill: none;
-        stroke: #eef6fa;
-        stroke-dasharray: 14 14;
-        stroke-linecap: round;
-      }
+  <!-- 左侧翼片 -->
+  <polygon points="40,58 22,50 22,66 40,74" fill="#183A8F"></polygon>
+  <polygon points="40,92 22,84 22,100 40,108" fill="#183A8F"></polygon>
+  <polygon points="40,126 22,118 22,134 40,142" fill="#183A8F"></polygon>
 
-      .cls-2, .cls-3 {
-        stroke-width: 8px;
-      }
+  <!-- 右侧翼片 -->
+  <polygon points="136,58 154,50 154,66 136,74" fill="#183A8F"></polygon>
+  <polygon points="136,92 154,84 154,100 136,108" fill="#183A8F"></polygon>
+  <polygon points="136,126 154,118 154,134 136,142" fill="#183A8F"></polygon>
 
-      .cls-3 {
-        stroke: #2f80ed;
-      }
+  <!-- 顶部帽檐 -->
+  <rect x="60" y="36" width="56" height="14" rx="2" fill="#183A8F"></rect>
 
-      .cls-3, .cls-4 {
-        fill: #f6fbfd;
-      }
+  <!-- 主体外框 -->
+  <rect x="52" y="44" width="72" height="118" rx="8" fill="none" stroke="#183A8F" stroke-width="10"></rect>
 
-      .cls-5 {
-        fill: #2f80ed;
-      }
-
-      .cls-6 {
-        fill: #fff;
-      }
-    </style>
-  </defs>
-  <rect class="cls-6" width="350" height="350"/>
-  <rect class="cls-5" x="7.37" y="31.58" width="336" height="92" rx="44" ry="44"/>
-  <path class="cls-5" d="M172.37,31.58h4c24.3,0,44,23.36,44,52.17v192.09c0,28.81-19.7,52.17-44,52.17h-4c-24.3,0-44-23.36-44-52.17V83.75c0-28.81,19.7-52.17,44-52.17Z"/>
-  <path class="cls-2" d="M28.37,77.58h107.63"/>
-  <path class="cls-2" d="M222.37,77.58h110.63"/>
-  <path class="cls-2" d="M174.37,136.58v176.44"/>
-  <rect class="cls-1" x="100.37" y="41.58" width="6" height="24" rx="2" ry="2"/>
-  <rect class="cls-1" x="242.37" y="41.58" width="6" height="24" rx="2" ry="2"/>
-  <rect class="cls-1" x="138.37" y="129.58" width="24" height="6" rx="2" ry="2"/>
-  <rect class="cls-1" x="186.37" y="129.58" width="24" height="6" rx="2" ry="2"/>
-  <circle class="cls-4" cx="174.37" cy="77.58" r="28"/>
-  <circle class="cls-3" cx="174.37" cy="77.58" r="16"/>
-  <rect class="cls-1" x="100.37" y="93.58" width="6" height="24" rx="2" ry="2"/>
-  <rect class="cls-1" x="242.37" y="93.58" width="6" height="24" rx="2" ry="2"/>
+  <!-- 三个灯：红黄绿 -->
+  <circle cx="88" cy="74" r="10" fill="#FF3B30" stroke="#183A8F" stroke-width="4"></circle>
+  <circle cx="88" cy="103" r="10" fill="#FFD60A" stroke="#183A8F" stroke-width="4"></circle>
+  <circle cx="88" cy="132" r="10" fill="#34C759" stroke="#183A8F" stroke-width="4"></circle>
 </svg>

@@ -8,10 +8,50 @@ QLabel, QCheckBox { background: transparent; }
 QToolTip { background: #303133; color: #e5eaf3; border: 1px solid #4c4d4f; padding: 6px 8px; }
 QWidget#appShell, QWidget#pageStack { background: #141414; }
 QWidget#navigationRail { background: #1d1e1f; border-right: 1px solid #414243; }
+QWidget#workspaceNavigationRail { background: #0f121a; border-right: 1px solid #353947; }
+QWidget#navigationStack { background: #0f121a; }
 QLabel#brandLogo { background: transparent; }
 QLabel#brandName { color: #e5eaf3; font-size: 16px; font-weight: 600; }
 QLabel#brandCaption, QLabel#caption, QLabel#fieldLabel, QLabel#metricLabel { color: #a3a6ad; }
 QLabel#sectionLabel { color: #8d9095; font-size: 11px; font-weight: 500; }
+QLabel#workspaceSectionTitle { color: #cfd3dc; font-size: 14px; font-weight: 600; }
+QLabel#activeWorkspaceName {
+  color: #e5eaf3; font-size: 15px; font-weight: 600; padding: 4px 12px 8px 12px;
+}
+QPushButton#workspaceBackButton {
+  background: transparent; border: 0; color: #a3a6ad; padding: 7px 10px; text-align: left;
+}
+QPushButton#workspaceBackButton:hover { color: #409eff; background: #18222c; }
+QPushButton#workspaceCreateButton {
+  background: transparent; border: 1px solid #3375b9; color: #79bbff;
+  padding: 0; font-size: 19px; font-weight: 500;
+}
+QPushButton#workspaceCreateButton:hover { background: #18222c; border-color: #409eff; }
+QLineEdit#workspaceSearchInput { background: #171a23; padding: 9px 10px; }
+QListWidget#workspaceList {
+  background: transparent; border: 0; color: #cfd3dc; outline: 0;
+}
+QListWidget#workspaceList::item {
+  border-left: 3px solid transparent; padding: 0; margin: 1px 0;
+}
+QListWidget#workspaceList::item:hover { background: #191d27; color: #e5eaf3; }
+QListWidget#workspaceList::item:selected {
+  background: #151d2e; border-left-color: #b3c5ff; color: #b3c5ff;
+}
+QWidget#workspaceListRow { background: transparent; }
+QWidget#workspaceListRow QLabel#workspaceListName {
+  color: #cfd3dc; font-size: 15px;
+}
+QWidget#workspaceListRow[active="true"] QLabel#workspaceListName { color: #b3c5ff; }
+QPushButton#workspaceListDeleteButton {
+  background: #2b1d1d; border: 1px solid #5b2929; color: #f56c6c;
+  padding: 3px 7px; font-size: 11px;
+}
+QPushButton#workspaceListDeleteButton:hover { border-color: #f56c6c; background: #3a2222; }
+QPushButton#workspaceSettingsButton {
+  background: transparent; border: 0; border-top: 1px solid #353947;
+  border-radius: 0; color: #cfd3dc; padding: 14px 10px; text-align: left;
+}
 QPushButton[role="navigation"] {
   background: transparent; border: 0; border-left: 3px solid transparent;
   border-radius: 0; color: #cfd3dc; padding: 10px 16px;
@@ -46,6 +86,18 @@ QLabel#notice[level="success"] { background: #1c2518; border-color: #2b4b23; col
 QLabel#notice[level="warning"] { background: #2b2518; border-color: #5c4824; color: #e6a23c; }
 QFrame#panel, QFrame#metricCard, QFrame#listCard, QFrame#assetDirectory {
   background: #1d1e1f; border: 1px solid #414243; border-radius: 4px;
+}
+QFrame#workspacePreview {
+  background: #10131c; border: 1px solid #353947; border-radius: 6px;
+  min-height: 300px;
+}
+QLabel#dialogTitle { color: #e5eaf3; font-size: 19px; font-weight: 600; }
+QLabel#workspaceDeleteError {
+  background: #2b1d1d; border: 1px solid #5b2929; border-radius: 4px;
+  color: #f56c6c; padding: 7px 9px;
+}
+QDialog#workspaceEditDialog, QDialog#workspaceDeleteDialog {
+  background: #272a33; border: 1px solid #4c5264;
 }
 QFrame#panelAccent { background: #1d1e1f; border: 1px solid #3375b9; border-radius: 4px; }
 QLabel#panelTitle { color: #e5eaf3; font-size: 14px; font-weight: 600; }
