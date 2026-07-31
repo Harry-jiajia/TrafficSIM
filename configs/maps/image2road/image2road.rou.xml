@@ -1,0 +1,93 @@
+<?xml version='1.0' encoding='utf-8'?>
+<routes>
+    <vType id="L0" vClass="passenger" length="5.0" carFollowModel="Krauss" guiShape="passenger" color="0,114,189" minGap="2.5" accel="2.6" decel="4.5" sigma="0.5" tau="1" maxSpeed="22.22" />
+    <vType id="L1" vClass="passenger" length="5.0" carFollowModel="Krauss" guiShape="passenger" color="217,83,25" minGap="2" accel="3.05" decel="4.5" sigma="0.4" tau="0.95" maxSpeed="22.22" />
+    <vType id="L2" vClass="passenger" length="5.0" carFollowModel="Krauss" guiShape="passenger" color="237,177,32" minGap="1.5" accel="3.5" decel="4.5" sigma="0.3" tau="0.9" maxSpeed="22.22" />
+    <vType id="L3" vClass="passenger" length="5.0" carFollowModel="Krauss" guiShape="passenger" color="46,139,87" minGap="1.25" accel="3.6" decel="4.5" sigma="0.2" tau="0.8" maxSpeed="22.22" />
+    <vType id="L4" vClass="passenger" length="5.0" carFollowModel="Krauss" guiShape="passenger" color="126,87,194" minGap="0.75" accel="3.7" decel="4.5" sigma="0" tau="0.7" maxSpeed="22.22" />
+    <vType id="L5" vClass="passenger" length="5.0" carFollowModel="Krauss" guiShape="passenger" color="190,63,63" minGap="0.5" accel="3.8" decel="4.5" sigma="0" tau="0.6" maxSpeed="22.22" />
+    <route id="huangcun_east" edges="hc_0_fwd hc_1_fwd hc_2_fwd hc_3_fwd" />
+    <route id="huangcun_west" edges="hc_3_rev hc_2_rev hc_1_rev hc_0_rev" />
+    <route id="xinghua_south" edges="xh_0_fwd xh_1_fwd xh_2_fwd xh_3_fwd xh_4_fwd xh_5_fwd" />
+    <route id="xinghua_north" edges="xh_5_rev xh_4_rev xh_3_rev xh_2_rev xh_1_rev xh_0_rev" />
+    <route id="xingwang_south" edges="xw_0_fwd xw_1_fwd xw_2_fwd xh_5_fwd" />
+    <route id="xingwang_north" edges="xh_5_rev xw_2_rev xw_1_rev xw_0_rev" />
+    <route id="eastwest_east" edges="yh_0_fwd yh_1_fwd yh_2_fwd xh_2_rev xz_0_fwd xz_1_fwd xz_2_fwd" />
+    <route id="eastwest_west" edges="xz_2_rev xz_1_rev xz_0_rev xh_2_fwd yh_2_rev yh_1_rev yh_0_rev" />
+    <route id="linxiao_east" edges="lx_0_fwd lx_1_fwd lx_2_fwd" />
+    <route id="linxiao_west" edges="lx_2_rev lx_1_rev lx_0_rev" />
+    <route id="g106_south" edges="g106_0_fwd g106_1_fwd g106_2_fwd" />
+    <route id="g106_north" edges="g106_2_rev g106_1_rev g106_0_rev" />
+    <flow id="hc_E_L0" type="L0" route="huangcun_east" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="hc_E_L1" type="L1" route="huangcun_east" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="hc_E_L2" type="L2" route="huangcun_east" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="hc_E_L3" type="L3" route="huangcun_east" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="hc_E_L4" type="L4" route="huangcun_east" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="hc_E_L5" type="L5" route="huangcun_east" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="hc_W_L0" type="L0" route="huangcun_west" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="hc_W_L1" type="L1" route="huangcun_west" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="hc_W_L2" type="L2" route="huangcun_west" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="hc_W_L3" type="L3" route="huangcun_west" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="hc_W_L4" type="L4" route="huangcun_west" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="hc_W_L5" type="L5" route="huangcun_west" begin="0" end="3600" vehsPerHour="60" departLane="best" departSpeed="max" />
+    <flow id="xh_S_L0" type="L0" route="xinghua_south" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xh_S_L1" type="L1" route="xinghua_south" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xh_S_L2" type="L2" route="xinghua_south" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xh_S_L3" type="L3" route="xinghua_south" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xh_S_L4" type="L4" route="xinghua_south" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xh_S_L5" type="L5" route="xinghua_south" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xh_N_L0" type="L0" route="xinghua_north" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xh_N_L1" type="L1" route="xinghua_north" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xh_N_L2" type="L2" route="xinghua_north" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xh_N_L3" type="L3" route="xinghua_north" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xh_N_L4" type="L4" route="xinghua_north" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xh_N_L5" type="L5" route="xinghua_north" begin="0" end="3600" vehsPerHour="70" departLane="best" departSpeed="max" />
+    <flow id="xw_S_L0" type="L0" route="xingwang_south" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xw_S_L1" type="L1" route="xingwang_south" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xw_S_L2" type="L2" route="xingwang_south" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xw_S_L3" type="L3" route="xingwang_south" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xw_S_L4" type="L4" route="xingwang_south" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xw_S_L5" type="L5" route="xingwang_south" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xw_N_L0" type="L0" route="xingwang_north" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xw_N_L1" type="L1" route="xingwang_north" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xw_N_L2" type="L2" route="xingwang_north" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xw_N_L3" type="L3" route="xingwang_north" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xw_N_L4" type="L4" route="xingwang_north" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xw_N_L5" type="L5" route="xingwang_north" begin="0" end="3600" vehsPerHour="40" departLane="best" departSpeed="max" />
+    <flow id="xz_E_L0" type="L0" route="eastwest_east" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="xz_E_L1" type="L1" route="eastwest_east" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="xz_E_L2" type="L2" route="eastwest_east" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="xz_E_L3" type="L3" route="eastwest_east" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="xz_E_L4" type="L4" route="eastwest_east" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="xz_E_L5" type="L5" route="eastwest_east" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="xz_W_L0" type="L0" route="eastwest_west" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="xz_W_L1" type="L1" route="eastwest_west" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="xz_W_L2" type="L2" route="eastwest_west" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="xz_W_L3" type="L3" route="eastwest_west" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="xz_W_L4" type="L4" route="eastwest_west" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="xz_W_L5" type="L5" route="eastwest_west" begin="0" end="3600" vehsPerHour="50" departLane="best" departSpeed="max" />
+    <flow id="lx_E_L0" type="L0" route="linxiao_east" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="lx_E_L1" type="L1" route="linxiao_east" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="lx_E_L2" type="L2" route="linxiao_east" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="lx_E_L3" type="L3" route="linxiao_east" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="lx_E_L4" type="L4" route="linxiao_east" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="lx_E_L5" type="L5" route="linxiao_east" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="lx_W_L0" type="L0" route="linxiao_west" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="lx_W_L1" type="L1" route="linxiao_west" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="lx_W_L2" type="L2" route="linxiao_west" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="lx_W_L3" type="L3" route="linxiao_west" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="lx_W_L4" type="L4" route="linxiao_west" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="lx_W_L5" type="L5" route="linxiao_west" begin="0" end="3600" vehsPerHour="30" departLane="best" departSpeed="max" />
+    <flow id="g_S_L0" type="L0" route="g106_south" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+    <flow id="g_S_L1" type="L1" route="g106_south" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+    <flow id="g_S_L2" type="L2" route="g106_south" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+    <flow id="g_S_L3" type="L3" route="g106_south" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+    <flow id="g_S_L4" type="L4" route="g106_south" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+    <flow id="g_S_L5" type="L5" route="g106_south" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+    <flow id="g_N_L0" type="L0" route="g106_north" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+    <flow id="g_N_L1" type="L1" route="g106_north" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+    <flow id="g_N_L2" type="L2" route="g106_north" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+    <flow id="g_N_L3" type="L3" route="g106_north" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+    <flow id="g_N_L4" type="L4" route="g106_north" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+    <flow id="g_N_L5" type="L5" route="g106_north" begin="0" end="3600" vehsPerHour="80" departLane="best" departSpeed="max" />
+</routes>

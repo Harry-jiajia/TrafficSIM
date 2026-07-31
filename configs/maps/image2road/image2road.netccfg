@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <input>
+        <node-files value="image2road.nod.xml"/>
+        <edge-files value="image2road.edg.xml"/>
+        <type-files value="image2road.typ.xml"/>
+    </input>
+    <output>
+        <output-file value="image2road.net.xml"/>
+    </output>
+    <processing>
+        <no-turnarounds value="true"/>
+        <offset.disable-normalization value="true"/>
+    </processing>
+</configuration>

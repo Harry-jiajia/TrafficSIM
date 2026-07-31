@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<additional>
+    <edgeData id="edgeData_60s" freq="60" file="outputs/image2road_edgeData.xml"/>
+    <laneData id="laneData_60s" freq="60" file="outputs/image2road_laneData.xml"/>
+</additional>

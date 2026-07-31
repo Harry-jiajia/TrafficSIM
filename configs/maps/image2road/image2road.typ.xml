@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<types>
+    <type id="arterial" priority="3" numLanes="3" speed="13.89" allow="passenger taxi bus coach delivery truck trailer emergency motorcycle" spreadType="right" width="3.20" />
+    <type id="secondary" priority="2" numLanes="2" speed="11.11" allow="passenger taxi bus coach delivery truck trailer emergency motorcycle" spreadType="right" width="3.10" />
+    <type id="trunk" priority="4" numLanes="3" speed="22.22" allow="passenger taxi bus coach delivery truck trailer emergency motorcycle" spreadType="right" width="3.50" />
+</types>

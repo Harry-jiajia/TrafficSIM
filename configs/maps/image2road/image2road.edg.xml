@@ -1,0 +1,73 @@
+<?xml version='1.0' encoding='utf-8'?>
+<edges>
+    <edge id="hc_0_fwd" from="xw_hc" to="xye_hc" shape="366.00,1300.00 560.00,1376.00 720.00,1432.00 890.00,1462.00" type="arterial" name="黄村西大街" />
+    <edge id="hc_0_rev" from="xye_hc" to="xw_hc" shape="890.00,1462.00 720.00,1432.00 560.00,1376.00 366.00,1300.00" type="arterial" name="黄村西大街" />
+    <edge id="hc_1_fwd" from="xye_hc" to="xh_hc" shape="890.00,1462.00 1120.00,1462.00 1320.00,1470.00 1478.00,1476.00" type="arterial" name="黄村西大街" />
+    <edge id="hc_1_rev" from="xh_hc" to="xye_hc" shape="1478.00,1476.00 1320.00,1470.00 1120.00,1462.00 890.00,1462.00" type="arterial" name="黄村西大街" />
+    <edge id="hc_2_fwd" from="xh_hc" to="xf_hc" shape="1478.00,1476.00 1700.00,1478.00 1940.00,1480.00 2186.00,1484.00" type="arterial" name="黄村西大街" />
+    <edge id="hc_2_rev" from="xf_hc" to="xh_hc" shape="2186.00,1484.00 1940.00,1480.00 1700.00,1478.00 1478.00,1476.00" type="arterial" name="黄村西大街" />
+    <edge id="hc_3_fwd" from="xf_hc" to="g_n" shape="2186.00,1484.00 2420.00,1482.00 2670.00,1480.00 2840.00,1488.00" type="arterial" name="黄村西大街" />
+    <edge id="hc_3_rev" from="g_n" to="xf_hc" shape="2840.00,1488.00 2670.00,1480.00 2420.00,1482.00 2186.00,1484.00" type="arterial" name="黄村西大街" />
+    <edge id="xw_0_fwd" from="xw_n" to="xw_hc" shape="184.00,1520.00 264.00,1416.00 366.00,1300.00" type="arterial" name="兴旺大街" />
+    <edge id="xw_0_rev" from="xw_hc" to="xw_n" shape="366.00,1300.00 264.00,1416.00 184.00,1520.00" type="arterial" name="兴旺大街" />
+    <edge id="xw_1_fwd" from="xw_hc" to="xw_yh" shape="366.00,1300.00 490.00,1048.00 642.00,846.00 820.00,678.00" type="arterial" name="兴旺大街" />
+    <edge id="xw_1_rev" from="xw_yh" to="xw_hc" shape="820.00,678.00 642.00,846.00 490.00,1048.00 366.00,1300.00" type="arterial" name="兴旺大街" />
+    <edge id="xw_2_fwd" from="xw_yh" to="xh_lx" shape="820.00,678.00 978.00,508.00 1168.00,298.00 1356.00,102.00 1406.00,148.00 1430.00,250.00" type="arterial" name="兴旺大街" />
+    <edge id="xw_2_rev" from="xh_lx" to="xw_yh" shape="1430.00,250.00 1406.00,148.00 1356.00,102.00 1168.00,298.00 978.00,508.00 820.00,678.00" type="arterial" name="兴旺大街" />
+    <edge id="xye_0_fwd" from="xye_hc" to="xye_yh" shape="890.00,1462.00 938.00,1238.00 982.00,1002.00 1022.00,828.00" type="arterial" name="兴业大街" />
+    <edge id="xye_0_rev" from="xye_yh" to="xye_hc" shape="1022.00,828.00 982.00,1002.00 938.00,1238.00 890.00,1462.00" type="arterial" name="兴业大街" />
+    <edge id="yh_0_fwd" from="yh_w" to="xw_yh" shape="0.00,310.00 302.00,362.00 554.00,420.00 700.00,560.00 820.00,678.00" type="arterial" name="永华路" />
+    <edge id="yh_0_rev" from="xw_yh" to="yh_w" shape="820.00,678.00 700.00,560.00 554.00,420.00 302.00,362.00 0.00,310.00" type="arterial" name="永华路" />
+    <edge id="yh_1_fwd" from="xw_yh" to="xye_yh" shape="820.00,678.00 904.00,756.00 966.00,814.00 1022.00,828.00" type="arterial" name="永华路" />
+    <edge id="yh_1_rev" from="xye_yh" to="xw_yh" shape="1022.00,828.00 966.00,814.00 904.00,756.00 820.00,678.00" type="arterial" name="永华路" />
+    <edge id="yh_2_fwd" from="xye_yh" to="xh_yh" shape="1022.00,828.00 1212.00,852.00 1376.00,872.00 1480.00,878.00" type="arterial" name="永华路" />
+    <edge id="yh_2_rev" from="xh_yh" to="xye_yh" shape="1480.00,878.00 1376.00,872.00 1212.00,852.00 1022.00,828.00" type="arterial" name="永华路" />
+    <edge id="xh_0_fwd" from="xh_hc" to="xh_market" shape="1478.00,1476.00 1478.00,1352.00 1480.00,1212.00" type="arterial" name="兴华大街" />
+    <edge id="xh_0_rev" from="xh_market" to="xh_hc" shape="1480.00,1212.00 1478.00,1352.00 1478.00,1476.00" type="arterial" name="兴华大街" />
+    <edge id="xh_1_fwd" from="xh_market" to="xh_xz" shape="1480.00,1212.00 1482.00,1088.00 1482.00,960.00" type="arterial" name="兴华大街" />
+    <edge id="xh_1_rev" from="xh_xz" to="xh_market" shape="1482.00,960.00 1482.00,1088.00 1480.00,1212.00" type="arterial" name="兴华大街" />
+    <edge id="xh_2_fwd" from="xh_xz" to="xh_yh" shape="1482.00,960.00 1480.00,878.00" type="arterial" name="兴华大街" />
+    <edge id="xh_2_rev" from="xh_yh" to="xh_xz" shape="1480.00,878.00 1482.00,960.00" type="arterial" name="兴华大街" />
+    <edge id="xh_3_fwd" from="xh_yh" to="xh_hl" shape="1480.00,878.00 1482.00,714.00 1482.00,542.00" type="arterial" name="兴华大街" />
+    <edge id="xh_3_rev" from="xh_hl" to="xh_yh" shape="1482.00,542.00 1482.00,714.00 1480.00,878.00" type="arterial" name="兴华大街" />
+    <edge id="xh_4_fwd" from="xh_hl" to="xh_lx" shape="1482.00,542.00 1482.00,404.00 1466.00,306.00 1430.00,250.00" type="arterial" name="兴华大街" />
+    <edge id="xh_4_rev" from="xh_lx" to="xh_hl" shape="1430.00,250.00 1466.00,306.00 1482.00,404.00 1482.00,542.00" type="arterial" name="兴华大街" />
+    <edge id="xh_5_fwd" from="xh_lx" to="xh_s" shape="1430.00,250.00 1428.00,120.00 1428.00,0.00" type="arterial" name="兴华大街" />
+    <edge id="xh_5_rev" from="xh_s" to="xh_lx" shape="1428.00,0.00 1428.00,120.00 1430.00,250.00" type="arterial" name="兴华大街" />
+    <edge id="xf_0_fwd" from="xf_hc" to="xf_market" shape="2186.00,1484.00 2188.00,1356.00 2190.00,1212.00" type="arterial" name="兴丰大街" />
+    <edge id="xf_0_rev" from="xf_market" to="xf_hc" shape="2190.00,1212.00 2188.00,1356.00 2186.00,1484.00" type="arterial" name="兴丰大街" />
+    <edge id="xf_1_fwd" from="xf_market" to="xf_xz" shape="2190.00,1212.00 2192.00,1020.00 2196.00,820.00" type="arterial" name="兴丰大街" />
+    <edge id="xf_1_rev" from="xf_xz" to="xf_market" shape="2196.00,820.00 2192.00,1020.00 2190.00,1212.00" type="arterial" name="兴丰大街" />
+    <edge id="xf_2_fwd" from="xf_xz" to="xf_hl" shape="2196.00,820.00 2202.00,692.00 2204.00,548.00" type="arterial" name="兴丰大街" />
+    <edge id="xf_2_rev" from="xf_hl" to="xf_xz" shape="2204.00,548.00 2202.00,692.00 2196.00,820.00" type="arterial" name="兴丰大街" />
+    <edge id="xf_3_fwd" from="xf_hl" to="xf_lx" shape="2204.00,548.00 2204.00,376.00 2188.00,280.00 2160.00,220.00" type="arterial" name="兴丰大街" />
+    <edge id="xf_3_rev" from="xf_lx" to="xf_hl" shape="2160.00,220.00 2188.00,280.00 2204.00,376.00 2204.00,548.00" type="arterial" name="兴丰大街" />
+    <edge id="xz_0_fwd" from="xh_xz" to="xf_xz" shape="1482.00,960.00 1640.00,942.00 1860.00,894.00 2060.00,854.00 2196.00,820.00" type="arterial" name="兴政街" />
+    <edge id="xz_0_rev" from="xf_xz" to="xh_xz" shape="2196.00,820.00 2060.00,854.00 1860.00,894.00 1640.00,942.00 1482.00,960.00" type="arterial" name="兴政街" />
+    <edge id="xz_1_fwd" from="xf_xz" to="xz_east_link" shape="2196.00,820.00 2320.00,788.00 2470.00,756.00" type="arterial" name="兴政街" />
+    <edge id="xz_1_rev" from="xz_east_link" to="xf_xz" shape="2470.00,756.00 2320.00,788.00 2196.00,820.00" type="arterial" name="兴政街" />
+    <edge id="xz_2_fwd" from="xz_east_link" to="g_xz" shape="2470.00,756.00 2640.00,716.00 2840.00,672.00" type="arterial" name="兴政街" />
+    <edge id="xz_2_rev" from="g_xz" to="xz_east_link" shape="2840.00,672.00 2640.00,716.00 2470.00,756.00" type="arterial" name="兴政街" />
+    <edge id="market_0_fwd" from="xh_market" to="xf_market" shape="1480.00,1212.00 1720.00,1212.00 1960.00,1212.00 2190.00,1212.00" type="secondary" name="商场南巷" />
+    <edge id="market_0_rev" from="xf_market" to="xh_market" shape="2190.00,1212.00 1960.00,1212.00 1720.00,1212.00 1480.00,1212.00" type="secondary" name="商场南巷" />
+    <edge id="hlw_0_fwd" from="xh_hl" to="xf_hl" shape="1482.00,542.00 1720.00,544.00 1970.00,546.00 2204.00,548.00" type="secondary" name="红楼西巷" />
+    <edge id="hlw_0_rev" from="xf_hl" to="xh_hl" shape="2204.00,548.00 1970.00,546.00 1720.00,544.00 1482.00,542.00" type="secondary" name="红楼西巷" />
+    <edge id="hle_0_fwd" from="xf_hl" to="east_hl" shape="2204.00,548.00 2330.00,548.00 2470.00,548.00" type="secondary" name="红楼东巷" />
+    <edge id="hle_0_rev" from="east_hl" to="xf_hl" shape="2470.00,548.00 2330.00,548.00 2204.00,548.00" type="secondary" name="红楼东巷" />
+    <edge id="eastlink_0_fwd" from="xz_east_link" to="east_hl" shape="2470.00,756.00 2470.00,644.00 2470.00,548.00" type="secondary" name="东侧连接路（简化）" />
+    <edge id="eastlink_0_rev" from="east_hl" to="xz_east_link" shape="2470.00,548.00 2470.00,644.00 2470.00,756.00" type="secondary" name="东侧连接路（简化）" />
+    <edge id="eastlink_1_fwd" from="east_hl" to="east_lx" shape="2470.00,548.00 2470.00,400.00 2470.00,280.00 2470.00,182.00" type="secondary" name="东侧连接路（简化）" />
+    <edge id="eastlink_1_rev" from="east_lx" to="east_hl" shape="2470.00,182.00 2470.00,280.00 2470.00,400.00 2470.00,548.00" type="secondary" name="东侧连接路（简化）" />
+    <edge id="lx_0_fwd" from="xh_lx" to="xf_lx" shape="1430.00,250.00 1640.00,240.00 1900.00,228.00 2160.00,220.00" type="arterial" name="林校北路" />
+    <edge id="lx_0_rev" from="xf_lx" to="xh_lx" shape="2160.00,220.00 1900.00,228.00 1640.00,240.00 1430.00,250.00" type="arterial" name="林校北路" />
+    <edge id="lx_1_fwd" from="xf_lx" to="east_lx" shape="2160.00,220.00 2310.00,200.00 2470.00,182.00" type="arterial" name="林校北路" />
+    <edge id="lx_1_rev" from="east_lx" to="xf_lx" shape="2470.00,182.00 2310.00,200.00 2160.00,220.00" type="arterial" name="林校北路" />
+    <edge id="lx_2_fwd" from="east_lx" to="g_lx" shape="2470.00,182.00 2610.00,174.00 2752.00,168.00" type="arterial" name="林校北路" />
+    <edge id="lx_2_rev" from="g_lx" to="east_lx" shape="2752.00,168.00 2610.00,174.00 2470.00,182.00" type="arterial" name="林校北路" />
+    <edge id="g106_0_fwd" from="g_n" to="g_xz" shape="2840.00,1488.00 2842.00,1220.00 2842.00,940.00 2840.00,672.00" type="trunk" name="G106（简化）" />
+    <edge id="g106_0_rev" from="g_xz" to="g_n" shape="2840.00,672.00 2842.00,940.00 2842.00,1220.00 2840.00,1488.00" type="trunk" name="G106（简化）" />
+    <edge id="g106_1_fwd" from="g_xz" to="g_lx" shape="2840.00,672.00 2820.00,480.00 2786.00,300.00 2752.00,168.00" type="trunk" name="G106（简化）" />
+    <edge id="g106_1_rev" from="g_lx" to="g_xz" shape="2752.00,168.00 2786.00,300.00 2820.00,480.00 2840.00,672.00" type="trunk" name="G106（简化）" />
+    <edge id="g106_2_fwd" from="g_lx" to="g_s" shape="2752.00,168.00 2768.00,88.00 2850.00,0.00" type="trunk" name="G106（简化）" />
+    <edge id="g106_2_rev" from="g_s" to="g_lx" shape="2850.00,0.00 2768.00,88.00 2752.00,168.00" type="trunk" name="G106（简化）" />
+</edges>

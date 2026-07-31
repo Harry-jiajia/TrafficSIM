@@ -1,0 +1,26 @@
+{
+  "kind": "fixed",
+  "sourceSceneKey": "image2road",
+  "createdAt": "2026-07-19T00:00:00",
+  "updatedAt": "2026-07-19T00:00:00",
+  "simulator": "sumo_krauss",
+  "fixedVehicleScene": false,
+  "spec": {
+    "name": "图像识别路网",
+    "duration_s": 3600,
+    "automation_mix": {
+      "L0": 0.1666666667,
+      "L1": 0.1666666667,
+      "L2": 0.1666666667,
+      "L3": 0.1666666667,
+      "L4": 0.1666666667,
+      "L5": 0.1666666665
+    }
+  },
+  "counts": {
+    "nodes": 25,
+    "edges": 70,
+    "routes": 12,
+    "flows": 72
+  }
+}

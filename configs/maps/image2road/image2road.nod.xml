@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<nodes>
+    <node id="xw_n" x="184.00" y="1520.00" type="priority" />
+    <node id="xw_hc" x="366.00" y="1300.00" type="traffic_light" />
+    <node id="xye_hc" x="890.00" y="1462.00" type="traffic_light" />
+    <node id="xh_hc" x="1478.00" y="1476.00" type="traffic_light" />
+    <node id="xf_hc" x="2186.00" y="1484.00" type="traffic_light" />
+    <node id="g_n" x="2840.00" y="1488.00" type="priority" />
+    <node id="xw_yh" x="820.00" y="678.00" type="traffic_light" />
+    <node id="yh_w" x="0.00" y="310.00" type="priority" />
+    <node id="xye_yh" x="1022.00" y="828.00" type="traffic_light" />
+    <node id="xh_market" x="1480.00" y="1212.00" type="priority" />
+    <node id="xf_market" x="2190.00" y="1212.00" type="priority" />
+    <node id="xh_xz" x="1482.00" y="960.00" type="traffic_light" />
+    <node id="xh_yh" x="1480.00" y="878.00" type="traffic_light" />
+    <node id="xf_xz" x="2196.00" y="820.00" type="traffic_light" />
+    <node id="xz_east_link" x="2470.00" y="756.00" type="priority" />
+    <node id="g_xz" x="2840.00" y="672.00" type="priority" />
+    <node id="xh_hl" x="1482.00" y="542.00" type="priority" />
+    <node id="xf_hl" x="2204.00" y="548.00" type="priority" />
+    <node id="east_hl" x="2470.00" y="548.00" type="priority" />
+    <node id="xh_lx" x="1430.00" y="250.00" type="traffic_light" />
+    <node id="xf_lx" x="2160.00" y="220.00" type="traffic_light" />
+    <node id="east_lx" x="2470.00" y="182.00" type="priority" />
+    <node id="g_lx" x="2752.00" y="168.00" type="priority" />
+    <node id="xh_s" x="1428.00" y="0.00" type="priority" />
+    <node id="g_s" x="2850.00" y="0.00" type="priority" />
+</nodes>
