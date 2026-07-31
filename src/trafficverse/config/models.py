@@ -159,27 +159,6 @@ class CarlaConfig(StrictModel):
         return value
 
 
-class TrafficBehaviorConfig(StrictModel):
-    max_acceleration_mps2: float = Field(default=2.5, gt=0.0)
-    comfortable_deceleration_mps2: float = Field(default=4.0, gt=0.0)
-    emergency_deceleration_mps2: float = Field(default=8.0, gt=0.0)
-    minimum_gap_m: float = Field(default=2.5, gt=0.0)
-    time_headway_s: float = Field(default=1.2, gt=0.0)
-    vehicle_length_m: float = Field(default=4.5, gt=0.0)
-    lane_change_front_gap_m: float = Field(default=10.0, gt=0.0)
-    lane_change_rear_gap_m: float = Field(default=8.0, gt=0.0)
-
-
-class TrafficEngineConfig(StrictModel):
-    network_schema_version: Literal["traffic-network/1.0"] = "traffic-network/1.0"
-    network_path: str = Field(min_length=1)
-    routes_path: str = Field(min_length=1)
-    signals_path: str = Field(min_length=1)
-    step_ms: int = Field(default=50, gt=0)
-    seed: int = Field(default=0, ge=0)
-    behavior: TrafficBehaviorConfig = Field(default_factory=TrafficBehaviorConfig)
-
-
 class WeatherConfig(StrictModel):
     preset: str = Field(min_length=1)
 

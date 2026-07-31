@@ -134,8 +134,8 @@ ROI/signal -> CARLA batch -> CARLA tick -> publish。pause 不 step，SUMO 失�
 4. PySide6 UI，并设置 `TRAFFICVERSE_CARLA_WINDOW_ID`。
 
 验收 50 辆连续 2 分钟、至少 10 ROI actor、暂停时间冻结、控制先作用 SUMO、二维仅来自快照、
-CARLA 原生窗口稳定、无 `camera.frame`、所有资源清理。通过后才移除 Native 生产遗留和历史 RGB
-实现；历史 ADR 保留。
+CARLA 原生窗口稳定、无 `camera.frame`、所有资源清理。Native/RGB 活动源码已经移除，M7 需要
+确认它们未被重新引入；历史 ADR 继续保留。
 
 ## 10.1 M8 — 通用二维 SUMO 场景包
 
@@ -148,7 +148,10 @@ API/UI、对应配置/契约/测试和 ADR-027 文档。
 - 场景 begin/end/step-length 进入内部 resolved snapshot，只有 manager 推进；
 - 无 OpenDRIVE binding 的 TLS 使用 `sumo-tls:<tls-id>:<link-index>`；
 - 运行副本和 outputs 只能写入 `artifacts/sumo/<experiment-id>`；
-- CARLA disabled 时不得构造 ROI、registration 或 CARLA signal planner。
+- CARLA disabled 时不得构造 ROI、registration 或 CARLA signal planner；
+- 场景配置页只列出 `kind=sumo` 条目；Town04 Core Run manifest 只在资产中心和独立联仿 Gate
+  中保留，不得作为二维场景 fallback；
+- 不保留或恢复 `NativeTrafficEngine`、其路由器、专属配置 model 或对应测试。
 
 真实验收：
 

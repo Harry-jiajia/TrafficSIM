@@ -83,7 +83,10 @@ class RunViewModel(QObject):
     def select_map(self, map_id: str) -> None:
         selected = next((item for item in self._maps if item.map_id == map_id), None)
         if selected is None:
-            self.notification.emit("error", "所选地图不在已验证地图列表中。")
+            self.notification.emit("error", "所选场景不在 SUMO 场景包列表中。")
+            return
+        if selected.kind != "sumo":
+            self.notification.emit("error", "所选资产不是可直接运行的 SUMO 场景包。")
             return
         if not selected.validated:
             detail = "; ".join(selected.validation_errors) or "SUMO 场景配置无效"
@@ -108,7 +111,7 @@ class RunViewModel(QObject):
 
     def create_experiment(self) -> None:
         if self._selected_map_id is None:
-            self.notification.emit("error", "请先选择一份已验证地图。")
+            self.notification.emit("error", "请先选择一份已验证的 SUMO 场景包。")
             return
         self._rest.create_experiment(self._scenario_id, self._selected_map_id)
 
@@ -166,7 +169,10 @@ class RunViewModel(QObject):
                 if item.manifest_available:
                     self._rest.get_map_manifest(item.map_id)
             if self._selected_map_id is None:
-                first_valid = next((item for item in self._maps if item.validated), None)
+                first_valid = next(
+                    (item for item in self._maps if item.kind == "sumo" and item.validated),
+                    None,
+                )
                 if first_valid is not None:
                     self.select_map(first_valid.map_id)
         elif operation.startswith("map.manifest:"):

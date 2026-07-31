@@ -100,7 +100,6 @@ class MainWindow(QMainWindow):
         self.live_page.lane_change_requested.connect(self._control_lane)
         self.live_page.vehicle_stop_requested.connect(self._control_stop)
         self.scene_page.map_selected.connect(vm.select_map)
-        self.scene_page.import_requested.connect(self._choose_map)
         self.scene_page.create_requested.connect(vm.create_experiment)
         self.assets_page.import_requested.connect(self._choose_map)
         self.assets_page.preview_requested.connect(vm.preview_map_asset)
@@ -136,7 +135,7 @@ class MainWindow(QMainWindow):
             if isinstance(maps, tuple)
             else ()
         )
-        self.scene_page.set_maps(values)
+        self.scene_page.set_maps(tuple(item for item in values if item.kind == "sumo"))
         self.assets_page.set_maps(values)
 
     @Slot(object)

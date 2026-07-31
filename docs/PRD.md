@@ -27,8 +27,8 @@ CARLA 原生渲染窗口。
    `127.0.0.1:2000` 连接 CARLA RPC；CARLA 必须以可见窗口模式运行并处于与 PySide6 相同的
    图形桌面会话。
 
-当前仓库仍存在 Native Traffic Engine 实现和 RGB 相机链路。它们属于待迁移实现，不再代表
-目标产品架构；任何迁移不得形成 SUMO 与 Native Traffic Engine 双真值。
+旧的 Native Traffic Engine 和 RGB 相机产品链路已经从活动实现中删除。所有二维运行都必须
+通过 SUMO adapter 产生标准快照，不得重新引入第二交通真值。
 
 ## 2. 用户与核心场景
 
@@ -93,6 +93,8 @@ CARLA 原生渲染窗口。
 - 每次运行在 `artifacts/sumo/<experiment-id>/` 创建隔离运行副本，不修改场景源文件或复用历史
   outputs；
 - 单个损坏场景不得阻止其他场景被发现，但损坏场景必须给出缺失文件、非法路径或 XML 错误。
+- 桌面端“场景配置”只列出此类 `kind=sumo` 包；Town04 Core Run manifest 只保留在独立联仿与
+  资产目录链路中，不得作为第二种二维运行实现混入场景选择器。
 
 #### 车辆控制
 
@@ -233,15 +235,15 @@ flowchart LR
 
 ```python
 class TrafficEnginePort(Protocol):
-    def load(self, config: TrafficEngineConfig) -> None: ...
+    def load(self, config: SumoConfig) -> None: ...
     def apply_controls(self, commands: Mapping[str, ControlCommand]) -> None: ...
     def step(self, target_time_ms: int) -> TrafficSnapshot: ...
     def health(self) -> ComponentHealth: ...
     def close(self) -> None: ...
 ```
 
-`SumoTrafficEngineAdapter` 是目标生产实现；`TrafficSnapshot` 的数据来自 SUMO，不代表项目内置
-交通模型。Native Traffic Engine 在迁移期只允许用于离线回归，不能参与目标 Core Run。
+`SumoTrafficEngineAdapter` 是唯一生产实现；`TrafficSnapshot` 的数据来自 SUMO，不代表项目内置
+交通模型。仓库不再维护自研交通引擎实现。
 
 ### 5.3 SimulationManager
 
@@ -369,7 +371,8 @@ TrafficVerse 争用相同 `8813` 连接或 CARLA tick；官方脚本仅作为同
 4. 将 `SimulationManager` 切换到 SUMO 权威步进；
 5. 完成 SUMO↔CARLA 同步；
 6. 在目标桌面平台验证 Qt 外部窗口嵌入，再通过原生窗口 Gate；
-7. 通过本地真实 SUMO + CARLA Core Run 后，才移除 Native Traffic Engine 生产路径。
+7. Native Traffic Engine 生产与源码路径已移除；本地真实 SUMO + CARLA Core Run 仍须单独完成
+   现场验收，不能由二维 SUMO 包测试替代。
 
 详细步骤、依赖和验收见 [SUMO_MIGRATION_PLAN.md](./SUMO_MIGRATION_PLAN.md)。迁移完成前，任何 Agent
 不得宣称目标架构已经可运行。

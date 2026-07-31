@@ -133,8 +133,10 @@ def test_initialize_checks_api_health_without_requesting_experiment_readiness() 
     assert connection_states == ["API_CONNECTED"]
 
 
-def test_map_catalog_auto_selects_verified_map_and_loads_network() -> None:
+def test_map_catalog_skips_core_run_asset_and_auto_selects_sumo_package() -> None:
     viewmodel, rest, _ = _viewmodel()
+    notifications: list[tuple[str, str]] = []
+    viewmodel.notification.connect(lambda level, message: notifications.append((level, message)))
     viewmodel.handle_rest_success(
         "maps.list",
         [
@@ -144,14 +146,29 @@ def test_map_catalog_auto_selects_verified_map_and_loads_network() -> None:
                 "carla_version": "0.9.16",
                 "validated": True,
                 "network_schema_version": "traffic-network/1.0",
-            }
+            },
+            {
+                "map_id": "image2road",
+                "kind": "sumo",
+                "display_name": "图像识别路网",
+                "carla_map": None,
+                "carla_version": None,
+                "validated": True,
+                "network_schema_version": "sumo-net/display-1.0",
+                "manifest_available": False,
+                "sumo_config_file": "image2road.sumocfg",
+                "sumo_step_ms": 1000,
+            },
         ],
     )
+    viewmodel.select_map("town04")
     viewmodel.create_experiment()
 
-    assert ("network", "town04") in rest.calls
     assert ("manifest", "town04") in rest.calls
-    assert ("create", (SCENARIO_ID, "town04")) in rest.calls
+    assert ("network", "town04") not in rest.calls
+    assert ("network", "image2road") in rest.calls
+    assert ("create", (SCENARIO_ID, "image2road")) in rest.calls
+    assert notifications[-1] == ("error", "所选资产不是可直接运行的 SUMO 场景包。")
 
 
 def test_native_sumo_package_loads_network_without_town04_manifest() -> None:

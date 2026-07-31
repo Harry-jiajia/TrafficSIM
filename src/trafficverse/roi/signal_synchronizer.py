@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 import yaml
+from pydantic import Field
 
 from trafficverse.domain.enums import TrafficLightColor
 from trafficverse.domain.models import (
@@ -13,8 +15,23 @@ from trafficverse.domain.models import (
     TrafficLightState,
     TrafficLightUpdate,
 )
+from trafficverse.domain.models.common import StrictModel
 from trafficverse.maps.validation import load_network
-from trafficverse.traffic.models import SignalCatalog
+
+
+class _SignalPhase(StrictModel):
+    color: TrafficLightColor
+    duration_ms: int = Field(gt=0)
+
+
+class _SignalProgram(StrictModel):
+    signal_id: str = Field(min_length=1)
+    phases: tuple[_SignalPhase, ...] = Field(min_length=1)
+
+
+class _SignalCatalog(StrictModel):
+    schema_version: Literal["1.0"] = "1.0"
+    programs: tuple[_SignalProgram, ...] = ()
 
 
 class SignalSynchronizer:
@@ -36,7 +53,7 @@ class SignalSynchronizer:
     ) -> SignalSynchronizer:
         network = load_network(network_path)
         signal_payload = yaml.safe_load(signals_path.read_text(encoding="utf-8"))
-        catalog = SignalCatalog.model_validate(signal_payload)
+        catalog = _SignalCatalog.model_validate(signal_payload)
         programs = {program.signal_id: program for program in catalog.programs}
         bindings = []
         for signal in network.signals:

@@ -1180,6 +1180,8 @@ TrafficVerse 增加“原生 SUMO 二维包”运行模式，与严格 Town04 Co
    路径，并把 SUMO 输出留在该 artifact 树；运行不得改写 `configs/maps` 中的源场景；
 8. 原生 SUMO 包自动设置 `carla.mode=disabled`，不构造 ROI、registration 或 CARLA signal planner；
    以后若某个任意 SUMO 包需要 CARLA 镜像，必须另行提供经过验证的配准和严格信号 binding。
+9. 桌面端二维场景选择器只展示 `kind=sumo` 的自动发现条目。Town04 manifest 继续属于独立 Core
+   Run 与资产目录，不作为第二种二维运行入口；旧 `NativeTrafficEngine` 源码不再保留。
 
 ### 选择理由
 

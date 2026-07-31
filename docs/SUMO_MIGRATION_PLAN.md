@@ -67,7 +67,7 @@
 ### 3.3 只保留历史、不直接改写
 
 - ADR-022 的原始理由保留，通过 ADR-024 标为 Superseded；
-- 旧 Native 引擎测试和资产在迁移完成前可作为回归参考，但不得出现在目标 Core Run；
+- 旧 Native 引擎的理由只在历史 ADR 和 Git 历史保留；活动源码、专属配置和测试不再保留；
 - 旧 RGB 契约在消费者迁移前按明确顺序删除，不用空帧或兼容 hack 长期保留；
 - 历史任务完成记录不得改写为新架构已验收。
 
@@ -219,7 +219,7 @@ UI 专用 RGB sensor；旧 JPEG/base64 decoder 和测试被移除或改为历史
 输入：M2–M6、真实本地 SUMO `8813`、CARLA `2000`、PySide6。
 
 输出：doctor、map validate、traffic smoke、co-simulation、UI E2E、Ruff、Mypy、pytest 证据；
-Native 生产装配和旧 RGB 依赖移除。
+确认已移除的 Native/RGB 路径未被重新引入。
 
 验收：逐项满足 PRD 7；50 辆连续运行 2 分钟；start/pause/resume/stop 可用；无双真值；无外部资源
 泄漏；失败项明确区分代码缺陷与环境阻塞。

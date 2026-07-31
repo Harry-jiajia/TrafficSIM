@@ -25,7 +25,6 @@ from ui.views.components import PAGE_CONTENT_MARGIN, empty_state, page_header, p
 
 class SceneConfigurationPage(QWidget):
     map_selected = Signal(str)
-    import_requested = Signal()
     create_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -57,12 +56,9 @@ class SceneConfigurationPage(QWidget):
         widget = QWidget()
         row = QHBoxLayout(widget)
         row.setContentsMargins(0, 0, 0, 0)
-        self.import_button = QPushButton("导入 .xodr")
         self.create_button = QPushButton("创建实验")
         self.create_button.setObjectName("primaryButton")
-        self.import_button.clicked.connect(self.import_requested)
         self.create_button.clicked.connect(self.create_requested)
-        row.addWidget(self.import_button)
         row.addWidget(self.create_button)
         return widget
 
@@ -86,7 +82,7 @@ class SceneConfigurationPage(QWidget):
         form = QFormLayout(content)
         form.setContentsMargins(0, 0, 0, 0)
         form.setSpacing(12)
-        self.scene_name = QLineEdit("Town04 核心运行")
+        self.scene_name = QLineEdit("SUMO 二维仿真")
         self.scene_name.setPlaceholderText("场景名称")
         self.seed = QSpinBox()
         self.seed.setRange(0, 2_147_483_647)
@@ -113,9 +109,13 @@ class SceneConfigurationPage(QWidget):
         self.map_combo = QComboBox()
         self.map_combo.setMinimumContentsLength(24)
         self.map_combo.currentIndexChanged.connect(self._select_map)
-        layout.addWidget(QLabel("SUMO 场景 / Core Run 地图"))
+        layout.addWidget(QLabel("SUMO 场景包"))
         layout.addWidget(self.map_combo)
-        preview = empty_state("等待地图", "从列表选择已编译、已校验的 OpenDRIVE 地图。", "⌁")
+        preview = empty_state(
+            "等待场景",
+            "从列表选择由 .sumocfg 自动发现并校验的 SUMO 场景包。",
+            "⌁",
+        )
         preview.setMinimumHeight(180)
         layout.addWidget(preview, 1)
         return panel("地图与道路", content, kicker="步骤 02")
@@ -125,8 +125,8 @@ class SceneConfigurationPage(QWidget):
         frame.setObjectName("panelAccent")
         layout = QGridLayout(frame)
         layout.setContentsMargins(16, 12, 16, 12)
-        layout.addWidget(QLabel("核心运行基线"), 0, 0)
-        detail = QLabel("50 ms 固定步长  ·  SUMO 全局真值  ·  CARLA ROI 镜像  ·  缓冲区滞回")
+        layout.addWidget(QLabel("SUMO 二维运行基线"), 0, 0)
+        detail = QLabel("场景自带步长  ·  SUMO 全局真值  ·  托管本机进程  ·  CARLA 禁用")
         detail.setObjectName("caption")
         layout.addWidget(detail, 1, 0)
         return frame
@@ -135,12 +135,10 @@ class SceneConfigurationPage(QWidget):
         self.map_combo.blockSignals(True)
         self.map_combo.clear()
         for item in maps:
+            if item.kind != "sumo":
+                continue
             name = item.display_name or item.carla_map or item.map_id
-            runtime = (
-                f"SUMO · {item.sumo_step_ms} ms"
-                if item.kind == "sumo" and item.sumo_step_ms is not None
-                else "Core Run"
-            )
+            runtime = f"SUMO · {item.sumo_step_ms} ms" if item.sumo_step_ms is not None else "SUMO"
             self.map_combo.addItem(f"{name}  ·  {runtime}", item.map_id)
         self.map_combo.blockSignals(False)
         if self.map_combo.count():

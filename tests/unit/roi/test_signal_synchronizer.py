@@ -13,7 +13,6 @@ from trafficverse.domain.models import (
 )
 from trafficverse.maps.validation import load_network
 from trafficverse.roi import SignalSynchronizer
-from trafficverse.traffic.models import SignalCatalog
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 MAP_DIRECTORY = REPOSITORY_ROOT / "configs/maps/town04"
@@ -67,16 +66,21 @@ def test_town04_assets_resolve_every_native_signal_without_runtime_guessing() ->
         CarlaTrafficLight(actor_id=index + 1, opendrive_id=signal.opendrive_id, frozen=True)
         for index, signal in enumerate(network.signals)
     )
-    catalog = SignalCatalog.model_validate(
-        yaml.safe_load((MAP_DIRECTORY / "signals.yaml").read_text(encoding="utf-8"))
-    )
+    catalog = yaml.safe_load((MAP_DIRECTORY / "signals.yaml").read_text(encoding="utf-8"))
+    assert isinstance(catalog, dict)
+    programs = catalog["programs"]
+    assert isinstance(programs, list)
     states = tuple(
         TrafficLightState(
-            signal_id=program.signal_id,
+            signal_id=str(program["signal_id"]),
             simulation_time_ms=50,
-            phase=program.phases[0].color.value,
+            phase=str(program["phases"][0]["color"]),
         )
-        for program in catalog.programs
+        for program in programs
+        if isinstance(program, dict)
+        and isinstance(program.get("phases"), list)
+        and program["phases"]
+        and isinstance(program["phases"][0], dict)
     )
 
     synchronizer.initialize(lights)

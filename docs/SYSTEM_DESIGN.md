@@ -93,6 +93,9 @@ sumo -c configs/maps/town04/map.sumocfg --remote-port 8813
 `<directory>-<config-stem>`。显式 input file 必须位于 `configs/maps` 根内。配置无效时目录仍可
 出现在资产列表并携带 validation errors，但 create/preview 会拒绝它。
 
+桌面端场景选择器只消费 `kind=sumo` 条目。Town04 的 manifest 条目继续服务资产中心和独立
+SUMO/CARLA Core Run，不进入通用二维选择器；这避免 UI 同时维护两套二维启动语义。
+
 ## 4. 配置与资产
 
 目标场景配置版本为 `1.2`：

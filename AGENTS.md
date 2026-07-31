@@ -97,15 +97,6 @@ TrafficSIM/
 │       │   ├── compiler.py
 │       │   ├── geojson.py
 │       │   └── validator.py
-│       ├── traffic/
-│       │   ├── engine.py
-│       │   ├── network.py
-│       │   ├── demand.py
-│       │   ├── routing.py
-│       │   ├── behavior.py
-│       │   ├── lane_change.py
-│       │   ├── signals.py
-│       │   └── safety.py
 │       ├── adapters/
 │       │   ├── carla/
 │       │   ├── persistence/
@@ -181,7 +172,6 @@ ui → REST/WebSocket contracts
 api → application → ports → domain
 adapters → ports + domain
 maps → domain
-traffic → ports + domain
 roi → domain + ports
 controllers → domain + ports
 bootstrap/cli → application + concrete adapters
@@ -231,7 +221,7 @@ uv run pytest
 | 类、枚举、Pydantic model | `PascalCase` | `VehicleState`、`ExperimentStatus` |
 | 常量 | `UPPER_SNAKE_CASE` | `DEFAULT_STEP_MS` |
 | Protocol/外部端口 | 能力名 + `Port` | `TrafficEnginePort`、`EventPublisherPort` |
-| 具体实现/adapter | 技术名 + 能力名 | `NativeTrafficEngine`、`CarlaAdapter` |
+| 具体实现/adapter | 技术名 + 能力名 | `SumoTrafficEngineAdapter`、`CarlaAdapter` |
 | application service | 用例名 + `Service` 或 `Manager` | `ScenarioService`、`SimulationManager` |
 | 异常 | 语义名 + `Error` | `VersionMismatchError` |
 | 测试 | `test_<behavior>_<expected>` | `test_vehicle_exits_buffer_destroys_actor` |

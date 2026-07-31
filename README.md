@@ -4,9 +4,9 @@ TrafficVerse 的目标架构是“SUMO 全局交通真值 + TrafficVerse 自有�
 窗口”。SUMO 只通过 TraCI 接入，TrafficVerse 不嵌入 SUMO GUI；CARLA 必须 windowed 运行，其
 原生窗口通过 PySide6 `QWindow.fromWinId()` 托管到运行页右侧。
 
-当前仓库正在按 [SUMO 迁移计划](docs/SUMO_MIGRATION_PLAN.md) 从 Native/RGB 旧实现迁移。生产
-装配已切换为 `SumoTrafficEngineAdapter`，Town04 SUMO 资产和 Qt 原生窗口 host 已加入；真实 CARLA
-联仿和 native-window 现场 Gate 仍必须在同一图形桌面会话完成。
+生产装配已切换为 `SumoTrafficEngineAdapter`，旧的 `NativeTrafficEngine` 二维实现已经删除。
+Town04 SUMO 资产和 Qt 原生窗口 host 仍用于独立的 Core Run 验收；真实 CARLA 联仿和
+native-window 现场 Gate 仍必须在同一图形桌面会话完成。
 
 ## 运行模式与版本
 
@@ -60,11 +60,14 @@ uv run trafficverse ui --api-url http://127.0.0.1:8000
 - 禁用 CARLA/ROI，只运行二维仿真；
 - 把运行副本和输出写入 `artifacts/sumo/<experiment-id>/`，不修改源场景。
 
+“场景配置”只列出这种由 `.sumocfg` 自动发现的二维 SUMO 包。Town04 Core Run manifest 仍可在
+“资产中心”查看，但不会再作为另一条二维场景实现混入该选择器。
+
 目录中只有一个 `.sumocfg` 时，场景 ID 是目录名；有多个时，每个配置分别显示为
 `<目录名>-<配置文件名>`。所有输入必须存在并位于 `configs/maps` 内。损坏场景会显示校验错误，
 但不会阻止其他场景加载。
 
-### Town04 + CARLA Core Run
+### Town04 + CARLA Core Run（独立验收链路）
 
 1. 启动 SUMO TraCI 后端。推荐 headless；它没有需要接入 TrafficVerse 的页面：
 
