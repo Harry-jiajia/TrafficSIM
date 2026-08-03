@@ -59,7 +59,7 @@ def test_core_run_window_constructs_and_closes_without_backend_or_carla() -> Non
 
     page_stack = window.findChild(QStackedWidget, "pageStack")
     assert page_stack is not None
-    assert page_stack.count() == 8
+    assert page_stack.count() == 9
     assert page_stack.currentWidget().objectName() == "workspaceOverviewPage"
     assert window.findChild(MapLibreDeckMapWidget) is not None
     map_splitter = window.findChild(QSplitter, "monitorMapSplitter")
@@ -80,7 +80,22 @@ def test_core_run_window_constructs_and_closes_without_backend_or_carla() -> Non
     enter = window.findChild(QPushButton, "workspaceEnterButton")
     assert enter is not None
     enter.click()
+    assert page_stack.currentWidget().objectName() == "projectDetailPage"
+    create_simulation = window.findChild(QPushButton, "projectCreateSimulationButton")
+    assert create_simulation is not None
+    create_simulation.click()
     assert page_stack.currentWidget().objectName() == "sceneConfigurationPage"
+    project_name = window.findChild(QPushButton, "activeWorkspaceName")
+    assert project_name is not None
+    project_name.click()
+    assert page_stack.currentWidget().objectName() == "projectDetailPage"
+    window.project_detail_page.simulation_action_requested.emit(
+        "早高峰联仿",
+        "copy",
+        "L3 · 45%",
+    )
+    assert window.scene_page.scene_name.text() == "早高峰联仿 副本"
+    assert "L3 · 45%" in window.scene_page.description.toPlainText()
 
     window.show()
     app.processEvents()

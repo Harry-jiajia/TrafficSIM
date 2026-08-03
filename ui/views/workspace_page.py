@@ -36,6 +36,7 @@ class WorkspaceEditDialog(QDialog):
         *,
         title: str,
         workspace: WorkspaceSummary | None = None,
+        entity_label: str = "工作区",
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -51,12 +52,12 @@ class WorkspaceEditDialog(QDialog):
         heading.setObjectName("dialogTitle")
         layout.addWidget(heading)
 
-        name_label = QLabel("工作区名称")
+        name_label = QLabel(f"{entity_label}名称")
         name_label.setObjectName("fieldLabel")
         layout.addWidget(name_label)
         self.name_input = QLineEdit(workspace.name if workspace is not None else "")
         self.name_input.setObjectName("workspaceNameInput")
-        self.name_input.setPlaceholderText("请输入工作区名称")
+        self.name_input.setPlaceholderText(f"请输入{entity_label}名称")
         self.name_input.setMaxLength(200)
         self.name_input.textChanged.connect(self._refresh_acceptance)
         layout.addWidget(self.name_input)
@@ -66,7 +67,7 @@ class WorkspaceEditDialog(QDialog):
         layout.addWidget(description_label)
         self.description_input = QTextEdit()
         self.description_input.setObjectName("workspaceDescriptionInput")
-        self.description_input.setPlaceholderText("请输入工作区描述…")
+        self.description_input.setPlaceholderText(f"请输入{entity_label}描述…")
         self.description_input.setFixedHeight(110)
         if workspace is not None:
             self.description_input.setPlainText(workspace.description)

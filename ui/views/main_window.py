@@ -28,6 +28,7 @@ from ui.views.experiment_management_page import ExperimentManagementPage
 from ui.views.live_monitor_page import LiveMonitorPage
 from ui.views.map_asset_page import MapAssetPage
 from ui.views.navigation import NavigationRail, WorkspaceNavigationRail
+from ui.views.project_detail_page import ProjectDetailPage
 from ui.views.scene_configuration_page import SceneConfigurationPage
 from ui.views.system_settings_page import SystemSettingsPage
 from ui.views.theme import ThemeMode, configure_application_font, load_stylesheet
@@ -68,15 +69,17 @@ class MainWindow(QMainWindow):
         self.notice.hide()
 
         self.live_page = LiveMonitorPage(load_web_map=load_web_map)
-        self.scene_page = SceneConfigurationPage()
+        self.scene_page = SceneConfigurationPage(load_web_map=load_web_map)
         self.experiments_page = ExperimentManagementPage()
         self.traffic_scenes_page = TrafficScenePage()
         self.maps_page = MapAssetPage(load_web_map=load_web_map)
         self.agents_page = AgentAssetPage()
         self.settings_page = SystemSettingsPage()
         self.workspace_page = WorkspaceOverviewPage()
+        self.project_detail_page = ProjectDetailPage()
         self._pages = {
             "workspace": self.workspace_page,
+            "project": self.project_detail_page,
             "live": self.live_page,
             "scene": self.scene_page,
             "experiments": self.experiments_page,
@@ -113,6 +116,7 @@ class MainWindow(QMainWindow):
     def _connect_pages(self) -> None:
         vm = self._viewmodel
         self.navigation.page_selected.connect(self._show_page)
+        self.navigation.project_detail_requested.connect(lambda: self._show_page("project"))
         self.navigation.workspace_exit_requested.connect(vm.leave_workspace)
         self.workspace_navigation.workspace_selected.connect(vm.select_workspace)
         self.workspace_navigation.workspace_enter_requested.connect(vm.enter_selected_workspace)
@@ -123,6 +127,13 @@ class MainWindow(QMainWindow):
         self.workspace_page.enter_requested.connect(vm.enter_selected_workspace)
         self.workspace_page.rename_requested.connect(self._rename_workspace)
         self.workspace_page.delete_requested.connect(self._delete_workspace)
+        self.project_detail_page.edit_requested.connect(self._edit_project)
+        self.project_detail_page.create_simulation_requested.connect(
+            lambda: self._show_page("scene")
+        )
+        self.project_detail_page.simulation_action_requested.connect(
+            self._handle_project_simulation_action
+        )
         self.live_page.start_requested.connect(vm.start)
         self.live_page.pause_requested.connect(vm.pause)
         self.live_page.resume_requested.connect(vm.resume)
@@ -151,6 +162,7 @@ class MainWindow(QMainWindow):
         vm.map_manifest_changed.connect(self.maps_page.set_manifest)
         vm.asset_network_changed.connect(self.maps_page.set_preview_network)
         vm.network_changed.connect(self.live_page.map_widget.set_network)
+        vm.network_changed.connect(self.scene_page.set_preview_network)
         vm.vehicles_changed.connect(self._set_vehicles)
         vm.traffic_lights_changed.connect(self.live_page.map_widget.set_traffic_lights)
         vm.component_health_changed.connect(self._set_health)
@@ -187,9 +199,17 @@ class MainWindow(QMainWindow):
     def _set_selected_workspace(self, workspace: object) -> None:
         selected = workspace if isinstance(workspace, WorkspaceSummary) else None
         self.workspace_page.set_workspace(selected)
+        self.project_detail_page.set_workspace(selected)
         self.workspace_navigation.set_selected(
             str(selected.workspace_id) if selected is not None else None
         )
+        active = self._viewmodel.active_workspace
+        if (
+            selected is not None
+            and active is not None
+            and selected.workspace_id == active.workspace_id
+        ):
+            self.navigation.set_workspace(selected.name)
         if self._viewmodel.active_workspace is None:
             self.page_stack.setCurrentWidget(self.workspace_page)
 
@@ -197,6 +217,7 @@ class MainWindow(QMainWindow):
     def _set_workspace_overview(self, overview: object) -> None:
         value = overview if isinstance(overview, WorkspaceOverview) else None
         self.workspace_page.set_overview(value)
+        self.project_detail_page.set_overview(value)
 
     @Slot(object)
     def _set_workspace_context(self, workspace: object) -> None:
@@ -207,7 +228,8 @@ class MainWindow(QMainWindow):
             return
         self.navigation.set_workspace(selected.name)
         self.navigation_stack.setCurrentWidget(self.navigation)
-        self._show_page("scene")
+        self.project_detail_page.set_workspace(selected)
+        self._show_page("project")
 
     @Slot(object)
     def _set_maps(self, maps: object) -> None:
@@ -309,6 +331,51 @@ class MainWindow(QMainWindow):
             ),
         )
 
+    @Slot(str)
+    def _edit_project(self, field: str) -> None:
+        workspace = self.project_detail_page.workspace
+        if workspace is None:
+            return
+        dialog = WorkspaceEditDialog(
+            title="编辑项目信息",
+            workspace=workspace,
+            entity_label="项目",
+            parent=self,
+        )
+        if field == "description":
+            dialog.description_input.setFocus()
+        else:
+            dialog.name_input.setFocus()
+            dialog.name_input.selectAll()
+        run_workspace_dialog(
+            dialog,
+            lambda name, description: self._viewmodel.update_workspace(
+                workspace.workspace_id,
+                name,
+                description,
+            ),
+        )
+
+    @Slot(str, str, str)
+    def _handle_project_simulation_action(
+        self,
+        simulation_name: str,
+        action: str,
+        parameter_summary: str,
+    ) -> None:
+        if action == "copy":
+            self.scene_page.apply_simulation_copy(simulation_name, parameter_summary)
+            self._show_page("scene")
+            self._show_notice("success", f"已复制“{simulation_name}”，可继续调整参数。")
+            return
+        if action in {"view", "logs", "replay"}:
+            self._show_page("experiments")
+            label = "回放" if action == "replay" else "查看"
+            self._show_notice("warning", f"“{simulation_name}”的{label}接口尚未接入。")
+            return
+        label = "暂停" if action == "pause" else "删除"
+        self._show_notice("warning", f"“{simulation_name}”的{label}接口尚未接入。")
+
     def _delete_workspace(self) -> None:
         workspace = self.workspace_page.workspace
         if workspace is None:
@@ -346,5 +413,6 @@ class MainWindow(QMainWindow):
         self.setProperty("theme", theme.value)
         self.setStyleSheet(load_stylesheet(theme))
         self.navigation.refresh_icons(theme)
+        self.project_detail_page.refresh_action_icons(theme)
         self.live_page.map_widget.set_theme(theme.value)
         self.maps_page.map_widget.set_theme(theme.value)

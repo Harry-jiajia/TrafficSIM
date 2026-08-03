@@ -18,9 +18,11 @@ QLabel#navigationGroupLabel {
   color: #8d9095; font-size: 13px; font-weight: 600; padding: 5px 12px 3px 12px;
 }
 QLabel#workspaceSectionTitle { color: #cfd3dc; font-size: 14px; font-weight: 600; }
-QLabel#activeWorkspaceName {
-  color: #e5eaf3; font-size: 15px; font-weight: 600; padding: 4px 12px 8px 12px;
+QPushButton#activeWorkspaceName {
+  background: transparent; border: 0; color: #e5eaf3; font-size: 15px; font-weight: 600;
+  padding: 6px 12px; text-align: left;
 }
+QPushButton#activeWorkspaceName:hover { background: #18222c; color: #409eff; }
 QPushButton#workspaceBackButton {
   background: transparent; border: 0; color: #a3a6ad; padding: 7px 10px; text-align: left;
 }
@@ -119,6 +121,58 @@ QFrame#workspacePreview {
   background: #10131c; border: 1px solid #353947; border-radius: 6px;
   min-height: 300px;
 }
+QFrame#projectEditableField {
+  background: #18191a; border: 1px solid #363637; border-radius: 4px;
+}
+QFrame#projectEditableField:hover, QFrame#projectEditableField:focus {
+  background: #18222c; border-color: #409eff;
+}
+QLabel#projectFieldLabel { color: #a3a6ad; font-size: 12px; }
+QLabel#projectNameValue { color: #e5eaf3; font-size: 18px; font-weight: 600; }
+QLabel#projectDescriptionValue { color: #cfd3dc; font-size: 14px; }
+QWidget#projectSimulationActions { background: transparent; }
+QToolButton#projectSimulationAction {
+  background: transparent; border: 0; border-radius: 4px; padding: 4px;
+}
+QToolButton#projectSimulationAction:hover { background: #2b2b2c; }
+QLabel#projectSimulationStatus { font-size: 12px; font-weight: 500; }
+QLabel#projectSimulationStatus[state="running"] { color: #409eff; }
+QLabel#projectSimulationStatus[state="completed"] { color: #67c23a; }
+QLabel#projectSimulationStatus[state="failed"] { color: #f56c6c; }
+QWidget#simulationConfigurationBody, QFrame#simulationConfigurationSection,
+QFrame#simulationRightColumn { background: transparent; border: 0; }
+QLabel#simulationSectionTitle { color: #8b93a7; font-size: 11px; font-weight: 600; }
+QLabel#simulationFieldLabel { color: #c9ced9; font-size: 11px; font-weight: 500; }
+QLineEdit#sceneNameInput, QTextEdit#sceneDescriptionInput {
+  background: #090c12; border-color: #3a4150; color: #eef1f7; font-size: 13px;
+}
+QLineEdit#sceneNameInput:focus, QTextEdit#sceneDescriptionInput:focus { border-color: #409eff; }
+QFrame#automationConfigurationRow {
+  background: #11151f; border: 1px solid #343b4a; border-radius: 4px;
+}
+QFrame#automationConfigurationRow QComboBox,
+QFrame#automationConfigurationRow QSpinBox { background: #090c12; }
+QPushButton#automationRowAction { min-width: 28px; max-width: 28px; padding: 6px 0; }
+QPushButton#automationRowAction[action="remove"] { color: #7f8799; }
+QPushButton#addAutomationCategoryButton {
+  background: transparent; border: 1px dashed #343b4a; color: #8b93a7; padding: 9px;
+}
+QPushButton#addAutomationCategoryButton:hover { border-color: #409eff; color: #79bbff; }
+QLabel#automationTotal {
+  background: #082c34; border: 1px solid #0f5965; border-radius: 3px;
+  color: #36cfc9; padding: 3px 7px; font-family: "__TRAFFICVERSE_MONO_FONT__";
+}
+QWebEngineView#simulationMapPreview {
+  background: #090d15; border: 1px solid #343b4a; border-radius: 4px;
+}
+QLabel#simulationMapStatus { color: #7f8799; font-size: 11px; }
+QTimeEdit#simulationDurationTime {
+  background: #090c12; border: 1px solid #3a4150; border-radius: 4px;
+  color: #eef1f7; padding: 7px 12px; font-family: "__TRAFFICVERSE_MONO_FONT__";
+}
+QTimeEdit#simulationDurationTime:hover, QTimeEdit#simulationDurationTime:focus {
+  border-color: #409eff;
+}
 QLabel#dialogTitle { color: #e5eaf3; font-size: 19px; font-weight: 600; }
 QLabel#workspaceDeleteError {
   background: #2b1d1d; border: 1px solid #5b2929; border-radius: 4px;
@@ -169,6 +223,7 @@ QTableWidget {
   border: 1px solid #414243; border-radius: 4px;
   gridline-color: #363637; color: #cfd3dc;
 }
+QTableWidget#projectSimulationTable { min-height: 280px; }
 QTreeWidget {
   background: #1d1e1f; alternate-background-color: #18191a;
   border: 1px solid #414243; border-radius: 4px; color: #cfd3dc;

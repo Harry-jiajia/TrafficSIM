@@ -57,6 +57,23 @@ def test_workspace_navigation_matches_grouped_stitch_structure_and_starts_collap
     navigation.close()
 
 
+def test_active_project_name_requests_project_detail_page() -> None:
+    _application()
+    navigation = NavigationRail()
+    requests: list[bool] = []
+    navigation.project_detail_requested.connect(lambda: requests.append(True))
+
+    navigation.set_workspace("北京亦庄项目")
+    project_button = navigation.findChild(QPushButton, "activeWorkspaceName")
+
+    assert project_button is not None
+    assert project_button.text() == "北京亦庄项目"
+    assert project_button.accessibleName() == "打开项目详情"
+    project_button.click()
+    assert requests == [True]
+    navigation.close()
+
+
 def test_expandable_navigation_row_uses_one_background_for_main_and_arrow() -> None:
     app = _application()
     navigation = NavigationRail()
