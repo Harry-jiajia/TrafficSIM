@@ -127,10 +127,8 @@ class MainWindow(QMainWindow):
         self.live_page.pause_requested.connect(vm.pause)
         self.live_page.resume_requested.connect(vm.resume)
         self.live_page.stop_requested.connect(vm.stop)
+        self.live_page.restart_requested.connect(vm.restart)
         self.live_page.speed_changed.connect(vm.set_speed)
-        self.live_page.vehicle_speed_requested.connect(self._control_speed)
-        self.live_page.lane_change_requested.connect(self._control_lane)
-        self.live_page.vehicle_stop_requested.connect(self._control_stop)
         self.scene_page.map_selected.connect(vm.select_map)
         self.scene_page.launch_requested.connect(vm.launch_experiment)
         self.traffic_scenes_page.scene_selected.connect(vm.select_map)
@@ -153,7 +151,7 @@ class MainWindow(QMainWindow):
         vm.network_changed.connect(self.live_page.map_widget.set_network)
         vm.vehicles_changed.connect(self._set_vehicles)
         vm.traffic_lights_changed.connect(self.live_page.map_widget.set_traffic_lights)
-        vm.component_health_changed.connect(self._set_health)
+        vm.live_metrics_changed.connect(self.live_page.set_metrics)
         vm.experiment_status_changed.connect(self._set_status)
         vm.simulation_time_changed.connect(self._set_time)
         vm.control_availability_changed.connect(self._set_controls)
@@ -223,25 +221,6 @@ class MainWindow(QMainWindow):
     @Slot(object)
     def _set_vehicles(self, vehicles: object) -> None:
         self.live_page.map_widget.set_vehicles(vehicles)
-        count = len(vehicles) if isinstance(vehicles, tuple) else 0
-        self.live_page.set_vehicle_count(count)
-
-    @Slot(object)
-    def _set_health(self, components: object) -> None:
-        values = components if isinstance(components, tuple) else ()
-        carla = next((item for item in values if getattr(item, "component", "") == "carla"), None)
-        status = str(getattr(carla, "status", "UNKNOWN"))
-        normalized_status = status.removeprefix("ComponentStatus.")
-        health_labels = {
-            "HEALTHY": "正常",
-            "DEGRADED": "降级",
-            "UNAVAILABLE": "不可用",
-            "UNKNOWN": "未知",
-        }
-        self.live_page.set_carla_status(health_labels.get(normalized_status, normalized_status))
-        if carla is not None and normalized_status != "HEALTHY":
-            message = getattr(carla, "message", None) or "本机 CARLA 当前不可用"
-            self.live_page.carla_window.show_unavailable(str(message))
 
     @Slot(str)
     def _set_status(self, status: str) -> None:
@@ -324,18 +303,6 @@ class MainWindow(QMainWindow):
         dialog = WorkspaceDeleteDialog(workspace, self)
         if dialog.exec() == dialog.DialogCode.Accepted:
             self._viewmodel.delete_workspace(workspace.workspace_id)
-
-    @Slot(str, float)
-    def _control_speed(self, vehicle_id: str, desired_speed_mps: float) -> None:
-        self._viewmodel.control_vehicle(vehicle_id, desired_speed_mps=desired_speed_mps)
-
-    @Slot(str, str)
-    def _control_lane(self, vehicle_id: str, direction: str) -> None:
-        self._viewmodel.control_vehicle(vehicle_id, lane_change=direction)
-
-    @Slot(str)
-    def _control_stop(self, vehicle_id: str) -> None:
-        self._viewmodel.control_vehicle(vehicle_id, stop_requested=True)
 
     @Slot(str)
     def _apply_theme(self, theme_name: str) -> None:

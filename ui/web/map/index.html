@@ -10,19 +10,15 @@
   <body>
     <div id="map"></div>
     <div id="map-grid" aria-hidden="true"></div>
-    <section id="map-hud" aria-label="地图状态">
-      <div class="map-eyebrow">TOWN04 数字孪生</div>
-      <div class="map-title">全局交通态势</div>
-      <div id="map-status">正在加载离线地图组件……</div>
+    <section id="map-hud" aria-label="地图图例">
       <div class="map-legend">
-        <span><i class="legend-dot human"></i>人工驾驶</span>
-        <span><i class="legend-dot automated"></i>自动驾驶</span>
-        <span><i class="legend-dot signal"></i>交通信号</span>
+        <span class="legend-item"><i class="legend-icon ai" aria-hidden="true"></i>人工智能</span>
+        <span class="legend-item"><i class="legend-icon automated" aria-hidden="true"></i>自动驾驶</span>
+        <span class="legend-item"><i class="legend-icon signal" aria-hidden="true"></i>交通信号</span>
       </div>
     </section>
-    <div id="view-controls" aria-label="地图视角">
-      <button type="button" data-view-mode="2d" class="active">2D</button>
-      <button type="button" data-view-mode="3d">3D</button>
+    <output id="map-status" hidden aria-live="polite"></output>
+    <div id="view-controls" aria-label="地图操作">
       <button type="button" id="reset-view">复位</button>
     </div>
     <script src="qrc:///qtwebchannel/qwebchannel.js"></script>

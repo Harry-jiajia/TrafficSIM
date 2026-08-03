@@ -96,14 +96,16 @@ def test_map_supports_command_drag_camera_rotation() -> None:
     assert "metaKey" in bundle
 
 
-def test_map_view_mode_is_not_exposed_to_the_qt_host() -> None:
+def test_map_is_fixed_to_2d_and_view_mode_is_not_exposed_to_the_qt_host() -> None:
     html = (MAP_WEB_ROOT / "index.html").read_text(encoding="utf-8")
     source = (MAP_WEB_ROOT / "src/app.js").read_text(encoding="utf-8")
     host = (MAP_WEB_ROOT.parents[1] / "widgets/maplibre_deck_map.py").read_text(encoding="utf-8")
 
-    assert 'data-view-mode="2d"' in html
-    assert 'data-view-mode="3d"' in html
-    assert 'data-view-mode="2d" class="active"' in html
+    assert 'data-view-mode="2d"' not in html
+    assert 'data-view-mode="3d"' not in html
+    assert ">2D</button>" not in html
+    assert ">3D</button>" not in html
+    assert 'id="reset-view"' in html
     assert 'viewMode: "2d"' in source
     assert "function setViewMode(viewMode)" in source
     assert "setViewMode(viewMode) {\n    setViewMode(viewMode);\n  }" not in source
@@ -133,9 +135,27 @@ def test_map_hud_has_a_safe_inset_from_the_webview_edge() -> None:
     hud_rules = css.split("#map-hud {", maxsplit=1)[1].split("}", maxsplit=1)[0]
 
     assert "left: 18px;" in hud_rules
-    assert "padding: 15px 17px 13px;" in hud_rules
+    assert "padding: 10px 12px;" in hud_rules
     assert "padding-left: 0;" not in hud_rules
     assert "border-left: 0;" not in hud_rules
+
+
+def test_map_hud_only_shows_the_three_requested_icon_legends() -> None:
+    html = (MAP_WEB_ROOT / "index.html").read_text(encoding="utf-8")
+    css = (MAP_WEB_ROOT / "styles.css").read_text(encoding="utf-8")
+
+    assert 'aria-label="地图图例"' in html
+    assert html.count('class="legend-item"') == 3
+    assert all(label in html for label in ("人工智能", "自动驾驶", "交通信号"))
+    assert all(
+        icon in html for icon in ("legend-icon ai", "legend-icon automated", "legend-icon signal")
+    )
+    assert "map-eyebrow" not in html
+    assert "map-title" not in html
+    assert 'id="map-status" hidden' in html
+    assert ".legend-icon.ai" in css
+    assert ".legend-icon.automated" in css
+    assert ".legend-icon.signal" in css
 
 
 def test_truck_model_is_local_and_checksum_documented() -> None:

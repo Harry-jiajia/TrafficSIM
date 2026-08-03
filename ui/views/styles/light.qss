@@ -155,6 +155,8 @@ QPushButton[role="primaryAction"] { background: #409eff; border-color: #409eff; 
 QPushButton[role="primaryAction"]:hover { background: #79bbff; border-color: #79bbff; }
 QPushButton#dangerButton { background: #fef0f0; border-color: #fbc4c4; color: #f56c6c; }
 QPushButton#dangerButton:hover { background: #f56c6c; border-color: #f56c6c; color: #ffffff; }
+QPushButton#restartButton { background: #fdf6ec; border-color: #f5dab1; color: #e6a23c; }
+QPushButton#restartButton:hover { background: #e6a23c; border-color: #e6a23c; color: #ffffff; }
 QPushButton#speedButton { padding: 6px 11px; }
 QPushButton#speedButton:checked { background: #ecf5ff; border-color: #409eff; color: #409eff; }
 QComboBox::drop-down { border: 0; width: 24px; }

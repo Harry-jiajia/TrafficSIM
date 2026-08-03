@@ -16,10 +16,12 @@ from ui.models import (
     Envelope,
     ExperimentStatus,
     ExperimentView,
+    LiveMetrics,
     MapImportJob,
     MapManifest,
     MapSummary,
     ReadinessResponse,
+    Vehicle,
     WorkspaceOverview,
     WorkspaceSummary,
     WorldState,
@@ -42,6 +44,7 @@ class RunViewModel(QObject):
     component_health_changed = Signal(object)
     experiment_status_changed = Signal(str)
     simulation_time_changed = Signal(int)
+    live_metrics_changed = Signal(object)
     control_availability_changed = Signal(object)
     connection_changed = Signal(str)
     monitor_requested = Signal()
@@ -72,6 +75,12 @@ class RunViewModel(QObject):
         self._world: WorldState | None = None
         self._launch_after_create = False
         self._start_after_prepare = False
+        self._restart_after_stop = False
+        self._seen_vehicle_ids: set[str] = set()
+        self._active_vehicle_ids: set[str] = set()
+        self._vehicle_entered_at_ms: dict[str, int] = {}
+        self._completed_travel_time_total_ms = 0
+        self._completed_vehicle_count = 0
         self._import_timer = QTimer(self)
         self._import_timer.setInterval(500)
         self._import_timer.timeout.connect(self._poll_import)
@@ -252,30 +261,23 @@ class RunViewModel(QObject):
         self._send("experiment.resume", {})
 
     def stop(self) -> None:
+        self._restart_after_stop = False
         self._send("experiment.stop", {"reason": "USER_REQUEST"})
+
+    def restart(self) -> None:
+        if self._status in {ExperimentStatus.RUNNING, ExperimentStatus.PAUSED}:
+            self._restart_after_stop = self._send(
+                "experiment.stop",
+                {"reason": "USER_RESTART"},
+            )
+            return
+        if self._status in {ExperimentStatus.COMPLETED, ExperimentStatus.FAILED}:
+            self._begin_restart()
+            return
+        self.notification.emit("warning", "当前实验状态不支持重新开始。")
 
     def set_speed(self, multiplier: float) -> None:
         self._send("experiment.speed.set", {"multiplier": multiplier})
-
-    def control_vehicle(
-        self,
-        vehicle_id: str,
-        *,
-        desired_speed_mps: float | None = None,
-        lane_change: str = "NONE",
-        stop_requested: bool = False,
-    ) -> None:
-        if not vehicle_id:
-            self.notification.emit("error", "请输入车辆 ID。")
-            return
-        payload: dict[str, object] = {
-            "vehicle_id": vehicle_id,
-            "lane_change": lane_change,
-            "stop_requested": stop_requested,
-        }
-        if desired_speed_mps is not None:
-            payload["desired_speed_mps"] = desired_speed_mps
-        self._send("vehicle.control", payload)
 
     def handle_rest_success(self, operation: str, payload: object) -> None:
         if operation == "health":
@@ -401,7 +403,9 @@ class RunViewModel(QObject):
                 )
                 self._realtime.request_snapshot()
             if update.vehicles_changed:
-                self.vehicles_changed.emit(tuple(self._world.vehicles.values()))
+                vehicles = tuple(self._world.vehicles.values())
+                self._update_live_metrics(vehicles, self._world.simulation_time_ms)
+                self.vehicles_changed.emit(vehicles)
             if update.traffic_lights_changed:
                 self.traffic_lights_changed.emit(tuple(self._world.traffic_lights.values()))
             if update.health_changed:
@@ -409,6 +413,7 @@ class RunViewModel(QObject):
             if update.status_changed and self._world.status is not None:
                 self._set_status(self._world.status)
             if envelope.type == "command.rejected":
+                self._restart_after_stop = False
                 message = (
                     envelope.payload.get("message") if isinstance(envelope.payload, dict) else None
                 )
@@ -425,6 +430,7 @@ class RunViewModel(QObject):
         self._experiment_id = view.experiment_id
         self._experiment_workspace_id = view.workspace_id
         self._world = WorldState(view.experiment_id, simulation_time_ms=view.simulation_time_ms)
+        self._reset_live_metrics()
         self._set_status(view.status)
         self._realtime.connect_to_experiment(view.experiment_id)
 
@@ -435,15 +441,83 @@ class RunViewModel(QObject):
         if status is ExperimentStatus.READY and self._start_after_prepare:
             self._start_after_prepare = False
             self._send("experiment.start", {})
+        if (
+            status in {ExperimentStatus.COMPLETED, ExperimentStatus.FAILED}
+            and self._restart_after_stop
+        ):
+            self._begin_restart()
 
-    def _send(self, command: str, payload: dict[str, object]) -> None:
+    def _begin_restart(self) -> None:
+        self._restart_after_stop = False
+        self._reset_experiment_context()
+        self._launch_after_create = True
+        if not self.create_experiment():
+            self._launch_after_create = False
+
+    def _update_live_metrics(
+        self,
+        vehicles: tuple[Vehicle, ...],
+        simulation_time_ms: int,
+    ) -> None:
+        current_ids = {vehicle.vehicle_id for vehicle in vehicles}
+        self._seen_vehicle_ids.update(current_ids)
+        for vehicle in vehicles:
+            self._vehicle_entered_at_ms.setdefault(
+                vehicle.vehicle_id,
+                min(vehicle.simulation_time_ms, simulation_time_ms),
+            )
+        for vehicle_id in self._active_vehicle_ids - current_ids:
+            entered_at_ms = self._vehicle_entered_at_ms.pop(vehicle_id, None)
+            if entered_at_ms is None:
+                continue
+            self._completed_travel_time_total_ms += max(
+                0,
+                simulation_time_ms - entered_at_ms,
+            )
+            self._completed_vehicle_count += 1
+        self._active_vehicle_ids = current_ids
+        average_speed_mps = (
+            sum(vehicle.speed_mps for vehicle in vehicles) / len(vehicles) if vehicles else 0.0
+        )
+        average_travel_time_ms = (
+            self._completed_travel_time_total_ms / self._completed_vehicle_count
+            if self._completed_vehicle_count
+            else None
+        )
+        self.live_metrics_changed.emit(
+            LiveMetrics(
+                current_vehicle_count=len(vehicles),
+                total_vehicle_count=len(self._seen_vehicle_ids),
+                average_speed_mps=average_speed_mps,
+                average_travel_time_ms=average_travel_time_ms,
+            )
+        )
+
+    def _reset_live_metrics(self) -> None:
+        self._seen_vehicle_ids.clear()
+        self._active_vehicle_ids.clear()
+        self._vehicle_entered_at_ms.clear()
+        self._completed_travel_time_total_ms = 0
+        self._completed_vehicle_count = 0
+        self.live_metrics_changed.emit(
+            LiveMetrics(
+                current_vehicle_count=0,
+                total_vehicle_count=0,
+                average_speed_mps=0.0,
+                average_travel_time_ms=None,
+            )
+        )
+
+    def _send(self, command: str, payload: dict[str, object]) -> bool:
         if self._experiment_id is None:
             self.notification.emit("error", "请先创建实验。")
-            return
+            return False
         try:
             self._realtime.send_command(command, payload)
         except RuntimeError as error:
             self.notification.emit("error", f"命令发送失败：{error}")
+            return False
+        return True
 
     def _handle_import_job(self, job: MapImportJob) -> None:
         self._import_job_id = job.job_id
@@ -473,10 +547,12 @@ class RunViewModel(QObject):
         self._world = None
         self._launch_after_create = False
         self._start_after_prepare = False
+        self._restart_after_stop = False
         self.experiment_status_changed.emit("NOT_CREATED")
         self.simulation_time_changed.emit(0)
         self.vehicles_changed.emit(())
         self.traffic_lights_changed.emit(())
+        self._reset_live_metrics()
         self._emit_controls()
 
     def _workspace(self, workspace_id: UUID | None) -> WorkspaceSummary | None:
