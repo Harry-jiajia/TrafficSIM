@@ -76,6 +76,7 @@ class _ExpandableNavigationRow(QWidget):
 
 class NavigationRail(QWidget):
     page_selected = Signal(str)
+    project_detail_requested = Signal()
     workspace_exit_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -101,9 +102,11 @@ class NavigationRail(QWidget):
         self.workspace_back.setCursor(Qt.CursorShape.PointingHandCursor)
         self.workspace_back.clicked.connect(self.workspace_exit_requested)
         layout.addWidget(self.workspace_back)
-        self.workspace_name = QLabel("尚未选择工作区")
+        self.workspace_name = QPushButton("尚未选择工作区")
         self.workspace_name.setObjectName("activeWorkspaceName")
-        self.workspace_name.setWordWrap(True)
+        self.workspace_name.setAccessibleName("打开项目详情")
+        self.workspace_name.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.workspace_name.clicked.connect(self.project_detail_requested)
         layout.addWidget(self.workspace_name)
         layout.addSpacing(18)
 
@@ -137,6 +140,7 @@ class NavigationRail(QWidget):
 
     def set_workspace(self, name: str) -> None:
         self.workspace_name.setText(name)
+        self.workspace_name.setToolTip(name)
 
     def set_active(self, key: str) -> None:
         for button_key, button in self._buttons.items():

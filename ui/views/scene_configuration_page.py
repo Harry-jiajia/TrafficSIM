@@ -1,11 +1,10 @@
-"""Scenario configuration page grounded in the current REST capabilities."""
+"""Scenario configuration page for composing a workspace simulation run."""
 
 from __future__ import annotations
 
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import QTime, Signal, Slot
 from PySide6.QtWidgets import (
     QComboBox,
-    QFormLayout,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -15,127 +14,279 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSpinBox,
     QTextEdit,
+    QTimeEdit,
     QVBoxLayout,
     QWidget,
 )
 
 from ui.models import MapSummary
-from ui.views.components import PAGE_CONTENT_MARGIN, empty_state, page_header, panel
+from ui.views.components import PAGE_CONTENT_MARGIN, page_header
+from ui.widgets import MapLibreDeckMapWidget
+
+_AUTOMATION_LEVELS = tuple(f"L{level}" for level in range(6))
+
+
+class _AutomationConfigurationRow(QFrame):
+    """One editable automation-level vehicle allocation."""
+
+    changed = Signal()
+    add_requested = Signal()
+    remove_requested = Signal(object)
+
+    def __init__(self, level: str, count: int, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("automationConfigurationRow")
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(8)
+        self.level_combo = QComboBox()
+        self.level_combo.setObjectName("automationLevelCombo")
+        for value in _AUTOMATION_LEVELS:
+            self.level_combo.addItem(f"{value}智驾", value)
+        self.level_combo.setCurrentIndex(_AUTOMATION_LEVELS.index(level))
+        self.level_combo.currentIndexChanged.connect(self.changed)
+        layout.addWidget(self.level_combo, 3)
+
+        self.count_input = QSpinBox()
+        self.count_input.setObjectName("automationVehicleCount")
+        self.count_input.setRange(0, 100_000)
+        self.count_input.setValue(count)
+        self.count_input.setSuffix(" 辆")
+        self.count_input.valueChanged.connect(self.changed)
+        layout.addWidget(self.count_input, 2)
+
+        add_button = QPushButton("+")
+        add_button.setObjectName("automationRowAction")
+        add_button.setAccessibleName("添加智驾分类")
+        add_button.clicked.connect(self.add_requested)
+        layout.addWidget(add_button)
+
+        remove_button = QPushButton("×")
+        remove_button.setObjectName("automationRowAction")
+        remove_button.setProperty("action", "remove")
+        remove_button.setAccessibleName("删除智驾分类")
+        remove_button.clicked.connect(lambda: self.remove_requested.emit(self))
+        layout.addWidget(remove_button)
+
+    @property
+    def level(self) -> str:
+        value = self.level_combo.currentData()
+        return value if isinstance(value, str) else "L0"
+
+    @property
+    def vehicle_count(self) -> int:
+        return self.count_input.value()
 
 
 class SceneConfigurationPage(QWidget):
+    """Collect map, automation mix, and environment settings for a simulation."""
+
     map_selected = Signal(str)
     launch_requested = Signal()
+    draft_save_requested = Signal()
+    configuration_save_requested = Signal()
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        *,
+        load_web_map: bool = False,
+    ) -> None:
         super().__init__(parent)
         self.setObjectName("sceneConfigurationPage")
+        self._load_web_map = load_web_map
+        self.automation_rows: list[_AutomationConfigurationRow] = []
+
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
-        root.addWidget(
-            page_header(
-                "仿真配置",
-                "配置运行参数并启动工作区仿真",
-                self._actions(),
-            )
-        )
+        root.addWidget(page_header("仿真配置", "", self._header_actions()))
 
         scroll = QScrollArea()
+        scroll.setObjectName("simulationConfigurationScroll")
         scroll.setWidgetResizable(True)
-        content = QWidget()
-        layout = QVBoxLayout(content)
-        layout.setContentsMargins(PAGE_CONTENT_MARGIN, 16, PAGE_CONTENT_MARGIN, 18)
-        layout.setSpacing(12)
-        layout.addWidget(self._steps())
-
-        columns = QHBoxLayout()
-        columns.setSpacing(12)
-        columns.addWidget(self._basic_information(), 3)
-        columns.addWidget(self._map_selection(), 2)
-        layout.addLayout(columns, 1)
-        layout.addWidget(self._summary())
-        scroll.setWidget(content)
+        body = QWidget()
+        body.setObjectName("simulationConfigurationBody")
+        layout = QVBoxLayout(body)
+        layout.setContentsMargins(PAGE_CONTENT_MARGIN + 14, 16, PAGE_CONTENT_MARGIN + 14, 20)
+        layout.setSpacing(24)
+        layout.addWidget(self._scene_information())
+        layout.addLayout(self._configuration_columns(), 1)
+        scroll.setWidget(body)
         root.addWidget(scroll, 1)
 
-    def _actions(self) -> QWidget:
+    def _header_actions(self) -> QWidget:
         widget = QWidget()
         row = QHBoxLayout(widget)
         row.setContentsMargins(0, 0, 0, 0)
-        self.create_button = QPushButton("开始仿真")
+        self.create_button = QPushButton("▶  开始仿真")
         self.create_button.setObjectName("primaryButton")
         self.create_button.clicked.connect(self.launch_requested)
         row.addWidget(self.create_button)
         return widget
 
-    def _steps(self) -> QFrame:
-        frame = QFrame()
-        frame.setObjectName("panel")
-        layout = QHBoxLayout(frame)
-        layout.setContentsMargins(16, 12, 16, 12)
-        steps = ("01  基础信息", "02  地图与道路", "03  交通需求", "04  行为参数", "05  开始仿真")
-        for index, text in enumerate(steps):
-            label = QLabel(text)
-            label.setObjectName("panelKicker" if index == 0 else "caption")
-            layout.addWidget(label)
-            if index < len(steps) - 1:
-                layout.addWidget(QLabel("—"))
-        layout.addStretch(1)
-        return frame
+    def _scene_information(self) -> QFrame:
+        section, layout = self._section("场景信息")
 
-    def _basic_information(self) -> QFrame:
-        content = QWidget()
-        form = QFormLayout(content)
-        form.setContentsMargins(0, 0, 0, 0)
-        form.setSpacing(12)
-        self.scene_name = QLineEdit("SUMO 二维仿真")
-        self.scene_name.setPlaceholderText("场景名称")
-        self.seed = QSpinBox()
-        self.seed.setRange(0, 2_147_483_647)
-        self.seed.setValue(42)
+        name_label = self._field_label("场景名称", required=True)
+        self.scene_name = QLineEdit()
+        self.scene_name.setObjectName("sceneNameInput")
+        self.scene_name.setPlaceholderText("请输入场景名称")
+        self.scene_name.setClearButtonEnabled(True)
+        self.scene_name.setAccessibleName("仿真场景名称")
+        layout.addWidget(name_label)
+        layout.addWidget(self.scene_name)
+
+        description_label = self._field_label("场景描述")
         self.description = QTextEdit()
-        self.description.setPlaceholderText("记录本次实验目标和变量说明")
-        self.description.setMaximumHeight(110)
-        form.addRow("场景名称", self.scene_name)
-        form.addRow("随机种子", self.seed)
-        form.addRow("说明", self.description)
-        read_only = QLabel(
-            "当前版本由配置文件提供权威场景参数。此处保留原型表单，"
-            "创建时仍使用已加载的场景 ID 与地图。"
-        )
-        read_only.setObjectName("caption")
-        read_only.setWordWrap(True)
-        form.addRow("运行约束", read_only)
-        return panel("基础信息", content, kicker="步骤 01")
+        self.description.setObjectName("sceneDescriptionInput")
+        self.description.setPlaceholderText("请输入场景描述")
+        self.description.setAccessibleName("仿真场景描述")
+        self.description.setFixedHeight(88)
+        layout.addWidget(description_label)
+        layout.addWidget(self.description)
+        return section
 
-    def _map_selection(self) -> QFrame:
-        content = QWidget()
-        layout = QVBoxLayout(content)
-        layout.setContentsMargins(0, 0, 0, 0)
+    def _configuration_columns(self) -> QGridLayout:
+        columns = QGridLayout()
+        columns.setContentsMargins(0, 0, 0, 0)
+        columns.setHorizontalSpacing(28)
+        columns.setVerticalSpacing(0)
+        columns.addWidget(self._map_configuration(), 0, 0)
+        columns.addWidget(self._right_configuration(), 0, 1)
+        columns.setColumnStretch(0, 1)
+        columns.setColumnStretch(1, 1)
+        return columns
+
+    def _map_configuration(self) -> QFrame:
+        section, layout = self._section("地图选择")
         self.map_combo = QComboBox()
+        self.map_combo.setObjectName("simulationMapCombo")
         self.map_combo.setMinimumContentsLength(24)
         self.map_combo.currentIndexChanged.connect(self._select_map)
-        layout.addWidget(QLabel("SUMO 场景包"))
         layout.addWidget(self.map_combo)
-        preview = empty_state(
-            "等待场景",
-            "从列表选择由 .sumocfg 自动发现并校验的 SUMO 场景包。",
-            "⌁",
-        )
-        preview.setMinimumHeight(180)
-        layout.addWidget(preview, 1)
-        return panel("地图与道路", content, kicker="步骤 02")
 
-    def _summary(self) -> QFrame:
+        self.map_widget = MapLibreDeckMapWidget(load_page=self._load_web_map)
+        self.map_widget.setObjectName("simulationMapPreview")
+        self.map_widget.setMinimumHeight(410)
+        layout.addWidget(self.map_widget, 1)
+
+        self.map_preview_status = QLabel("选择地图资源后加载标准路网预览")
+        self.map_preview_status.setObjectName("simulationMapStatus")
+        layout.addWidget(self.map_preview_status)
+        return section
+
+    def _right_configuration(self) -> QFrame:
+        section = QFrame()
+        section.setObjectName("simulationRightColumn")
+        layout = QVBoxLayout(section)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(16)
+        layout.addWidget(self._automation_configuration())
+        layout.addStretch(1)
+        layout.addWidget(self._environment_configuration())
+        layout.addLayout(self._footer_actions())
+        return section
+
+    def _automation_configuration(self) -> QFrame:
+        section, layout = self._section("智驾数量配置", self._automation_total_badge())
+        self.automation_rows_layout = QVBoxLayout()
+        self.automation_rows_layout.setContentsMargins(0, 0, 0, 0)
+        self.automation_rows_layout.setSpacing(8)
+        layout.addLayout(self.automation_rows_layout)
+
+        self.add_automation_button = QPushButton("⊕  添加智驾分类")
+        self.add_automation_button.setObjectName("addAutomationCategoryButton")
+        self.add_automation_button.clicked.connect(self._add_automation_row)
+        layout.addWidget(self.add_automation_button)
+        self._append_automation_row("L4", 50)
+        return section
+
+    def _automation_total_badge(self) -> QLabel:
+        self.vehicle_total = QLabel("总计：0")
+        self.vehicle_total.setObjectName("automationTotal")
+        return self.vehicle_total
+
+    def _environment_configuration(self) -> QFrame:
+        section, layout = self._section("环境配置")
+        fields = QGridLayout()
+        fields.setContentsMargins(0, 0, 0, 0)
+        fields.setHorizontalSpacing(12)
+        fields.setVerticalSpacing(6)
+
+        environment_label = self._field_label("天气 / 真实时间")
+        self.weather_time_combo = QComboBox()
+        self.weather_time_combo.setObjectName("simulationWeatherTimeCombo")
+        self.weather_time_combo.addItems(
+            (
+                "晴朗 · 早上",
+                "晴朗 · 中午",
+                "晴朗 · 晚上",
+                "多云 · 早上",
+                "多云 · 中午",
+                "小雨 · 晚上",
+                "大雨 · 晚上",
+                "雾天 · 清晨",
+            )
+        )
+        self.weather_time_combo.setCurrentIndex(1)
+
+        duration_label = self._field_label("仿真时长")
+        self.duration_time = QTimeEdit(QTime(1, 0, 0))
+        self.duration_time.setObjectName("simulationDurationTime")
+        self.duration_time.setDisplayFormat("HH:mm:ss")
+
+        fields.addWidget(environment_label, 0, 0)
+        fields.addWidget(duration_label, 0, 1)
+        fields.addWidget(self.weather_time_combo, 1, 0)
+        fields.addWidget(self.duration_time, 1, 1)
+        fields.setColumnStretch(0, 1)
+        fields.setColumnStretch(1, 1)
+        layout.addLayout(fields)
+        return section
+
+    def _footer_actions(self) -> QHBoxLayout:
+        actions = QHBoxLayout()
+        actions.setContentsMargins(0, 0, 0, 0)
+        actions.setSpacing(10)
+        self.save_draft_button = QPushButton("保存草稿")
+        self.save_draft_button.setObjectName("saveSimulationDraftButton")
+        self.save_draft_button.clicked.connect(self.draft_save_requested)
+        actions.addWidget(self.save_draft_button, 1)
+        self.save_configuration_button = QPushButton("保存配置")
+        self.save_configuration_button.setObjectName("saveSimulationConfigurationButton")
+        self.save_configuration_button.setProperty("role", "primaryAction")
+        self.save_configuration_button.clicked.connect(self.configuration_save_requested)
+        actions.addWidget(self.save_configuration_button, 1)
+        return actions
+
+    @staticmethod
+    def _section(
+        title: str,
+        trailing: QWidget | None = None,
+    ) -> tuple[QFrame, QVBoxLayout]:
         frame = QFrame()
-        frame.setObjectName("panelAccent")
-        layout = QGridLayout(frame)
-        layout.setContentsMargins(16, 12, 16, 12)
-        layout.addWidget(QLabel("SUMO 二维运行基线"), 0, 0)
-        detail = QLabel("场景自带步长  ·  SUMO 全局真值  ·  托管本机进程  ·  CARLA 禁用")
-        detail.setObjectName("caption")
-        layout.addWidget(detail, 1, 0)
-        return frame
+        frame.setObjectName("simulationConfigurationSection")
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+        heading = QHBoxLayout()
+        heading.setContentsMargins(0, 0, 0, 0)
+        label = QLabel(title)
+        label.setObjectName("simulationSectionTitle")
+        heading.addWidget(label)
+        heading.addStretch(1)
+        if trailing is not None:
+            heading.addWidget(trailing)
+        layout.addLayout(heading)
+        return frame, layout
+
+    @staticmethod
+    def _field_label(text: str, *, required: bool = False) -> QLabel:
+        label = QLabel(f"{text}<span style='color:#f56c6c'> *</span>" if required else text)
+        label.setObjectName("simulationFieldLabel")
+        return label
 
     def set_maps(self, maps: tuple[MapSummary, ...]) -> None:
         self.map_combo.blockSignals(True)
@@ -144,17 +295,63 @@ class SceneConfigurationPage(QWidget):
             if item.kind != "sumo":
                 continue
             name = item.display_name or item.carla_map or item.map_id
-            runtime = f"SUMO · {item.sumo_step_ms} ms" if item.sumo_step_ms is not None else "SUMO"
-            self.map_combo.addItem(f"{name}  ·  {runtime}", item.map_id)
+            self.map_combo.addItem(name, item.map_id)
         self.map_combo.blockSignals(False)
         if self.map_combo.count():
             self.map_combo.setCurrentIndex(0)
+            self._select_map(0)
+        else:
+            self.map_preview_status.setText("暂无可运行的 SUMO 地图资源")
+
+    @Slot(object)
+    def set_preview_network(self, network: object) -> None:
+        self.map_widget.set_network(network)
+        self.map_preview_status.setText("已加载标准路网预览")
 
     def set_create_enabled(self, enabled: bool) -> None:
         self.create_button.setEnabled(enabled)
+
+    def apply_simulation_copy(self, simulation_name: str, parameter_summary: str) -> None:
+        """Prefill editable fields from a simulation record."""
+        self.scene_name.setText(f"{simulation_name} 副本")
+        self.description.setPlainText(
+            f"复制自“{simulation_name}”。原仿真参数摘要：{parameter_summary}"
+        )
 
     @Slot(int)
     def _select_map(self, index: int) -> None:
         map_id = self.map_combo.itemData(index)
         if isinstance(map_id, str):
+            self.map_preview_status.setText("正在加载地图路网预览……")
             self.map_selected.emit(map_id)
+
+    def _add_automation_row(self) -> None:
+        used_levels = {row.level for row in self.automation_rows}
+        next_level = next((level for level in _AUTOMATION_LEVELS if level not in used_levels), None)
+        if next_level is None:
+            self.add_automation_button.setEnabled(False)
+            return
+        self._append_automation_row(next_level, 0)
+
+    def _append_automation_row(self, level: str, count: int) -> None:
+        row = _AutomationConfigurationRow(level, count)
+        row.changed.connect(self._update_vehicle_total)
+        row.add_requested.connect(self._add_automation_row)
+        row.remove_requested.connect(self._remove_automation_row)
+        self.automation_rows.append(row)
+        self.automation_rows_layout.addWidget(row)
+        self.add_automation_button.setEnabled(len(self.automation_rows) < len(_AUTOMATION_LEVELS))
+        self._update_vehicle_total()
+
+    def _remove_automation_row(self, item: object) -> None:
+        if not isinstance(item, _AutomationConfigurationRow) or item not in self.automation_rows:
+            return
+        self.automation_rows.remove(item)
+        self.automation_rows_layout.removeWidget(item)
+        item.deleteLater()
+        self.add_automation_button.setEnabled(True)
+        self._update_vehicle_total()
+
+    def _update_vehicle_total(self) -> None:
+        total = sum(row.vehicle_count for row in self.automation_rows)
+        self.vehicle_total.setText(f"总计：{total}")
