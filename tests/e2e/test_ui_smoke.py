@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
-    QSplitter,
     QStackedWidget,
     QTreeWidget,
 )
@@ -62,9 +61,7 @@ def test_core_run_window_constructs_and_closes_without_backend_or_carla() -> Non
     assert page_stack.count() == 8
     assert page_stack.currentWidget().objectName() == "workspaceOverviewPage"
     assert window.findChild(MapLibreDeckMapWidget) is not None
-    map_splitter = window.findChild(QSplitter, "monitorMapSplitter")
-    assert map_splitter is not None
-    assert map_splitter.count() == 2
+    assert not hasattr(window.live_page, "carla_window")
     viewmodel.handle_rest_success(
         "workspaces.list",
         [
@@ -87,11 +84,8 @@ def test_core_run_window_constructs_and_closes_without_backend_or_carla() -> Non
     page_title = window.live_page.findChild(QLabel, "pageTitle")
     assert page_title is not None
     live_labels = window.live_page.findChildren(QLabel)
-    map_title = next(label for label in live_labels if label.text() == "全局交通态势")
-    console_title = next(label for label in live_labels if label.text() == "车辆控制")
-    aligned_left_edges = {
-        label.mapTo(window, QPoint()).x() for label in (page_title, map_title, console_title)
-    }
+    map_title = next(label for label in live_labels if label.text() == "二维仿真场景")
+    aligned_left_edges = {label.mapTo(window, QPoint()).x() for label in (page_title, map_title)}
     assert len(aligned_left_edges) == 1
 
     brand_logo = window.findChild(QLabel, "brandLogo")
@@ -101,6 +95,12 @@ def test_core_run_window_constructs_and_closes_without_backend_or_carla() -> Non
     assert not window.windowIcon().isNull()
 
     live_text = " ".join(label.text() for label in live_labels)
+    assert "ROI 局部三维" not in live_text
+    assert "CARLA" not in live_text
+    assert all(
+        metric in live_text for metric in ("当前车辆数", "车辆总数", "平均速度", "平均通过时间")
+    )
+    assert "车辆控制" not in live_text
     assert "MapLibre" not in live_text
     assert "deck.gl" not in live_text
     visible_text = " ".join(label.text() for label in window.findChildren(QLabel))

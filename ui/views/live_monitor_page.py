@@ -1,31 +1,26 @@
-"""Live two-dimensional and CARLA monitoring page."""
+"""Live two-dimensional simulation monitoring and control page."""
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtCore import Signal, Slot
 from PySide6.QtWidgets import (
     QButtonGroup,
-    QDoubleSpinBox,
     QFrame,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QPushButton,
-    QSplitter,
     QVBoxLayout,
     QWidget,
 )
 
-from ui.models import ControlAvailability
+from ui.models import ControlAvailability, LiveMetrics
 from ui.views.components import (
     PAGE_CONTENT_MARGIN,
-    PANEL_CONTENT_MARGIN,
     metric_card,
     page_header,
     panel,
 )
-from ui.widgets import CarlaNativeWindowHost, MapLibreDeckMapWidget
+from ui.widgets import MapLibreDeckMapWidget
 
 
 class LiveMonitorPage(QWidget):
@@ -33,22 +28,19 @@ class LiveMonitorPage(QWidget):
     pause_requested = Signal()
     resume_requested = Signal()
     stop_requested = Signal()
+    restart_requested = Signal()
     speed_changed = Signal(float)
-    vehicle_speed_requested = Signal(str, float)
-    lane_change_requested = Signal(str, str)
-    vehicle_stop_requested = Signal(str)
 
     def __init__(self, *, load_web_map: bool, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("liveMonitorPage")
         self.map_widget = MapLibreDeckMapWidget(load_page=load_web_map)
-        self.carla_window = CarlaNativeWindowHost()
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
         root.addWidget(
-            page_header("实时监控", "全局交通态势与 ROI 三维镜像", self._header_actions())
+            page_header("仿真运行", "SUMO 二维交通态势与实时运行控制", self._header_actions())
         )
 
         body = QWidget()
@@ -56,46 +48,32 @@ class LiveMonitorPage(QWidget):
         body_layout.setContentsMargins(PAGE_CONTENT_MARGIN, 14, PAGE_CONTENT_MARGIN, 16)
         body_layout.setSpacing(12)
         body_layout.addWidget(self._workspace(), 1)
-        body_layout.addWidget(self._vehicle_console())
+        body_layout.addWidget(self._simulation_controls())
         root.addWidget(body, 1)
-
-        self.map_widget.vehicle_selected.connect(self.set_vehicle_id)
 
     def _workspace(self) -> QWidget:
         map_panel = panel(
-            "全局交通态势",
+            "二维仿真场景",
             self.map_widget,
+            kicker="SUMO 实时路网",
         )
-        carla_panel = panel(
-            "ROI 局部三维",
-            self.carla_window,
-        )
+        map_panel.setMinimumHeight(360)
         stats_panel = self._statistics_panel()
-
-        self.map_splitter = QSplitter(Qt.Orientation.Horizontal)
-        self.map_splitter.setObjectName("monitorMapSplitter")
-        self.map_splitter.setChildrenCollapsible(False)
-        self.map_splitter.setOpaqueResize(True)
-        self.map_splitter.setHandleWidth(8)
-        self.map_splitter.addWidget(map_panel)
-        self.map_splitter.addWidget(carla_panel)
-        self.map_splitter.setSizes([620, 460])
-        self.map_splitter.setStretchFactor(0, 5)
-        self.map_splitter.setStretchFactor(1, 4)
 
         workspace = QWidget()
         layout = QHBoxLayout(workspace)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
-        layout.addWidget(self.map_splitter, 1)
+        layout.setSpacing(12)
+        layout.addWidget(map_panel, 1)
         layout.addWidget(stats_panel)
         return workspace
 
     def _statistics_panel(self) -> QFrame:
         frame = QFrame()
         frame.setObjectName("panel")
-        frame.setMinimumWidth(188)
-        frame.setMaximumWidth(240)
+        frame.setProperty("role", "liveMetrics")
+        frame.setMinimumWidth(244)
+        frame.setMaximumWidth(284)
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(9)
@@ -106,64 +84,66 @@ class LiveMonitorPage(QWidget):
         layout.addWidget(kicker)
         layout.addWidget(title)
 
-        self.vehicle_metric = metric_card("全局车辆", "0", "SUMO 实时状态")
-        self.carla_metric = metric_card("CARLA", "等待", "本机原生窗口")
-        self.experiment_metric = metric_card("实验状态", "未创建", "核心运行")
-        layout.addWidget(self.vehicle_metric)
-        layout.addWidget(self.carla_metric)
-        layout.addWidget(self.experiment_metric)
+        self.current_vehicle_metric = metric_card("当前车辆数", "0 辆", "当前活跃车辆")
+        self.total_vehicle_metric = metric_card("车辆总数", "0 辆", "本次运行累计出现")
+        self.average_speed_metric = metric_card("平均速度", "0.0 km/h", "当前车辆平均速度")
+        self.average_travel_time_metric = metric_card(
+            "平均通过时间",
+            "—",
+            "已离场车辆平均用时",
+        )
+        layout.addWidget(self.current_vehicle_metric)
+        layout.addWidget(self.total_vehicle_metric)
+        layout.addWidget(self.average_speed_metric)
+        layout.addWidget(self.average_travel_time_metric)
         layout.addStretch(1)
         return frame
 
-    def _vehicle_console(self) -> QFrame:
-        frame = QFrame()
-        frame.setObjectName("panel")
-        grid = QGridLayout(frame)
-        grid.setContentsMargins(PANEL_CONTENT_MARGIN, 10, PANEL_CONTENT_MARGIN, 10)
-        grid.setHorizontalSpacing(8)
-        grid.setVerticalSpacing(5)
+    def _simulation_controls(self) -> QFrame:
+        content = QWidget()
+        row = QHBoxLayout(content)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(8)
 
-        kicker = QLabel("车辆控制")
-        kicker.setObjectName("panelKicker")
-        grid.addWidget(kicker, 0, 0)
-        grid.addWidget(QLabel("选中车辆"), 1, 0)
-        self.vehicle_id = QLineEdit()
-        self.vehicle_id.setPlaceholderText("在地图上选择车辆，或输入车辆 ID")
-        self.vehicle_id.setMinimumWidth(210)
-        grid.addWidget(self.vehicle_id, 1, 1)
+        self.start_button = QPushButton("启动")
+        self.start_button.setObjectName("primaryButton")
+        self.pause_button = QPushButton("暂停")
+        self.resume_button = QPushButton("继续")
+        self.stop_button = QPushButton("停止")
+        self.stop_button.setObjectName("dangerButton")
+        self.restart_button = QPushButton("重新开始")
+        self.restart_button.setObjectName("restartButton")
 
-        grid.addWidget(QLabel("目标速度"), 1, 2)
-        self.desired_speed = QDoubleSpinBox()
-        self.desired_speed.setRange(0.0, 60.0)
-        self.desired_speed.setValue(8.0)
-        self.desired_speed.setSuffix(" m/s")
-        grid.addWidget(self.desired_speed, 1, 3)
+        self.start_button.clicked.connect(self.start_requested)
+        self.pause_button.clicked.connect(self.pause_requested)
+        self.resume_button.clicked.connect(self.resume_requested)
+        self.stop_button.clicked.connect(self.stop_requested)
+        self.restart_button.clicked.connect(self.restart_requested)
 
-        self.apply_speed_button = QPushButton("应用车速")
-        self.left_button = QPushButton("左换道")
-        self.right_button = QPushButton("右换道")
-        self.vehicle_stop_button = QPushButton("单车停车")
-        self.vehicle_stop_button.setObjectName("dangerButton")
-        self.apply_speed_button.clicked.connect(self._emit_vehicle_speed)
-        self.left_button.clicked.connect(lambda: self._emit_lane_change("LEFT"))
-        self.right_button.clicked.connect(lambda: self._emit_lane_change("RIGHT"))
-        self.vehicle_stop_button.clicked.connect(self._emit_vehicle_stop)
-        grid.addWidget(self.apply_speed_button, 1, 4)
-        grid.addWidget(self.left_button, 1, 5)
-        grid.addWidget(self.right_button, 1, 6)
-        grid.addWidget(self.vehicle_stop_button, 1, 7)
-        grid.setColumnStretch(1, 1)
-        return frame
+        for button in (
+            self.start_button,
+            self.pause_button,
+            self.resume_button,
+            self.stop_button,
+            self.restart_button,
+        ):
+            row.addWidget(button)
+        row.addStretch(1)
+        row.addWidget(self._speed_controls())
+        return panel("运行控制", content, kicker="仿真生命周期")
 
     def _speed_controls(self) -> QWidget:
         widget = QWidget()
         row = QHBoxLayout(widget)
         row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(3)
-        group = QButtonGroup(self)
-        group.setExclusive(True)
-        for value, label in ((0.5, "0.5×"), (1.0, "1×"), (2.0, "2×")):
-            button = QPushButton(label)
+        row.setSpacing(4)
+        caption_label = QLabel("播放倍率")
+        caption_label.setObjectName("caption")
+        row.addWidget(caption_label)
+        self.speed_group = QButtonGroup(self)
+        self.speed_group.setExclusive(True)
+        for value, button_text in ((0.5, "0.5×"), (1.0, "1×"), (2.0, "2×")):
+            button = QPushButton(button_text)
             button.setCheckable(True)
             button.setObjectName("speedButton")
             button.setProperty("multiplier", value)
@@ -172,18 +152,8 @@ class LiveMonitorPage(QWidget):
             button.clicked.connect(
                 lambda checked=False, speed=value: self.speed_changed.emit(speed)
             )
-            group.addButton(button)
+            self.speed_group.addButton(button)
             row.addWidget(button)
-        return widget
-
-    def _start_controls(self) -> QWidget:
-        widget = QWidget()
-        row = QHBoxLayout(widget)
-        row.setContentsMargins(0, 0, 0, 0)
-        self.start_button = QPushButton("开始运行")
-        self.start_button.setObjectName("primaryButton")
-        self.start_button.clicked.connect(self.start_requested)
-        row.addWidget(self.start_button)
         return widget
 
     def _header_actions(self) -> QWidget:
@@ -198,35 +168,30 @@ class LiveMonitorPage(QWidget):
         self.status_label = QLabel("未创建")
         self.status_label.setObjectName("statusBadge")
         row.addWidget(self.connection_label)
-        row.addWidget(self.time_label)
         row.addWidget(self.status_label)
-        row.addWidget(self._speed_controls())
-        row.addWidget(self._start_controls())
-        self.pause_button = QPushButton("暂停")
-        self.resume_button = QPushButton("恢复")
-        self.stop_button = QPushButton("停止")
-        self.stop_button.setObjectName("dangerButton")
-        self.pause_button.clicked.connect(self.pause_requested)
-        self.resume_button.clicked.connect(self.resume_requested)
-        self.stop_button.clicked.connect(self.stop_requested)
-        row.addWidget(self.pause_button)
-        row.addWidget(self.resume_button)
-        row.addWidget(self.stop_button)
+        row.addWidget(self.time_label)
         return widget
 
-    @Slot(str)
-    def set_vehicle_id(self, vehicle_id: str) -> None:
-        self.vehicle_id.setText(vehicle_id)
-
-    def set_vehicle_count(self, count: int) -> None:
-        self._metric_value(self.vehicle_metric).setText(str(count))
-
-    def set_carla_status(self, status: str) -> None:
-        self._metric_value(self.carla_metric).setText(status)
+    @Slot(object)
+    def set_metrics(self, metrics: object) -> None:
+        if not isinstance(metrics, LiveMetrics):
+            return
+        self._metric_value(self.current_vehicle_metric).setText(
+            f"{metrics.current_vehicle_count} 辆"
+        )
+        self._metric_value(self.total_vehicle_metric).setText(f"{metrics.total_vehicle_count} 辆")
+        self._metric_value(self.average_speed_metric).setText(
+            f"{metrics.average_speed_mps * 3.6:.1f} km/h"
+        )
+        travel_time = (
+            "—"
+            if metrics.average_travel_time_ms is None
+            else f"{metrics.average_travel_time_ms / 1000.0:.1f} s"
+        )
+        self._metric_value(self.average_travel_time_metric).setText(travel_time)
 
     def set_status(self, status: str) -> None:
         self.status_label.setText(status)
-        self._metric_value(self.experiment_metric).setText(status)
 
     def set_time(self, simulation_time_ms: int) -> None:
         hours, remainder = divmod(simulation_time_ms, 3_600_000)
@@ -239,13 +204,9 @@ class LiveMonitorPage(QWidget):
         self.pause_button.setEnabled(availability.can_pause)
         self.resume_button.setEnabled(availability.can_resume)
         self.stop_button.setEnabled(availability.can_stop)
-        for widget in (
-            self.apply_speed_button,
-            self.left_button,
-            self.right_button,
-            self.vehicle_stop_button,
-        ):
-            widget.setEnabled(availability.can_control_vehicle)
+        self.restart_button.setEnabled(availability.can_restart)
+        for button in self.speed_group.buttons():
+            button.setEnabled(availability.can_set_speed)
 
     def set_connection(self, state: str) -> None:
         labels = {
@@ -256,17 +217,6 @@ class LiveMonitorPage(QWidget):
             "DISCONNECTED": "实时已断开",
         }
         self.connection_label.setText(labels.get(state, state))
-
-    def _emit_vehicle_speed(self) -> None:
-        self.vehicle_speed_requested.emit(
-            self.vehicle_id.text().strip(), self.desired_speed.value()
-        )
-
-    def _emit_lane_change(self, direction: str) -> None:
-        self.lane_change_requested.emit(self.vehicle_id.text().strip(), direction)
-
-    def _emit_vehicle_stop(self) -> None:
-        self.vehicle_stop_requested.emit(self.vehicle_id.text().strip())
 
     @staticmethod
     def _metric_value(card: QFrame) -> QLabel:

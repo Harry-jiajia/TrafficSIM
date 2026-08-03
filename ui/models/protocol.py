@@ -199,7 +199,8 @@ class ControlAvailability:
     can_pause: bool
     can_resume: bool
     can_stop: bool
-    can_control_vehicle: bool
+    can_restart: bool
+    can_set_speed: bool
 
     @classmethod
     def for_status(cls, status: ExperimentStatus | None) -> ControlAvailability:
@@ -210,8 +211,30 @@ class ControlAvailability:
             can_pause=status is ExperimentStatus.RUNNING,
             can_resume=status is ExperimentStatus.PAUSED,
             can_stop=status in {ExperimentStatus.RUNNING, ExperimentStatus.PAUSED},
-            can_control_vehicle=status in {ExperimentStatus.RUNNING, ExperimentStatus.PAUSED},
+            can_restart=status
+            in {
+                ExperimentStatus.RUNNING,
+                ExperimentStatus.PAUSED,
+                ExperimentStatus.COMPLETED,
+                ExperimentStatus.FAILED,
+            },
+            can_set_speed=status
+            in {
+                ExperimentStatus.READY,
+                ExperimentStatus.RUNNING,
+                ExperimentStatus.PAUSED,
+            },
         )
+
+
+@dataclass(frozen=True, slots=True)
+class LiveMetrics:
+    """UI session metrics derived from authoritative vehicle snapshots."""
+
+    current_vehicle_count: int
+    total_vehicle_count: int
+    average_speed_mps: float
+    average_travel_time_ms: float | None
 
 
 @dataclass(frozen=True, slots=True)

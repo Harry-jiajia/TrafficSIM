@@ -4,10 +4,11 @@ from uuid import UUID
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QApplication
-from ui.models import ExperimentStatus
+from ui.models import ExperimentStatus, LiveMetrics
 from ui.viewmodels import RunViewModel
 
 EXPERIMENT_ID = UUID("00000000-0000-0000-0000-000000000010")
+RESTARTED_EXPERIMENT_ID = UUID("00000000-0000-0000-0000-000000000011")
 SCENARIO_ID = UUID("00000000-0000-0000-0000-000000000042")
 WORKSPACE_ID = UUID("10000000-0000-0000-0000-000000000001")
 
@@ -103,11 +104,14 @@ class FakeRealtime(QObject):
         self.sent: list[tuple[str, dict[str, object]]] = []
         self.snapshot_requests = 0
         self.closed = False
+        self.raise_on_send = False
 
     def connect_to_experiment(self, experiment_id: UUID) -> None:
         self.connected = experiment_id
 
     def send_command(self, command: str, payload: dict[str, object]) -> str:
+        if self.raise_on_send:
+            raise RuntimeError("realtime connection is unavailable")
         self.sent.append((command, payload))
         return "message-1"
 
@@ -162,16 +166,21 @@ def _envelope(message_type: str, sequence: int, payload: object) -> dict[str, ob
     }
 
 
-def _vehicle(sequence: int) -> dict[str, object]:
+def _vehicle(
+    sequence: int,
+    *,
+    vehicle_id: str = "vehicle-1",
+    speed_mps: float = 5.0,
+) -> dict[str, object]:
     return {
         "schema_version": "1.0",
         "experiment_id": str(EXPERIMENT_ID),
-        "vehicle_id": "vehicle-1",
+        "vehicle_id": vehicle_id,
         "simulation_time_ms": sequence * 50,
         "sequence": sequence,
         "automation_level": "HUMAN",
         "position": {"x": 1.0, "y": 2.0, "z": 0.0},
-        "speed_mps": 5.0,
+        "speed_mps": speed_mps,
         "acceleration_mps2": 0.0,
         "heading_rad": 0.0,
         "lane_id": "lane-1",
@@ -558,3 +567,133 @@ def test_running_world_deltas_forward_new_vehicle_positions_to_the_map() -> None
     viewmodel.handle_envelope(_envelope("vehicle.delta", 2, {"vehicles": [second]}))
 
     assert positions == [(1.0, 2.0), (8.0, 5.0)]
+
+
+def test_live_metrics_track_active_total_speed_and_completed_travel_time() -> None:
+    viewmodel, _, _ = _viewmodel()
+    _enter_workspace(viewmodel)
+    viewmodel.handle_rest_success(
+        "experiment.create",
+        {
+            "experiment_id": str(EXPERIMENT_ID),
+            "workspace_id": str(WORKSPACE_ID),
+            "status": "RUNNING",
+            "simulation_time_ms": 0,
+            "speed_multiplier": 1.0,
+        },
+    )
+    samples: list[LiveMetrics] = []
+    viewmodel.live_metrics_changed.connect(samples.append)
+
+    viewmodel.handle_envelope(
+        _envelope(
+            "vehicle.delta",
+            1,
+            {"vehicles": [_vehicle(1, vehicle_id="vehicle-1", speed_mps=5.0)]},
+        )
+    )
+    viewmodel.handle_envelope(
+        _envelope(
+            "vehicle.delta",
+            2,
+            {
+                "vehicles": [
+                    _vehicle(2, vehicle_id="vehicle-1", speed_mps=5.0),
+                    _vehicle(2, vehicle_id="vehicle-2", speed_mps=15.0),
+                ]
+            },
+        )
+    )
+    viewmodel.handle_envelope(
+        _envelope(
+            "vehicle.delta",
+            3,
+            {"vehicles": [_vehicle(3, vehicle_id="vehicle-2", speed_mps=15.0)]},
+        )
+    )
+
+    assert samples[-1] == LiveMetrics(
+        current_vehicle_count=1,
+        total_vehicle_count=2,
+        average_speed_mps=15.0,
+        average_travel_time_ms=100.0,
+    )
+
+
+def test_restart_stops_active_experiment_then_creates_and_launches_a_new_one() -> None:
+    viewmodel, rest, realtime = _viewmodel()
+    _enter_workspace(viewmodel)
+    viewmodel.handle_rest_success(
+        "maps.list",
+        [
+            {
+                "map_id": "image2road",
+                "kind": "sumo",
+                "display_name": "图像识别路网",
+                "validated": True,
+                "network_schema_version": "sumo-net/display-1.0",
+                "manifest_available": False,
+                "sumo_config_file": "image2road.sumocfg",
+                "sumo_step_ms": 1000,
+            }
+        ],
+    )
+    viewmodel.handle_rest_success(
+        "experiment.create",
+        {
+            "experiment_id": str(EXPERIMENT_ID),
+            "workspace_id": str(WORKSPACE_ID),
+            "status": "RUNNING",
+            "simulation_time_ms": 0,
+            "speed_multiplier": 1.0,
+        },
+    )
+
+    viewmodel.restart()
+    viewmodel.handle_envelope(_envelope("experiment.state.changed", 1, {"status": "COMPLETED"}))
+
+    assert realtime.sent[-1] == ("experiment.stop", {"reason": "USER_RESTART"})
+    assert realtime.closed is True
+    assert rest.calls[-1] == ("create", (WORKSPACE_ID, SCENARIO_ID, "image2road"))
+
+    viewmodel.handle_rest_success(
+        "experiment.create",
+        {
+            "experiment_id": str(RESTARTED_EXPERIMENT_ID),
+            "workspace_id": str(WORKSPACE_ID),
+            "status": "CREATED",
+            "simulation_time_ms": 0,
+            "speed_multiplier": 1.0,
+        },
+    )
+
+    assert realtime.connected == RESTARTED_EXPERIMENT_ID
+    assert realtime.sent[-1] == ("experiment.prepare", {})
+
+
+def test_restart_does_not_create_new_experiment_when_stop_command_cannot_be_sent() -> None:
+    viewmodel, rest, realtime = _viewmodel()
+    _enter_workspace(viewmodel)
+    viewmodel.handle_rest_success(
+        "experiment.create",
+        {
+            "experiment_id": str(EXPERIMENT_ID),
+            "workspace_id": str(WORKSPACE_ID),
+            "status": "RUNNING",
+            "simulation_time_ms": 0,
+            "speed_multiplier": 1.0,
+        },
+    )
+    notifications: list[tuple[str, str]] = []
+    viewmodel.notification.connect(lambda level, message: notifications.append((level, message)))
+    realtime.raise_on_send = True
+
+    viewmodel.restart()
+    realtime.raise_on_send = False
+    viewmodel.handle_envelope(_envelope("experiment.state.changed", 1, {"status": "COMPLETED"}))
+
+    assert not [call for call in rest.calls if call[0] == "create"]
+    assert notifications[-1] == (
+        "error",
+        "命令发送失败：realtime connection is unavailable",
+    )
